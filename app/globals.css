@@ -1,26 +1,75 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: 250 251 253;
+  --card: 255 255 255;
+  --fg: 15 23 42;
+  --muted: 100 116 139;
+  --border: 226 232 240;
+  --accent: 13 122 130;
+  --cat-utility: 13 122 130;
+  --cat-media: 180 83 9;
+  --cat-text: 124 58 237;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --bg: 6 8 15;
+  --card: 13 16 26;
+  --fg: 226 232 240;
+  --muted: 129 140 163;
+  --border: 31 37 54;
+  --accent: 45 212 191;
+  --cat-utility: 45 212 191;
+  --cat-media: 251 191 36;
+  --cat-text: 167 139 250;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: rgb(var(--bg));
+  color: rgb(var(--fg));
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-display { font-family: "Space Grotesk", ui-sans-serif, sans-serif; }
+.font-data { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+.led-dot {
+  position: relative;
+  display: inline-flex;
+  height: 7px;
+  width: 7px;
+  border-radius: 9999px;
+}
+.led-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  animation: led-pulse 2.2s ease-in-out infinite;
+}
+@keyframes led-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(var(--accent) / 0.5); }
+  50% { box-shadow: 0 0 0 4px rgb(var(--accent) / 0); }
+}
+
+.radar-sweep {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 700px;
+  height: 700px;
+  margin: -350px 0 0 -350px;
+  background: conic-gradient(from 0deg, transparent 0deg, rgb(var(--accent) / 0.18) 18deg, transparent 40deg);
+  border-radius: 9999px;
+  animation: radar-spin 7s linear infinite;
+  pointer-events: none;
+}
+@keyframes radar-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .led-dot::after, .radar-sweep { animation: none; }
 }
