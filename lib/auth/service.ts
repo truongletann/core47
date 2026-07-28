@@ -1,0 +1,133 @@
+import { eq } from "drizzle-orm";
+import { getDb } from "@/db/client";
+import { users, sessions } from "@/db/schema";
+import { RegisterSchema, LoginSchema, UpdateProfileSchema, type RegisterInput, type LoginInput, type UpdateProfileInput } from "./schema";
+import { generateSalt, hashPassword, verifyPassword } from "./crypto";
+import { SESSION_DURATION_DAYS } from "./config";
+import type { User } from "@/types/auth";
+
+function toUser(record: {
+  id: string;
+  email: string;
+  isAdmin: number;
+  name: string | null;
+  avatarUrl: string | null;
+  createdAt: string;
+}): User {
+  return {
+    id: record.id,
+    email: record.email,
+    name: record.name,
+    avatarUrl: record.avatarUrl,
+    isAdmin: Boolean(record.isAdmin),
+    createdAt: record.createdAt,
+  };
+}
+
+export async function registerUser(raw: RegisterInput): Promise<{ user: User; sessionId: string }> {
+  const input = RegisterSchema.parse(raw);
+  const db = await getDb();
+
+  const existing = await db.select().from(users).where(eq(users.email, input.email)).get();
+  if (existing) {
+    throw new Error("EMAIL_TAKEN");
+  }
+
+  // Người đăng ký đầu tiên tự động là admin
+  const anyUser = await db.select().from(users).limit(1).get();
+  const isFirstUser = !anyUser;
+
+  const salt = generateSalt();
+  const passwordHash = await hashPassword(input.password, salt);
+
+  const userRecord = {
+    id: crypto.randomUUID(),
+    email: input.email,
+    passwordHash,
+    passwordSalt: salt,
+    isAdmin: isFirstUser ? 1 : 0,
+    name: null,
+    avatarUrl: null,
+    createdAt: new Date().toISOString(),
+  };
+  await db.insert(users).values(userRecord);
+
+  const sessionId = await createSession(userRecord.id);
+
+  return { user: toUser(userRecord), sessionId };
+}
+
+export async function loginUser(raw: LoginInput): Promise<{ user: User; sessionId: string }> {
+  const input = LoginSchema.parse(raw);
+  const db = await getDb();
+
+  const record = await db.select().from(users).where(eq(users.email, input.email)).get();
+  if (!record) {
+    throw new Error("INVALID_CREDENTIALS");
+  }
+
+  const valid = await verifyPassword(input.password, record.passwordSalt, record.passwordHash);
+  if (!valid) {
+    throw new Error("INVALID_CREDENTIALS");
+  }
+
+  const sessionId = await createSession(record.id);
+
+  return { user: toUser(record), sessionId };
+}
+
+async function createSession(userId: string): Promise<string> {
+  const db = await getDb();
+  const sessionId = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+  await db.insert(sessions).values({
+    id: sessionId,
+    userId,
+    expiresAt,
+    createdAt: new Date().toISOString(),
+  });
+
+  return sessionId;
+}
+
+export async function getUserBySessionId(sessionId: string | undefined): Promise<User | null> {
+  if (!sessionId) return null;
+  const db = await getDb();
+
+  const session = await db.select().from(sessions).where(eq(sessions.id, sessionId)).get();
+  if (!session) return null;
+
+  if (new Date(session.expiresAt) < new Date()) {
+    await db.delete(sessions).where(eq(sessions.id, sessionId));
+    return null;
+  }
+
+  const record = await db.select().from(users).where(eq(users.id, session.userId)).get();
+  if (!record) return null;
+
+  return toUser(record);
+}
+
+export async function updateProfile(userId: string, raw: UpdateProfileInput): Promise<User> {
+  const input = UpdateProfileSchema.parse(raw);
+  const db = await getDb();
+
+  await db
+    .update(users)
+    .set({
+      name: input.name || null,
+      avatarUrl: input.avatarUrl || null,
+    })
+    .where(eq(users.id, userId));
+
+  const record = await db.select().from(users).where(eq(users.id, userId)).get();
+  if (!record) throw new Error("USER_NOT_FOUND");
+
+  return toUser(record);
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  const db = await getDb();
+  await db.delete(sessions).where(eq(sessions.id, sessionId));
+}
