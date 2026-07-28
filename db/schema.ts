@@ -38,6 +38,7 @@ export const shortLinks = sqliteTable("short_links", {
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
+  username: text("username").unique(),
   passwordHash: text("password_hash").notNull(),
   passwordSalt: text("password_salt").notNull(),
   isAdmin: integer("is_admin").notNull().default(0),

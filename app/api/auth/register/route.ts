@@ -35,6 +35,9 @@ export async function POST(req: NextRequest) {
     if (err instanceof Error && err.message === "EMAIL_TAKEN") {
       return NextResponse.json({ success: false, error: "EMAIL_TAKEN" }, { status: 409 });
     }
+    if (err instanceof Error && err.message === "USERNAME_TAKEN") {
+      return NextResponse.json({ success: false, error: "USERNAME_TAKEN" }, { status: 409 });
+    }
     return NextResponse.json({ success: false, error: "SERVER_ERROR" }, { status: 500 });
   }
 }

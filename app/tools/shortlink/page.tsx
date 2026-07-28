@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Copy, Check, Zap, ShieldCheck, BarChart3 } from "lucide-react";
+import { Copy, Check, Zap, ShieldCheck, BarChart3, Trash2 } from "lucide-react";
 import { SHORT_DOMAIN } from "@/lib/shortlink/config";
 
 interface HistoryLink {
@@ -28,6 +27,21 @@ function toPoints(series: number[], width: number, height: number, max: number) 
     .join(" ");
 }
 
+// Tạo dãy số trang rút gọn: 1 2 3 ... 10, hoặc 1 ... 4 5 6 ... 10
+function getPageRange(current: number, total: number): (number | "...")[] {
+  const range: (number | "...")[] = [];
+  const delta = 1;
+
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+      range.push(i);
+    } else if (range[range.length - 1] !== "...") {
+      range.push("...");
+    }
+  }
+  return range;
+}
+
 export default function ShortlinkPage() {
   const [url, setUrl] = useState("");
   const [showCustom, setShowCustom] = useState(false);
@@ -40,6 +54,14 @@ export default function ShortlinkPage() {
   const [historyLinks, setHistoryLinks] = useState<HistoryLink[]>([]);
   const [loggedIn, setLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
+  const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/shortlink/my", { credentials: "include" })
@@ -61,6 +83,61 @@ export default function ShortlinkPage() {
     const res = await fetch("/api/shortlink/my", { credentials: "include" });
     const json = (await res.json()) as { data?: { links?: HistoryLink[] } };
     setHistoryLinks(json?.data?.links ?? []);
+  }
+
+  async function handleDeleteLink(code: string) {
+    setConfirmDialog({
+      message: "Delete this link? This cannot be undone.",
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        await fetch(`/api/shortlink/${code}`, { method: "DELETE", credentials: "include" });
+        refreshHistory();
+      },
+    });
+  }
+
+  function toggleSelect(code: string) {
+    setSelectedCodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) next.delete(code);
+      else next.add(code);
+      return next;
+    });
+  }
+
+  function toggleSelectAllOnPage(codesOnPage: string[]) {
+    setSelectedCodes((prev) => {
+      const allSelected = codesOnPage.every((c) => prev.has(c));
+      const next = new Set(prev);
+      if (allSelected) {
+        codesOnPage.forEach((c) => next.delete(c));
+      } else {
+        codesOnPage.forEach((c) => next.add(c));
+      }
+      return next;
+    });
+  }
+
+  async function handleBulkDelete() {
+    if (selectedCodes.size === 0) return;
+    setConfirmDialog({
+      message: `Delete ${selectedCodes.size} selected link(s)? This cannot be undone.`,
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        setBulkDeleting(true);
+        try {
+          await Promise.all(
+            Array.from(selectedCodes).map((code) =>
+              fetch(`/api/shortlink/${code}`, { method: "DELETE", credentials: "include" }),
+            ),
+          );
+          setSelectedCodes(new Set());
+          refreshHistory();
+        } finally {
+          setBulkDeleting(false);
+        }
+      },
+    });
   }
 
   async function handleSubmit() {
@@ -229,9 +306,6 @@ export default function ShortlinkPage() {
           <span className="flex items-center gap-1.5">
             <BarChart3 size={13} className="text-[rgb(var(--accent))]" /> Click analytics
           </span>
-          <Link href="/history" className="underline underline-offset-2 hover:text-[rgb(var(--accent))]">
-            View your links →
-          </Link>
         </div>
       </div>
 
@@ -313,38 +387,136 @@ export default function ShortlinkPage() {
       {/* History inline — chỉ hiện khi đã đăng nhập */}
       {loggedIn && (
         <div className="lg:col-span-2">
-          <h2 className="font-display mb-3 text-lg font-semibold">
-            {isAdmin ? "All links (admin view)" : "Your links"}
-          </h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold">
+              {isAdmin ? "All links (admin view)" : "Your links"}
+            </h2>
+            {selectedCodes.size > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                disabled={bulkDeleting}
+                className="font-data flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
+              >
+                <Trash2 size={13} />
+                {bulkDeleting ? "Deleting..." : `Delete selected (${selectedCodes.size})`}
+              </button>
+            )}
+          </div>
+
           <div className="overflow-hidden rounded-xl border border-[rgb(var(--border))]">
             {historyLinks.length === 0 ? (
               <p className="p-6 text-center text-sm text-[rgb(var(--muted))]">
                 No links yet — create one above.
               </p>
             ) : (
-              historyLinks.map((link) => (
-                <div
-                  key={link.code}
-                  className="flex items-center justify-between border-b border-[rgb(var(--border))] px-4 py-3 last:border-0"
-                >
-                  <div className="min-w-0">
-                    <p className="font-data text-sm text-[rgb(var(--accent))]">
-                      {SHORT_DOMAIN}/{link.code}
-                    </p>
-                    <p className="mt-0.5 truncate text-xs text-[rgb(var(--muted))]">
-                      {link.targetUrl}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-[rgb(var(--muted))]">
-                      By {link.creatorEmail ?? "guest"} ·{" "}
-                      {new Date(link.createdAt).toLocaleString()}
-                    </p>
+              <>
+                {(() => {
+                  const pageItems = historyLinks.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+                  const codesOnPage = pageItems.map((l) => l.code);
+                  const allOnPageSelected =
+                    codesOnPage.length > 0 && codesOnPage.every((c) => selectedCodes.has(c));
+                  return (
+                    <div className="flex items-center gap-3 border-b border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-4 py-2">
+                      <input
+                        type="checkbox"
+                        checked={allOnPageSelected}
+                        onChange={() => toggleSelectAllOnPage(codesOnPage)}
+                        className="h-4 w-4 accent-[rgb(var(--accent))]"
+                      />
+                      <span className="font-data text-xs text-[rgb(var(--muted))]">
+                        Select all on this page
+                      </span>
+                    </div>
+                  );
+                })()}
+                {historyLinks
+                  .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+                  .map((link) => (
+                  <div
+                    key={link.code}
+                    className="flex items-center justify-between gap-3 border-b border-[rgb(var(--border))] px-4 py-3 last:border-0"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCodes.has(link.code)}
+                      onChange={() => toggleSelect(link.code)}
+                      className="h-4 w-4 shrink-0 accent-[rgb(var(--accent))]"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-data text-sm text-[rgb(var(--accent))]">
+                        {SHORT_DOMAIN}/{link.code}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-[rgb(var(--muted))]">
+                        {link.targetUrl}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-[rgb(var(--muted))]">
+                        By {link.creatorEmail ?? "guest"} ·{" "}
+                        {new Date(link.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="font-data text-xs text-[rgb(var(--muted))]">
+                        {link.clicks} clicks
+                      </span>
+                      <button
+                        onClick={() => handleDeleteLink(link.code)}
+                        aria-label="Delete link"
+                        className="text-[rgb(var(--muted))] hover:text-red-600"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <span className="font-data shrink-0 text-xs text-[rgb(var(--muted))]">
-                    {link.clicks} clicks
-                  </span>
-                </div>
-              ))
+                ))}
+              </>
             )}
+          </div>
+
+          {historyLinks.length > PAGE_SIZE && (
+            <div className="font-data mt-3 flex items-center justify-center gap-1">
+              {getPageRange(page, Math.ceil(historyLinks.length / PAGE_SIZE)).map((p, i) =>
+                p === "..." ? (
+                  <span key={`ellipsis-${i}`} className="px-1 text-xs text-[rgb(var(--muted))]">
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`h-7 w-7 rounded-md text-xs ${
+                      p === page
+                        ? "bg-[rgb(var(--accent))] font-semibold text-white"
+                        : "text-[rgb(var(--muted))] hover:bg-[rgb(var(--border)/0.5)]"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ),
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal xác nhận riêng, thay cho confirm() mặc định của trình duyệt */}
+      {confirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+          <div className="w-full max-w-sm rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-5 shadow-xl">
+            <p className="text-sm text-[rgb(var(--fg))]">{confirmDialog.message}</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmDialog(null)}
+                className="rounded-md border border-[rgb(var(--border))] px-3 py-1.5 text-sm hover:bg-[rgb(var(--border)/0.5)]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDialog.onConfirm}
+                className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

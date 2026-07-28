@@ -6,7 +6,6 @@ interface MeUser {
   id: string;
   email: string;
   name: string | null;
-  avatarUrl: string | null;
   isAdmin: boolean;
 }
 
@@ -16,8 +15,10 @@ function defaultAvatarUrl(nameOrEmail: string) {
 }
 
 export function UserMenu({ homeUrl }: { homeUrl: string }) {
-  const [user, setUser] = useState<MeUser | null | undefined>(undefined); // undefined = đang tải
+  const [user, setUser] = useState<MeUser | null | undefined>(undefined);
   const [open, setOpen] = useState(false);
+  const [avatarBroken, setAvatarBroken] = useState(false);
+  const [avatarVersion, setAvatarVersion] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,6 +26,15 @@ export function UserMenu({ homeUrl }: { homeUrl: string }) {
       .then((r) => r.json() as Promise<{ data?: { user?: MeUser | null } }>)
       .then((json) => setUser(json?.data?.user ?? null))
       .catch(() => setUser(null));
+  }, []);
+
+  useEffect(() => {
+    function onAvatarUpdated() {
+      setAvatarBroken(false);
+      setAvatarVersion(Date.now());
+    }
+    window.addEventListener("core47:avatar-updated", onAvatarUpdated);
+    return () => window.removeEventListener("core47:avatar-updated", onAvatarUpdated);
   }, []);
 
   useEffect(() => {
@@ -49,19 +59,28 @@ export function UserMenu({ homeUrl }: { homeUrl: string }) {
   }
 
   if (!user) {
+    const returnTo = typeof window !== "undefined" ? window.location.href : "";
+    const loginHref = `${base}/login?returnTo=${encodeURIComponent(returnTo)}`;
     return (
-      <a href={`${base}/login`} className="font-data text-sm text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] transition-colors">
+      <a href={loginHref} className="font-data text-sm text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] transition-colors">
         Log in
       </a>
     );
   }
 
-  const avatarSrc = user.avatarUrl || defaultAvatarUrl(user.name || user.email);
+  const avatarSrc = avatarBroken
+    ? defaultAvatarUrl(user.name || user.email)
+    : `https://core47.xyz/api/avatar/${user.id}?v=${avatarVersion}`;
 
   return (
     <div className="relative" ref={menuRef}>
       <button onClick={() => setOpen((v) => !v)} className="block h-8 w-8 overflow-hidden rounded-full border border-[rgb(var(--border))]">
-        <img src={avatarSrc} alt={user.email} className="h-full w-full object-cover" />
+        <img
+          src={avatarSrc}
+          alt={user.email}
+          onError={() => setAvatarBroken(true)}
+          className="h-full w-full object-cover"
+        />
       </button>
 
       {open && (
@@ -78,7 +97,7 @@ export function UserMenu({ homeUrl }: { homeUrl: string }) {
             href={`${base}/profile`}
             className="block px-3 py-2 text-sm text-[rgb(var(--fg))] hover:bg-[rgb(var(--accent)/0.06)]"
           >
-            Edit profile
+            Settings
           </a>
           <button
             onClick={handleLogout}

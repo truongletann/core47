@@ -79,6 +79,24 @@ export async function getShortLinksByUser(userId: string): Promise<ShortLink[]> 
     .orderBy(desc(shortLinks.createdAt));
 }
 
+export async function deleteShortLink(
+  code: string,
+  requester: { userId: string | null; isAdmin: boolean },
+): Promise<void> {
+  const db = await getDb();
+  const link = await db.select().from(shortLinks).where(eq(shortLinks.code, code)).get();
+
+  if (!link) {
+    throw new Error("NOT_FOUND");
+  }
+
+  const isOwner = link.userId && link.userId === requester.userId;
+  if (!isOwner && !requester.isAdmin) {
+    throw new Error("FORBIDDEN");
+  }
+
+  await db.delete(shortLinks).where(eq(shortLinks.code, code));
+}
 export async function getAllShortLinks(): Promise<ShortLink[]> {
   const db = await getDb();
   return db.select().from(shortLinks).orderBy(desc(shortLinks.createdAt));

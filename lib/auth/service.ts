@@ -1,7 +1,16 @@
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { users, sessions } from "@/db/schema";
-import { RegisterSchema, LoginSchema, UpdateProfileSchema, type RegisterInput, type LoginInput, type UpdateProfileInput } from "./schema";
+import {
+  RegisterSchema,
+  LoginSchema,
+  UpdateProfileSchema,
+  ChangePasswordSchema,
+  type RegisterInput,
+  type LoginInput,
+  type UpdateProfileInput,
+  type ChangePasswordInput,
+} from "./schema";
 import { generateSalt, hashPassword, verifyPassword } from "./crypto";
 import { SESSION_DURATION_DAYS } from "./config";
 import type { User } from "@/types/auth";
@@ -9,6 +18,7 @@ import type { User } from "@/types/auth";
 function toUser(record: {
   id: string;
   email: string;
+  username: string | null;
   isAdmin: number;
   name: string | null;
   avatarUrl: string | null;
@@ -17,6 +27,7 @@ function toUser(record: {
   return {
     id: record.id,
     email: record.email,
+    username: record.username,
     name: record.name,
     avatarUrl: record.avatarUrl,
     isAdmin: Boolean(record.isAdmin),
@@ -28,9 +39,17 @@ export async function registerUser(raw: RegisterInput): Promise<{ user: User; se
   const input = RegisterSchema.parse(raw);
   const db = await getDb();
 
-  const existing = await db.select().from(users).where(eq(users.email, input.email)).get();
-  if (existing) {
+  const existingEmail = await db.select().from(users).where(eq(users.email, input.email)).get();
+  if (existingEmail) {
     throw new Error("EMAIL_TAKEN");
+  }
+
+  const username = input.username || null;
+  if (username) {
+    const existingUsername = await db.select().from(users).where(eq(users.username, username)).get();
+    if (existingUsername) {
+      throw new Error("USERNAME_TAKEN");
+    }
   }
 
   // Người đăng ký đầu tiên tự động là admin
@@ -43,6 +62,7 @@ export async function registerUser(raw: RegisterInput): Promise<{ user: User; se
   const userRecord = {
     id: crypto.randomUUID(),
     email: input.email,
+    username,
     passwordHash,
     passwordSalt: salt,
     isAdmin: isFirstUser ? 1 : 0,
@@ -61,7 +81,12 @@ export async function loginUser(raw: LoginInput): Promise<{ user: User; sessionI
   const input = LoginSchema.parse(raw);
   const db = await getDb();
 
-  const record = await db.select().from(users).where(eq(users.email, input.email)).get();
+  const record = await db
+    .select()
+    .from(users)
+    .where(or(eq(users.email, input.identifier), eq(users.username, input.identifier)))
+    .get();
+
   if (!record) {
     throw new Error("INVALID_CREDENTIALS");
   }
@@ -113,11 +138,19 @@ export async function updateProfile(userId: string, raw: UpdateProfileInput): Pr
   const input = UpdateProfileSchema.parse(raw);
   const db = await getDb();
 
+  const newUsername = input.username || null;
+  if (newUsername) {
+    const existing = await db.select().from(users).where(eq(users.username, newUsername)).get();
+    if (existing && existing.id !== userId) {
+      throw new Error("USERNAME_TAKEN");
+    }
+  }
+
   await db
     .update(users)
     .set({
       name: input.name || null,
-      avatarUrl: input.avatarUrl || null,
+      username: newUsername,
     })
     .where(eq(users.id, userId));
 
@@ -125,6 +158,25 @@ export async function updateProfile(userId: string, raw: UpdateProfileInput): Pr
   if (!record) throw new Error("USER_NOT_FOUND");
 
   return toUser(record);
+}
+
+export async function changePassword(userId: string, raw: ChangePasswordInput): Promise<void> {
+  const input = ChangePasswordSchema.parse(raw);
+  const db = await getDb();
+
+  const record = await db.select().from(users).where(eq(users.id, userId)).get();
+  if (!record) throw new Error("USER_NOT_FOUND");
+
+  const valid = await verifyPassword(input.currentPassword, record.passwordSalt, record.passwordHash);
+  if (!valid) throw new Error("WRONG_CURRENT_PASSWORD");
+
+  const newSalt = generateSalt();
+  const newHash = await hashPassword(input.newPassword, newSalt);
+
+  await db
+    .update(users)
+    .set({ passwordHash: newHash, passwordSalt: newSalt })
+    .where(eq(users.id, userId));
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {

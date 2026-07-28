@@ -23,6 +23,22 @@
   },
   "dynamicRoutes": [
     {
+      "page": "/api/avatar/[userId]",
+      "regex": "^/api/avatar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPuserId": "nxtPuserId"
+      },
+      "namedRegex": "^/api/avatar/(?<nxtPuserId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/shortlink/[code]",
+      "regex": "^/api/shortlink/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPcode": "nxtPcode"
+      },
+      "namedRegex": "^/api/shortlink/(?<nxtPcode>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/tools/shortlink/[code]",
       "regex": "^/tools/shortlink/([^/]+?)(?:/)?$",
       "routeKeys": {
@@ -57,6 +73,18 @@
       "namedRegex": "^/admin(?:/)?$"
     },
     {
+      "page": "/api/auth/avatar",
+      "regex": "^/api/auth/avatar(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/avatar(?:/)?$"
+    },
+    {
+      "page": "/api/auth/change-password",
+      "regex": "^/api/auth/change\\-password(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/change\\-password(?:/)?$"
+    },
+    {
       "page": "/api/auth/login",
       "regex": "^/api/auth/login(?:/)?$",
       "routeKeys": {},
@@ -69,6 +97,18 @@
       "namedRegex": "^/api/auth/logout(?:/)?$"
     },
     {
+      "page": "/api/auth/me",
+      "regex": "^/api/auth/me(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/me(?:/)?$"
+    },
+    {
+      "page": "/api/auth/profile",
+      "regex": "^/api/auth/profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/profile(?:/)?$"
+    },
+    {
       "page": "/api/auth/register",
       "regex": "^/api/auth/register(?:/)?$",
       "routeKeys": {},
@@ -79,6 +119,12 @@
       "regex": "^/api/shortlink(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/shortlink(?:/)?$"
+    },
+    {
+      "page": "/api/shortlink/my",
+      "regex": "^/api/shortlink/my(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/shortlink/my(?:/)?$"
     },
     {
       "page": "/favicon.ico",

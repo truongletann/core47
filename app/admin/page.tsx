@@ -4,6 +4,7 @@ import { getUserBySessionId } from "@/lib/auth/service";
 import { getAllShortLinks } from "@/lib/shortlink/service";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/config";
 import { SHORT_DOMAIN } from "@/lib/shortlink/config";
+import { DeleteLinkButton } from "@/components/ui/DeleteLinkButton";
 
 export default async function AdminPage() {
   const cookieStore = await cookies();
@@ -33,6 +34,7 @@ export default async function AdminPage() {
               <th className="px-4 py-2">Device / Browser</th>
               <th className="px-4 py-2">Created at</th>
               <th className="px-4 py-2">Clicks</th>
+              <th className="px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -53,6 +55,9 @@ export default async function AdminPage() {
                   {new Date(link.createdAt).toLocaleString()}
                 </td>
                 <td className="px-4 py-2">{link.clicks}</td>
+                <td className="px-4 py-2">
+                  <DeleteLinkButton code={link.code} />
+                </td>
               </tr>
             ))}
           </tbody>
