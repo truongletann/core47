@@ -25,7 +25,7 @@ export function ToolGrid({ tools, categories }: Props) {
   }, [tools, activeCategory, search]);
 
   return (
-    <section className="mx-auto max-w-6xl px-6 pb-16">
+    <section className="mx-auto max-w-7xl px-6 pb-16">
       <ToolFilterBar
         categories={categories}
         activeCategory={activeCategory}

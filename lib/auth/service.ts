@@ -20,6 +20,7 @@ function toUser(record: {
   email: string;
   username: string | null;
   isAdmin: number;
+  isDisabled: number;
   name: string | null;
   avatarUrl: string | null;
   createdAt: string;
@@ -31,6 +32,7 @@ function toUser(record: {
     name: record.name,
     avatarUrl: record.avatarUrl,
     isAdmin: Boolean(record.isAdmin),
+    isDisabled: Boolean(record.isDisabled),
     createdAt: record.createdAt,
   };
 }
@@ -66,6 +68,7 @@ export async function registerUser(raw: RegisterInput): Promise<{ user: User; se
     passwordHash,
     passwordSalt: salt,
     isAdmin: isFirstUser ? 1 : 0,
+    isDisabled: 0,
     name: null,
     avatarUrl: null,
     createdAt: new Date().toISOString(),
@@ -95,6 +98,14 @@ export async function loginUser(raw: LoginInput): Promise<{ user: User; sessionI
   if (!valid) {
     throw new Error("INVALID_CREDENTIALS");
   }
+
+  if (record.isDisabled) {
+    throw new Error("ACCOUNT_DISABLED");
+  }
+
+  const now = new Date().toISOString();
+  await db.update(users).set({ lastLoginAt: now }).where(eq(users.id, record.id));
+  record.lastLoginAt = now;
 
   const sessionId = await createSession(record.id);
 

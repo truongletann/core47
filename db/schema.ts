@@ -42,8 +42,10 @@ export const users = sqliteTable("users", {
   passwordHash: text("password_hash").notNull(),
   passwordSalt: text("password_salt").notNull(),
   isAdmin: integer("is_admin").notNull().default(0),
+  isDisabled: integer("is_disabled").notNull().default(0),
   name: text("name"),
   avatarUrl: text("avatar_url"),
+  lastLoginAt: text("last_login_at"),
   createdAt: text("created_at").notNull(),
 });
 

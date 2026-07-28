@@ -204,7 +204,7 @@ export default function ShortlinkPage() {
   const maxVal = Math.max(...CLICKS_SERIES, ...UNIQUE_SERIES) + 6;
 
   return (
-    <main className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 py-20 lg:grid-cols-2">
+    <main className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 py-20 lg:grid-cols-2">
       {/* Left column — content + form */}
       <div className="text-left">
         <span className="font-data inline-flex items-center gap-2 rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--card))] px-3 py-1 text-xs text-[rgb(var(--muted))]">

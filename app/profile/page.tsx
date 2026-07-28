@@ -144,7 +144,7 @@ export default function ProfilePage() {
   const avatarSrc = `https://core47.xyz/api/avatar/${user.id}?v=${avatarVersion}`;
 
   return (
-    <main className="mx-auto flex max-w-4xl gap-8 px-6 py-16">
+    <main className="mx-auto flex max-w-6xl gap-8 px-6 py-16">
       <nav className="w-40 shrink-0">
         <p className="mb-2 px-2 text-xs font-medium uppercase tracking-wide text-[rgb(var(--muted))]">
           Settings

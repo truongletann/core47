@@ -23,6 +23,30 @@
   },
   "dynamicRoutes": [
     {
+      "page": "/api/admin/categories/[id]",
+      "regex": "^/api/admin/categories/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/categories/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/tools/[id]",
+      "regex": "^/api/admin/tools/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/tools/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/users/[id]",
+      "regex": "^/api/admin/users/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/users/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/api/avatar/[userId]",
       "regex": "^/api/avatar/([^/]+?)(?:/)?$",
       "routeKeys": {
@@ -71,6 +95,24 @@
       "regex": "^/admin(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/admin(?:/)?$"
+    },
+    {
+      "page": "/api/admin/categories",
+      "regex": "^/api/admin/categories(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/categories(?:/)?$"
+    },
+    {
+      "page": "/api/admin/tools",
+      "regex": "^/api/admin/tools(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/tools(?:/)?$"
+    },
+    {
+      "page": "/api/admin/users",
+      "regex": "^/api/admin/users(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/users(?:/)?$"
     },
     {
       "page": "/api/auth/avatar",
@@ -143,6 +185,30 @@
       "regex": "^/profile(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/profile(?:/)?$"
+    },
+    {
+      "page": "/tools/admin",
+      "regex": "^/tools/admin(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin(?:/)?$"
+    },
+    {
+      "page": "/tools/admin/categories",
+      "regex": "^/tools/admin/categories(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/categories(?:/)?$"
+    },
+    {
+      "page": "/tools/admin/tools",
+      "regex": "^/tools/admin/tools(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/tools(?:/)?$"
+    },
+    {
+      "page": "/tools/admin/users",
+      "regex": "^/tools/admin/users(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/users(?:/)?$"
     },
     {
       "page": "/tools/shortlink",

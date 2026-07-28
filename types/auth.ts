@@ -5,5 +5,6 @@ export interface User {
   name: string | null;
   avatarUrl: string | null;
   isAdmin: boolean;
+  isDisabled: boolean;
   createdAt: string;
 }

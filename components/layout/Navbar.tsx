@@ -9,6 +9,7 @@ const ROOT_DOMAIN = "core47.xyz";
 
 export function Navbar() {
   const [homeUrl, setHomeUrl] = useState("/");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const { hostname, protocol, port } = window.location;
@@ -21,9 +22,16 @@ export function Navbar() {
     }
   }, []);
 
+  useEffect(() => {
+    fetch("https://core47.xyz/api/auth/me", { credentials: "include" })
+      .then((r) => r.json() as Promise<{ data?: { user?: { isAdmin?: boolean } | null } }>)
+      .then((json) => setIsAdmin(Boolean(json?.data?.user?.isAdmin)))
+      .catch(() => setIsAdmin(false));
+  }, []);
+
   return (
     <header className="sticky top-0 z-40 border-b border-[rgb(var(--border))] bg-[rgb(var(--bg)/0.8)] backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
         <a href={homeUrl}>
           <LogoMark />
         </a>
@@ -36,6 +44,14 @@ export function Navbar() {
             <a href={homeUrl.replace(/\/$/, "") + "/toolkits"} className="hover:text-[rgb(var(--fg))] transition-colors">
               List 100
             </a>
+            {isAdmin && (
+              <a
+                href="https://admin.core47.xyz/"
+                className="text-[rgb(var(--accent))] hover:opacity-80 transition-opacity"
+              >
+                Admin
+              </a>
+            )}
           </nav>
           <UserMenu homeUrl={homeUrl} />
           <ThemeToggle />

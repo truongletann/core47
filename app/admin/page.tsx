@@ -17,7 +17,7 @@ export default async function AdminPage() {
   const links = await getAllShortLinks();
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-16">
+    <main className="mx-auto max-w-7xl px-6 py-16">
       <h1 className="font-display text-2xl font-semibold">Admin — All links</h1>
       <p className="mt-1 text-sm text-[rgb(var(--muted))]">
         {links.length} link(s) total across all users
