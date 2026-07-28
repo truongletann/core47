@@ -1,13 +1,15 @@
-import { eq } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { categories, tools, users } from "@/db/schema";
+import { categories, tools, users, list100Items } from "@/db/schema";
 import {
   CategorySchema,
   UpdateCategorySchema,
   ToolSchema,
+  List100ItemSchema,
   type CategoryInput,
   type UpdateCategoryInput,
   type ToolInput,
+  type List100ItemInput,
 } from "./schema";
 
 export async function listCategoriesAdmin() {
@@ -112,4 +114,41 @@ export async function listUsersAdmin() {
 export async function setUserDisabled(id: string, disabled: boolean) {
   const db = await getDb();
   await db.update(users).set({ isDisabled: disabled ? 1 : 0 }).where(eq(users.id, id));
+}
+
+export async function listList100Admin() {
+  const db = await getDb();
+  const rows = await db.select().from(list100Items).orderBy(asc(list100Items.rank));
+  return rows.map((r) => ({ ...r, tags: r.tags ?? "" }));
+}
+
+export async function createList100Item(raw: List100ItemInput) {
+  const input = List100ItemSchema.parse(raw);
+  const db = await getDb();
+
+  const now = new Date().toISOString();
+  const record = {
+    id: crypto.randomUUID(),
+    ...input,
+    score: input.score ?? null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  await db.insert(list100Items).values(record);
+  return record;
+}
+
+export async function updateList100Item(id: string, raw: List100ItemInput) {
+  const input = List100ItemSchema.parse(raw);
+  const db = await getDb();
+
+  await db
+    .update(list100Items)
+    .set({ ...input, score: input.score ?? null, updatedAt: new Date().toISOString() })
+    .where(eq(list100Items.id, id));
+}
+
+export async function deleteList100Item(id: string) {
+  const db = await getDb();
+  await db.delete(list100Items).where(eq(list100Items.id, id));
 }

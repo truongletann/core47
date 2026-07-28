@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 
 export const categories = sqliteTable("categories", {
   id: text("id").primaryKey(),
@@ -63,4 +63,23 @@ export const toolFavorites = sqliteTable("tool_favorites", {
   userId: text("user_id").notNull(),
   toolSlug: text("tool_slug").notNull(),
   createdAt: text("created_at").notNull(),
+});
+
+// NEW — item của List 100 (top 100 công cụ/website được xếp hạng)
+export const list100Items = sqliteTable("list100_items", {
+  id: text("id").primaryKey(),
+  rank: integer("rank").notNull(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  longDescription: text("long_description"),
+  url: text("url").notNull(),
+  imageUrl: text("image_url"),
+  category: text("category"),
+  tags: text("tags"), // comma-separated
+  score: real("score"),
+  status: text("status", { enum: ["published", "draft"] })
+    .notNull()
+    .default("draft"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
 });
