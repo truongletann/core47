@@ -63,12 +63,36 @@
       "namedRegex": "^/api/shortlink/(?<nxtPcode>[^/]+?)(?:/)?$"
     },
     {
+      "page": "/api/toolbox/favorites/[slug]",
+      "regex": "^/api/toolbox/favorites/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/api/toolbox/favorites/(?<nxtPslug>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/tools/shortlink/[code]",
       "regex": "^/tools/shortlink/([^/]+?)(?:/)?$",
       "routeKeys": {
         "nxtPcode": "nxtPcode"
       },
       "namedRegex": "^/tools/shortlink/(?<nxtPcode>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/tools/tools/category/[slug]",
+      "regex": "^/tools/tools/category/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/tools/tools/category/(?<nxtPslug>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/tools/tools/[slug]",
+      "regex": "^/tools/tools/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/tools/tools/(?<nxtPslug>[^/]+?)(?:/)?$"
     }
   ],
   "staticRoutes": [
@@ -169,6 +193,12 @@
       "namedRegex": "^/api/shortlink/my(?:/)?$"
     },
     {
+      "page": "/api/toolbox/favorites",
+      "regex": "^/api/toolbox/favorites(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/toolbox/favorites(?:/)?$"
+    },
+    {
       "page": "/favicon.ico",
       "regex": "^/favicon\\.ico(?:/)?$",
       "routeKeys": {},
@@ -217,10 +247,46 @@
       "namedRegex": "^/tools/shortlink(?:/)?$"
     },
     {
-      "page": "/tools/shortlink/history",
-      "regex": "^/tools/shortlink/history(?:/)?$",
+      "page": "/tools/tools",
+      "regex": "^/tools/tools(?:/)?$",
       "routeKeys": {},
-      "namedRegex": "^/tools/shortlink/history(?:/)?$"
+      "namedRegex": "^/tools/tools(?:/)?$"
+    },
+    {
+      "page": "/tools/tools/base64",
+      "regex": "^/tools/tools/base64(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/tools/base64(?:/)?$"
+    },
+    {
+      "page": "/tools/tools/hash-generator",
+      "regex": "^/tools/tools/hash\\-generator(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/tools/hash\\-generator(?:/)?$"
+    },
+    {
+      "page": "/tools/tools/json-formatter",
+      "regex": "^/tools/tools/json\\-formatter(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/tools/json\\-formatter(?:/)?$"
+    },
+    {
+      "page": "/tools/tools/password-generator",
+      "regex": "^/tools/tools/password\\-generator(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/tools/password\\-generator(?:/)?$"
+    },
+    {
+      "page": "/tools/tools/url-encoder",
+      "regex": "^/tools/tools/url\\-encoder(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/tools/url\\-encoder(?:/)?$"
+    },
+    {
+      "page": "/tools/tools/uuid-generator",
+      "regex": "^/tools/tools/uuid\\-generator(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/tools/uuid\\-generator(?:/)?$"
     }
   ],
   "dataRoutes": [],

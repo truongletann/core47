@@ -19,6 +19,8 @@
   "/api/shortlink/[code]/route": "app/api/shortlink/[code]/route.js",
   "/api/shortlink/my/route": "app/api/shortlink/my/route.js",
   "/api/shortlink/route": "app/api/shortlink/route.js",
+  "/api/toolbox/favorites/[slug]/route": "app/api/toolbox/favorites/[slug]/route.js",
+  "/api/toolbox/favorites/route": "app/api/toolbox/favorites/route.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/login/page": "app/login/page.js",
   "/page": "app/page.js",
@@ -28,6 +30,14 @@
   "/tools/admin/tools/page": "app/tools/admin/tools/page.js",
   "/tools/admin/users/page": "app/tools/admin/users/page.js",
   "/tools/shortlink/[code]/route": "app/tools/shortlink/[code]/route.js",
-  "/tools/shortlink/history/page": "app/tools/shortlink/history/page.js",
-  "/tools/shortlink/page": "app/tools/shortlink/page.js"
+  "/tools/shortlink/page": "app/tools/shortlink/page.js",
+  "/tools/tools/[slug]/page": "app/tools/tools/[slug]/page.js",
+  "/tools/tools/base64/page": "app/tools/tools/base64/page.js",
+  "/tools/tools/category/[slug]/page": "app/tools/tools/category/[slug]/page.js",
+  "/tools/tools/hash-generator/page": "app/tools/tools/hash-generator/page.js",
+  "/tools/tools/json-formatter/page": "app/tools/tools/json-formatter/page.js",
+  "/tools/tools/page": "app/tools/tools/page.js",
+  "/tools/tools/password-generator/page": "app/tools/tools/password-generator/page.js",
+  "/tools/tools/url-encoder/page": "app/tools/tools/url-encoder/page.js",
+  "/tools/tools/uuid-generator/page": "app/tools/tools/uuid-generator/page.js"
 }

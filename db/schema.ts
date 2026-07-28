@@ -56,3 +56,11 @@ export const sessions = sqliteTable("sessions", {
   expiresAt: text("expires_at").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+// NEW — tool yêu thích của user trong toolbox
+export const toolFavorites = sqliteTable("tool_favorites", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  toolSlug: text("tool_slug").notNull(),
+  createdAt: text("created_at").notNull(),
+});

@@ -19,6 +19,8 @@
   "/api/shortlink/[code]/route": "/api/shortlink/[code]",
   "/api/shortlink/my/route": "/api/shortlink/my",
   "/api/shortlink/route": "/api/shortlink",
+  "/api/toolbox/favorites/[slug]/route": "/api/toolbox/favorites/[slug]",
+  "/api/toolbox/favorites/route": "/api/toolbox/favorites",
   "/favicon.ico/route": "/favicon.ico",
   "/login/page": "/login",
   "/page": "/",
@@ -28,6 +30,14 @@
   "/tools/admin/tools/page": "/tools/admin/tools",
   "/tools/admin/users/page": "/tools/admin/users",
   "/tools/shortlink/[code]/route": "/tools/shortlink/[code]",
-  "/tools/shortlink/history/page": "/tools/shortlink/history",
-  "/tools/shortlink/page": "/tools/shortlink"
+  "/tools/shortlink/page": "/tools/shortlink",
+  "/tools/tools/[slug]/page": "/tools/tools/[slug]",
+  "/tools/tools/base64/page": "/tools/tools/base64",
+  "/tools/tools/category/[slug]/page": "/tools/tools/category/[slug]",
+  "/tools/tools/hash-generator/page": "/tools/tools/hash-generator",
+  "/tools/tools/json-formatter/page": "/tools/tools/json-formatter",
+  "/tools/tools/page": "/tools/tools",
+  "/tools/tools/password-generator/page": "/tools/tools/password-generator",
+  "/tools/tools/url-encoder/page": "/tools/tools/url-encoder",
+  "/tools/tools/uuid-generator/page": "/tools/tools/uuid-generator"
 }
