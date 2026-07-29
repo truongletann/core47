@@ -87,3 +87,20 @@ export const list100Suggestions = sqliteTable("list100_suggestions", {
   content: text("content").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+// NEW — bài viết Blog, nội dung Markdown, quản lý qua admin CMS
+export const blogPosts = sqliteTable("blog_posts", {
+  id: text("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  excerpt: text("excerpt").notNull(),
+  content: text("content").notNull(), // markdown
+  coverImageKey: text("cover_image_key"), // key trong R2 bucket AVATARS, prefix blog-covers/
+  tags: text("tags"), // comma-separated
+  status: text("status", { enum: ["draft", "published"] })
+    .notNull()
+    .default("draft"),
+  publishedAt: text("published_at"), // tự set lần đầu chuyển sang published
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});

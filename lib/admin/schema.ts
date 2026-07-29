@@ -50,7 +50,23 @@ export const List100ItemSchema = z.object({
   suggestedBy: z.string().trim().max(60).optional().transform(emptyToNull),
 });
 
+export const BlogPostSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .min(1)
+    .max(120)
+    .regex(/^[a-z0-9-]+$/, "Chỉ chữ thường, số và dấu gạch ngang"),
+  title: z.string().trim().min(1).max(160),
+  excerpt: z.string().trim().min(1).max(300),
+  content: z.string().min(1).max(50000),
+  coverImageKey: z.string().trim().max(200).optional().transform(emptyToNull),
+  tags: z.string().trim().max(300).optional().transform(emptyToNull),
+  status: z.enum(["draft", "published"]),
+});
+
 export type CategoryInput = z.infer<typeof CategorySchema>;
 export type UpdateCategoryInput = z.infer<typeof UpdateCategorySchema>;
 export type ToolInput = z.infer<typeof ToolSchema>;
 export type List100ItemInput = z.infer<typeof List100ItemSchema>;
+export type BlogPostInput = z.infer<typeof BlogPostSchema>;

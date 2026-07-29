@@ -9,3 +9,7 @@ export async function getAvatarsBucket() {
   }
   return env.AVATARS;
 }
+
+// Blog cover images dùng chung bucket R2 "AVATARS" (key namespace riêng: blog-covers/)
+// để không phải tạo/khai báo thêm 1 R2 bucket mới.
+export const getBlogBucket = getAvatarsBucket;

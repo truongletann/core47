@@ -1,6 +1,6 @@
 import { eq, asc, desc } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { categories, tools, users, list100Items, list100Suggestions } from "@/db/schema";
+import { categories, tools, users, list100Items, list100Suggestions, blogPosts } from "@/db/schema";
 import {
   CategorySchema,
   UpdateCategorySchema,
@@ -9,6 +9,7 @@ import {
   type UpdateCategoryInput,
   type ToolInput,
   type List100ItemInput,
+  type BlogPostInput,
 } from "./schema";
 
 export async function listCategoriesAdmin() {
@@ -200,4 +201,74 @@ export async function listSuggestionsAdmin() {
 export async function deleteSuggestion(id: string) {
   const db = await getDb();
   await db.delete(list100Suggestions).where(eq(list100Suggestions.id, id));
+}
+
+export async function listBlogPostsAdmin() {
+  const db = await getDb();
+  return db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
+}
+
+export async function getBlogPostAdminById(id: string) {
+  const db = await getDb();
+  return db.select().from(blogPosts).where(eq(blogPosts.id, id)).get();
+}
+
+export async function createBlogPost(input: BlogPostInput) {
+  const db = await getDb();
+
+  const existingSlug = await db.select().from(blogPosts).where(eq(blogPosts.slug, input.slug)).get();
+  if (existingSlug) throw new Error("SLUG_TAKEN");
+
+  const now = new Date().toISOString();
+  const record = {
+    id: crypto.randomUUID(),
+    slug: input.slug,
+    title: input.title,
+    excerpt: input.excerpt,
+    content: input.content,
+    coverImageKey: input.coverImageKey,
+    tags: input.tags,
+    status: input.status,
+    publishedAt: input.status === "published" ? now : null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  await db.insert(blogPosts).values(record);
+  return record;
+}
+
+export async function updateBlogPost(id: string, input: BlogPostInput) {
+  const db = await getDb();
+
+  const existingSlug = await db.select().from(blogPosts).where(eq(blogPosts.slug, input.slug)).get();
+  if (existingSlug && existingSlug.id !== id) throw new Error("SLUG_TAKEN");
+
+  const existing = await db
+    .select({ publishedAt: blogPosts.publishedAt })
+    .from(blogPosts)
+    .where(eq(blogPosts.id, id))
+    .get();
+
+  await db
+    .update(blogPosts)
+    .set({
+      slug: input.slug,
+      title: input.title,
+      excerpt: input.excerpt,
+      content: input.content,
+      coverImageKey: input.coverImageKey,
+      tags: input.tags,
+      status: input.status,
+      publishedAt:
+        input.status === "published"
+          ? (existing?.publishedAt ?? new Date().toISOString())
+          : null,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(blogPosts.id, id));
+}
+
+export async function deleteBlogPost(id: string) {
+  const db = await getDb();
+  await db.delete(blogPosts).where(eq(blogPosts.id, id));
 }

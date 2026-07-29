@@ -1,5 +1,11 @@
 ﻿@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* next-themes toggle class ".dark" trên <html> — bind Tailwind dark: vào class
+   này thay vì mặc định theo prefers-color-scheme, để nút đổi theme hoạt động
+   đúng với các utility class dark:*. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --bg: 250 251 253;
