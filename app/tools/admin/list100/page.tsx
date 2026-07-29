@@ -50,11 +50,11 @@ function List100Form({ form, setForm }: { form: FormState; setForm: (f: FormStat
           />
         </label>
         <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Điều muốn làm</span>
+          <span className="mb-1 block text-[rgb(var(--muted))]">Thing to do</span>
           <input
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="vd: Học tiếng Tây Ban Nha"
+            placeholder="e.g. Learn Spanish"
             autoComplete="off"
             maxLength={280}
             className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
@@ -63,21 +63,21 @@ function List100Form({ form, setForm }: { form: FormState; setForm: (f: FormStat
       </div>
       {form.suggestedBy && (
         <p className="text-xs text-[rgb(var(--muted))]">
-          Gợi ý bởi <strong>{form.suggestedBy}</strong> — chỉ hiện trong admin.
+          Suggested by <strong>{form.suggestedBy}</strong> — admin-only.
         </p>
       )}
       <label className="text-sm">
-        <span className="mb-1 block text-[rgb(var(--muted))]">Ghi chú (tuỳ chọn, hiện trong ngoặc)</span>
+        <span className="mb-1 block text-[rgb(var(--muted))]">Note (optional, shown in parentheses)</span>
         <input
           value={form.note}
           onChange={(e) => setForm({ ...form, note: e.target.value })}
-          placeholder="vd: đã làm ở 3 nước: VN, Ấn Độ, Mỹ"
+          placeholder="e.g. done this in 3 countries: US, India, Vietnam"
           maxLength={300}
           className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
         />
       </label>
       <label className="text-sm">
-        <span className="mb-1 block text-[rgb(var(--muted))]">Link tham khảo (tuỳ chọn)</span>
+        <span className="mb-1 block text-[rgb(var(--muted))]">Reference link (optional)</span>
         <input
           value={form.link}
           onChange={(e) => setForm({ ...form, link: e.target.value })}
@@ -93,7 +93,7 @@ function List100Form({ form, setForm }: { form: FormState; setForm: (f: FormStat
             checked={form.isDone}
             onChange={(e) => setForm({ ...form, isDone: e.target.checked })}
           />
-          <span>Đã hoàn thành</span>
+          <span>Done</span>
         </label>
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -101,7 +101,7 @@ function List100Form({ form, setForm }: { form: FormState; setForm: (f: FormStat
             checked={form.isPublic}
             onChange={(e) => setForm({ ...form, isPublic: e.target.checked })}
           />
-          <span>Hiện công khai trên trang List 100</span>
+          <span>Show publicly on the List 100 page</span>
         </label>
       </div>
     </div>
@@ -195,10 +195,10 @@ export default function AdminList100Page() {
   }
 
   const fieldLabel: Record<string, string> = {
-    rank: "Số thứ tự",
-    title: "Điều muốn làm",
-    note: "Ghi chú",
-    link: "Link tham khảo",
+    rank: "Rank",
+    title: "Thing to do",
+    note: "Note",
+    link: "Reference link",
   };
 
   function errorMessage(json: {
@@ -212,9 +212,9 @@ export default function AdminList100Page() {
         .join(" · ");
     }
     if (json.error === "SERVER_ERROR" && json.message) {
-      return `Lỗi server: ${json.message}`;
+      return `Server error: ${json.message}`;
     }
-    return "Đã có lỗi xảy ra.";
+    return "Something went wrong.";
   }
 
   async function handleCreate() {
@@ -298,7 +298,7 @@ export default function AdminList100Page() {
           onClick={openCreate}
           className="rounded-lg bg-[rgb(var(--accent))] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
         >
-          + Thêm mục
+          + Add item
         </button>
       </div>
 
@@ -306,7 +306,7 @@ export default function AdminList100Page() {
         <div className="mb-6 rounded-xl border border-[rgb(var(--border))]">
           <div className="border-b border-[rgb(var(--border))] px-4 py-2.5">
             <h2 className="text-sm font-semibold">
-              Góp ý chờ duyệt{" "}
+              Suggestions pending review{" "}
               <span className="font-data text-xs font-normal text-[rgb(var(--muted))]">
                 ({suggestions.length})
               </span>
@@ -318,8 +318,8 @@ export default function AdminList100Page() {
                 <div className="min-w-0 flex-1 text-sm">
                   <p>{s.content}</p>
                   <p className="mt-1 text-xs text-[rgb(var(--muted))]">
-                    {s.name ? `Gửi bởi ${s.name}` : "Ẩn danh"} ·{" "}
-                    {new Date(s.createdAt).toLocaleDateString("vi-VN")}
+                    {s.name ? `From ${s.name}` : "Anonymous"} ·{" "}
+                    {new Date(s.createdAt).toLocaleDateString("en-US")}
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">
@@ -327,13 +327,13 @@ export default function AdminList100Page() {
                     onClick={() => openApprove(s)}
                     className="rounded-md border border-[rgb(var(--border))] px-2 py-1 text-xs hover:bg-[rgb(var(--border)/0.5)]"
                   >
-                    Duyệt
+                    Approve
                   </button>
                   <button
                     onClick={() => handleRejectSuggestion(s.id)}
                     className="rounded-md border border-[rgb(var(--border))] px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                   >
-                    Từ chối
+                    Reject
                   </button>
                 </div>
               </li>
@@ -347,9 +347,9 @@ export default function AdminList100Page() {
           <thead>
             <tr className="border-b border-[rgb(var(--border))] text-xs uppercase text-[rgb(var(--muted))]">
               <th className="px-4 py-2">#</th>
-              <th className="px-4 py-2">Điều muốn làm</th>
-              <th className="px-4 py-2">Xong?</th>
-              <th className="px-4 py-2">Công khai</th>
+              <th className="px-4 py-2">Thing to do</th>
+              <th className="px-4 py-2">Done?</th>
+              <th className="px-4 py-2">Public</th>
               <th className="px-4 py-2">Actions</th>
             </tr>
           </thead>
@@ -363,7 +363,7 @@ export default function AdminList100Page() {
             ) : items.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-6 text-center text-[rgb(var(--muted))]">
-                  Chưa có mục nào.
+                  No items yet.
                 </td>
               </tr>
             ) : (
@@ -375,7 +375,7 @@ export default function AdminList100Page() {
                         <button
                           onClick={() => moveRank(index, -1)}
                           disabled={index === 0}
-                          aria-label="Đưa lên"
+                          aria-label="Move up"
                           className="text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] disabled:opacity-25"
                         >
                           <ArrowUp size={12} />
@@ -383,7 +383,7 @@ export default function AdminList100Page() {
                         <button
                           onClick={() => moveRank(index, 1)}
                           disabled={index === items.length - 1}
-                          aria-label="Đưa xuống"
+                          aria-label="Move down"
                           className="text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] disabled:opacity-25"
                         >
                           <ArrowDown size={12} />
@@ -397,12 +397,12 @@ export default function AdminList100Page() {
                     {i.note && <span className="text-[rgb(var(--muted))]"> ({i.note})</span>}
                     {i.suggestedBy && (
                       <span className="mt-0.5 block text-[10px] text-[rgb(var(--muted))]">
-                        Gợi ý bởi {i.suggestedBy}
+                        Suggested by {i.suggestedBy}
                       </span>
                     )}
                   </td>
                   <td className="px-4 py-2 text-xs">{i.isDone ? "✓" : "✗"}</td>
-                  <td className="px-4 py-2 text-xs">{i.isPublic ? "Có" : "Ẩn"}</td>
+                  <td className="px-4 py-2 text-xs">{i.isPublic ? "Yes" : "Hidden"}</td>
                   <td className="px-4 py-2">
                     <div className="flex gap-2">
                       <button
@@ -428,7 +428,7 @@ export default function AdminList100Page() {
 
       {creating && (
         <Modal
-          title={approvingSuggestionId ? "Duyệt góp ý → Thêm mục List 100" : "Thêm mục List 100"}
+          title={approvingSuggestionId ? "Approve suggestion → Add to List 100" : "Add item to List 100"}
           onClose={() => {
             setCreating(false);
             setApprovingSuggestionId(null);
@@ -441,7 +441,7 @@ export default function AdminList100Page() {
             disabled={saving || !form.title}
             className="mt-3 w-fit rounded-lg bg-[rgb(var(--accent))] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
-            {saving ? "Saving..." : approvingSuggestionId ? "Duyệt & tạo mục" : "Create"}
+            {saving ? "Saving..." : approvingSuggestionId ? "Approve & create" : "Create"}
           </button>
         </Modal>
       )}

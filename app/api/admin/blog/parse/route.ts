@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/guard";
 import { parseFrontmatter } from "@/lib/blog/markdown";
 
-// Nhận nguyên văn 1 file .md (có thể có frontmatter YAML ở đầu), trả về
-// content đã bỏ frontmatter + các field title/tags đọc được từ frontmatter
-// (nếu có) để admin editor tự điền sẵn form khi import file có sẵn.
+// Accepts the raw text of a .md file (may have YAML frontmatter at the top)
+// and returns the content with frontmatter stripped, plus any title/tags
+// fields read from the frontmatter, so the admin editor can prefill the
+// form when importing an existing file.
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin(req);
   if (!admin) return NextResponse.json({ success: false, error: "FORBIDDEN" }, { status: 403 });

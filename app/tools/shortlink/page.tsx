@@ -27,7 +27,7 @@ function toPoints(series: number[], width: number, height: number, max: number) 
     .join(" ");
 }
 
-// Tạo dãy số trang rút gọn: 1 2 3 ... 10, hoặc 1 ... 4 5 6 ... 10
+// Builds a compact page-number sequence: 1 2 3 ... 10, or 1 ... 4 5 6 ... 10
 function getPageRange(current: number, total: number): (number | "...")[] {
   const range: (number | "...")[] = [];
   const delta = 1;
@@ -384,7 +384,7 @@ export default function ShortlinkPage() {
         </div>
       </div>
 
-      {/* History inline — chỉ hiện khi đã đăng nhập */}
+      {/* Inline history — only shown when logged in */}
       {loggedIn && (
         <div className="lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
@@ -498,7 +498,7 @@ export default function ShortlinkPage() {
         </div>
       )}
 
-      {/* Modal xác nhận riêng, thay cho confirm() mặc định của trình duyệt */}
+      {/* Custom confirm modal, replacing the browser's default confirm() */}
       {confirmDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
           <div className="w-full max-w-sm rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-5 shadow-xl">

@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   }
 
   const bucket = await getBlogBucket();
-  const key = crypto.randomUUID(); // key riêng cho mỗi lần upload, không gắn với post cụ thể
+  const key = crypto.randomUUID(); // unique per upload, not tied to a specific post
 
   await bucket.put(`blog-covers/${key}`, await file.arrayBuffer(), {
     httpMetadata: { contentType: file.type },

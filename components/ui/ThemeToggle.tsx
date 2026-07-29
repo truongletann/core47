@@ -13,7 +13,7 @@ export function ThemeToggle() {
 
   return (
     <button
-      aria-label="Đổi giao diện sáng/tối"
+      aria-label="Toggle light/dark theme"
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       className="flex h-8 w-8 items-center justify-center rounded-full border border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] transition-colors"
     >

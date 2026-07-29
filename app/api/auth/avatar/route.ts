@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   }
 
   const bucket = await getAvatarsBucket();
-  const key = `avatars/${user.id}`; // key cố định — upload mới tự động ghi đè ảnh cũ
+  const key = `avatars/${user.id}`; // fixed key — a new upload automatically overwrites the old one
 
   await bucket.put(key, await file.arrayBuffer(), {
     httpMetadata: { contentType: file.type },

@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/guard";
 import { renderMarkdown } from "@/lib/blog/markdown";
 
-// Render markdown y hệt trang public (frontmatter, container :::, emoji...)
-// để preview trong admin khớp với những gì sẽ hiện thật trên blog.
+// Renders markdown exactly like the public page (frontmatter, ::: containers,
+// emoji...) so the admin preview matches what will actually show on the blog.
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin(req);
   if (!admin) return NextResponse.json({ success: false, error: "FORBIDDEN" }, { status: 403 });

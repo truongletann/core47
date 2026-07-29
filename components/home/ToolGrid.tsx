@@ -36,7 +36,7 @@ export function ToolGrid({ tools, categories }: Props) {
 
       {filtered.length === 0 ? (
         <p className="text-center text-sm text-[rgb(var(--muted))]">
-          Không tìm thấy công cụ phù hợp.
+          No matching tools found.
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

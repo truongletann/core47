@@ -2,7 +2,7 @@ import { marked, type Tokens } from "marked";
 import matter from "gray-matter";
 import { emojify } from "node-emoji";
 
-// Cú pháp container kiểu VitePress/Docusaurus: :::type Tiêu đề tuỳ chọn\n...\n:::
+// VitePress/Docusaurus-style container syntax: :::type Optional Title\n...\n:::
 const CONTAINER_RE = /^:::([a-zA-Z]+)(?:[ \t]+(.*))?\r?\n([\s\S]*?)\r?\n:::[ \t]*$/gm;
 
 const CONTAINER_ALIASES: Record<string, string> = {
@@ -15,8 +15,8 @@ const CONTAINER_ALIASES: Record<string, string> = {
   tip: "tip",
 };
 
-// [TOC] / [toc] / [[TOC]] trên 1 dòng riêng — shortcode tự sinh mục lục,
-// phổ biến ở Docsify/MkDocs/GitBook.
+// [TOC] / [toc] / [[TOC]] on its own line — auto table-of-contents
+// shortcode, common in Docsify/MkDocs/GitBook.
 const TOC_MARKER_RE = /^\[\[?toc\]?\]\s*$/gim;
 const HEADING_LINE_RE = /^(#{1,6})[ \t]+(.+)$/gm;
 
@@ -31,7 +31,7 @@ function slugifyHeading(text: string, seen: Map<string, number>): string {
     text
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "") // bỏ dấu tiếng Việt
+      .replace(/[̀-ͯ]/g, "") // strip diacritics
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || "section";
   const count = seen.get(base) ?? 0;
@@ -57,17 +57,18 @@ function buildTocHtml(headings: HeadingEntry[]): string {
   if (headings.length === 0) return "";
   const minLevel = Math.min(...headings.map((h) => h.level));
   const items = headings
-    .filter((h) => h.level <= minLevel + 2) // giới hạn độ sâu mục lục
+    .filter((h) => h.level <= minLevel + 2) // cap the outline depth
     .map(
       (h) =>
         `<li style="margin-left:${(h.level - minLevel) * 0.9}rem"><a href="#${h.slug}">${h.text}</a></li>`,
     )
     .join("");
-  return `\n\n<nav class="md-toc"><p class="md-toc-title">Mục lục</p><ul>${items}</ul></nav>\n\n`;
+  return `\n\n<nav class="md-toc"><p class="md-toc-title">Contents</p><ul>${items}</ul></nav>\n\n`;
 }
 
-// Gán id cho từng thẻ heading theo đúng thứ tự đã tính sẵn ở extractHeadings,
-// để link trong mục lục (#slug) nhảy tới đúng chỗ.
+// Assigns an id to each heading tag in the same order precomputed by
+// extractHeadings, so links in the table of contents (#slug) jump to the
+// right spot.
 class HeadingIdRenderer extends marked.Renderer {
   private queue: HeadingEntry[];
 
@@ -84,9 +85,9 @@ class HeadingIdRenderer extends marked.Renderer {
 }
 
 /**
- * Tách frontmatter YAML (---\n...\n---) ra khỏi nội dung markdown.
- * Nhiều người viết blog dán nguyên file .md có frontmatter — nếu không tách,
- * block đó bị in ra thành text thô ở đầu bài.
+ * Strips YAML frontmatter (---\n...\n---) out of markdown content.
+ * Many people paste an entire .md file with frontmatter into the editor —
+ * without this, that block would print as raw text at the top of the post.
  */
 export function parseFrontmatter(raw: string): { data: Record<string, unknown>; content: string } {
   const { data, content } = matter(raw);
@@ -107,20 +108,21 @@ function renderContainers(text: string): string {
 }
 
 /**
- * Render markdown ra HTML, chịu được nhiều "phương ngữ" markdown phổ biến:
- * - Frontmatter YAML ở đầu file (tự động bỏ, không hiện ra ngoài)
- * - Container kiểu :::warning / :::info / :::success / :::tip / :::danger
- * - Emoji shortcode kiểu :small_blue_diamond:
- * - [TOC] tự sinh mục lục kèm id cho heading để nhảy tới đúng chỗ
- * - HTML thô chèn trực tiếp (center, div, img...) — marked mặc định đã giữ nguyên
+ * Renders markdown to HTML, tolerant of several common markdown "dialects":
+ * - YAML frontmatter at the top of the file (stripped automatically)
+ * - Containers like :::warning / :::info / :::success / :::tip / :::danger
+ * - Emoji shortcodes like :small_blue_diamond:
+ * - [TOC] auto-generates a table of contents with heading ids to jump to
+ * - Raw HTML embedded directly (center, div, img...) — marked already
+ *   passes this through unchanged by default
  */
 export function renderMarkdown(raw: string): string {
   const withoutFrontmatter = stripFrontmatter(raw);
   const withEmoji = emojify(withoutFrontmatter);
 
-  // Heading dùng để build mục lục/id chỉ tính phần NGOÀI container (:::...:::),
-  // vì nội dung trong container được marked.parse() riêng, renderer gắn id sẽ
-  // không thấy được heading bên trong đó.
+  // Headings used to build the outline/ids only count content OUTSIDE
+  // containers (:::...:::), since container content is rendered through a
+  // separate marked.parse() call the id-assigning renderer never sees.
   const outlineSource = withEmoji.replace(CONTAINER_RE, "");
   const headings = extractHeadings(outlineSource);
 

@@ -7,7 +7,7 @@ export async function GET(
 ) {
   const { userId } = await params;
 
-  // Validate userId đơn giản — chỉ chấp nhận dạng UUID để tránh path traversal
+  // Simple userId validation — only accept UUID-like values to avoid path traversal
   if (!/^[a-zA-Z0-9-]+$/.test(userId)) {
     return NextResponse.json({ error: "INVALID_ID" }, { status: 400 });
   }

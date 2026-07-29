@@ -49,7 +49,7 @@ export async function verifyPassword(
   expectedHash: string,
 ): Promise<boolean> {
   const actualHash = await hashPassword(password, saltHex);
-  // So sánh độ dài cố định để giảm rủi ro timing attack
+  // Constant-time comparison to reduce timing-attack risk
   if (actualHash.length !== expectedHash.length) return false;
   let diff = 0;
   for (let i = 0; i < actualHash.length; i++) {

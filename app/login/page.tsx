@@ -24,8 +24,8 @@ function getSafeReturnTo(): string | null {
 export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [identifier, setIdentifier] = useState(""); // login: email hoặc username
-  const [email, setEmail] = useState(""); // register: bắt buộc có email
-  const [username, setUsername] = useState(""); // register: tùy chọn
+  const [email, setEmail] = useState(""); // register: email is required
+  const [username, setUsername] = useState(""); // register: optional
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

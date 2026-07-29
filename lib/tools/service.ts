@@ -19,7 +19,7 @@ export async function getAllCategories(): Promise<Category[]> {
 }
 
 export async function getTools(rawQuery: ToolListQuery): Promise<Tool[]> {
-  const query = ToolListQuerySchema.parse(rawQuery); // fail-fast nếu input sai contract
+  const query = ToolListQuerySchema.parse(rawQuery); // fail-fast if input violates the contract
 
   const db = await getDb();
 

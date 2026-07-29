@@ -1,18 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Cho phép Next.js dev server nhận request từ core47.xyz và mọi subdomain của nó
-  // (mặc định Next.js chỉ tin tưởng "localhost", chặn bớt tài nguyên dev với host khác
-  // để chống DNS rebinding attack — đây là nguyên nhân gây lỗi CSS/JS/nút bấm không
-  // phản hồi khi test qua *.core47.xyz:3000 thay vì localhost:3000).
+  // Allow the Next.js dev server to accept requests from core47.xyz and all
+  // its subdomains (by default Next.js only trusts "localhost" and blocks
+  // dev assets from other hosts to guard against DNS rebinding attacks —
+  // this is what causes CSS/JS/buttons to silently not respond when testing
+  // via *.core47.xyz:3000 instead of localhost:3000).
   allowedDevOrigins: ["core47.xyz", "*.core47.xyz"],
 };
 
 module.exports = nextConfig;
 
-// Bật Cloudflare bindings (D1/R2) khi chạy `next dev` ở local.
+// Enable Cloudflare bindings (D1/R2) when running `next dev` locally.
 try {
   const { initOpenNextCloudflareForDev } = require("@opennextjs/cloudflare");
   initOpenNextCloudflareForDev();
 } catch (e) {
-  // Bỏ qua nếu chưa cài package — không chặn dev server chạy
+  // Ignore if the package isn't installed yet — don't block the dev server
 }

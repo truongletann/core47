@@ -28,13 +28,13 @@ export const shortLinks = sqliteTable("short_links", {
   targetUrl: text("target_url").notNull(),
   clicks: integer("clicks").notNull().default(0),
   createdAt: text("created_at").notNull(),
-  // NEW — theo dõi ai/từ đâu tạo link
+  // NEW — tracks who created the link and from where
   userId: text("user_id"),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
 });
 
-// NEW — bảng người dùng
+// NEW — users table
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -49,7 +49,7 @@ export const users = sqliteTable("users", {
   createdAt: text("created_at").notNull(),
 });
 
-// NEW — bảng phiên đăng nhập
+// NEW — session table
 export const sessions = sqliteTable("sessions", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
@@ -57,7 +57,7 @@ export const sessions = sqliteTable("sessions", {
   createdAt: text("created_at").notNull(),
 });
 
-// NEW — tool yêu thích của user trong toolbox
+// NEW — user's favorite tools in the toolbox
 export const toolFavorites = sqliteTable("tool_favorites", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
@@ -65,42 +65,42 @@ export const toolFavorites = sqliteTable("tool_favorites", {
   createdAt: text("created_at").notNull(),
 });
 
-// NEW — item của List 100 ("100 điều muốn làm trước khi chết")
+// NEW — List 100 item ("100 things to do before I die")
 export const list100Items = sqliteTable("list100_items", {
   id: text("id").primaryKey(),
   rank: integer("rank").notNull(),
   title: text("title").notNull(),
-  note: text("note"), // ghi chú ngắn hiện trong ngoặc, không bắt buộc
-  link: text("link"), // link tham khảo/bài viết liên quan, không bắt buộc
+  note: text("note"), // short note shown in parentheses, optional
+  link: text("link"), // reference link/article, optional
   isDone: integer("is_done").notNull().default(0),
-  completedAt: text("completed_at"), // tự set khi isDone chuyển sang true
-  isPublic: integer("is_public").notNull().default(1), // ẩn khỏi trang public nếu = 0
-  suggestedBy: text("suggested_by"), // tên người gợi ý (nếu tạo từ duyệt suggestion), chỉ admin thấy
+  completedAt: text("completed_at"), // auto-set when isDone flips to true
+  isPublic: integer("is_public").notNull().default(1), // hidden from the public page if = 0
+  suggestedBy: text("suggested_by"), // suggester's name (if created from an approved suggestion), admin-only
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
 
-// NEW — góp ý item cho List 100 gửi từ trang public, admin duyệt thủ công
+// NEW — List 100 item suggestions submitted from the public page, admin approves manually
 export const list100Suggestions = sqliteTable("list100_suggestions", {
   id: text("id").primaryKey(),
-  name: text("name"), // tên người gợi ý, không bắt buộc
+  name: text("name"), // suggester's name, optional
   content: text("content").notNull(),
   createdAt: text("created_at").notNull(),
 });
 
-// NEW — bài viết Blog, nội dung Markdown, quản lý qua admin CMS
+// NEW — Blog posts, Markdown content, managed via the admin CMS
 export const blogPosts = sqliteTable("blog_posts", {
   id: text("id").primaryKey(),
   slug: text("slug").notNull().unique(),
   title: text("title").notNull(),
   excerpt: text("excerpt").notNull(),
   content: text("content").notNull(), // markdown
-  coverImageKey: text("cover_image_key"), // key trong R2 bucket AVATARS, prefix blog-covers/
+  coverImageKey: text("cover_image_key"), // key in the AVATARS R2 bucket, blog-covers/ prefix
   tags: text("tags"), // comma-separated
   status: text("status", { enum: ["draft", "published"] })
     .notNull()
     .default("draft"),
-  publishedAt: text("published_at"), // tự set lần đầu chuyển sang published
+  publishedAt: text("published_at"), // auto-set the first time it switches to published
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

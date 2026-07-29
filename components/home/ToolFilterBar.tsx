@@ -26,7 +26,7 @@ export function ToolFilterBar({
         <input
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Tìm công cụ..."
+          placeholder="Search tools..."
           maxLength={80}
           className="font-data w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] py-2 pl-9 pr-9 text-sm text-[rgb(var(--fg))] shadow-sm outline-none focus:ring-2 focus:ring-[rgb(var(--accent)/0.3)]"
         />
@@ -45,7 +45,7 @@ export function ToolFilterBar({
               : "border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--muted))] hover:border-[rgb(var(--accent))]",
           )}
         >
-          Tất cả
+          All
         </button>
         {categories.map((c) => (
           <button

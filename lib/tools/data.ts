@@ -1,9 +1,9 @@
 import type { Category, Tool } from "@/types/tool";
 
 export const CATEGORIES: Category[] = [
-  { id: "media", name: "Media & Ảnh", sortOrder: 1 },
-  { id: "text", name: "Văn bản & Chữ", sortOrder: 2 },
-  { id: "utility", name: "Tiện ích", sortOrder: 3 },
+  { id: "media", name: "Media & Images", sortOrder: 1 },
+  { id: "text", name: "Text & Writing", sortOrder: 2 },
+  { id: "utility", name: "Utilities", sortOrder: 3 },
 ];
 
 export const TOOLS: Tool[] = [
@@ -11,7 +11,7 @@ export const TOOLS: Tool[] = [
     id: "t1",
     slug: "genqr",
     name: "QR Codes",
-    description: "Tạo mã QR tùy chỉnh cho liên kết, wifi, danh thiếp.",
+    description: "Generate custom QR codes for links, wifi, business cards.",
     subdomain: "genqr.core47.xyz",
     icon: "QrCode",
     categoryId: "utility",
@@ -22,7 +22,7 @@ export const TOOLS: Tool[] = [
     id: "t2",
     slug: "beautysql",
     name: "BeautySQL",
-    description: "Format & làm đẹp câu lệnh SQL của bạn ngay trên trình duyệt.",
+    description: "Format and beautify your SQL queries right in the browser.",
     subdomain: "beautysql.core47.xyz",
     icon: "Code2",
     categoryId: "utility",
@@ -32,8 +32,8 @@ export const TOOLS: Tool[] = [
   {
     id: "t3",
     slug: "shortlink",
-    name: "Rút gọn link",
-    description: "Công cụ rút gọn link miễn phí, thống kê click cơ bản.",
+    name: "Link Shortener",
+    description: "Free link shortener with basic click analytics.",
     subdomain: "shortlink.core47.xyz",
     icon: "Link",
     categoryId: "utility",
@@ -44,7 +44,7 @@ export const TOOLS: Tool[] = [
     id: "t4",
     slug: "bio",
     name: "Bio Pages",
-    description: "Gom mọi liên kết của bạn vào một trang tiểu sử duy nhất.",
+    description: "Gather all your links into a single bio page.",
     subdomain: "bio.core47.xyz",
     icon: "FileText",
     categoryId: "text",
@@ -54,8 +54,8 @@ export const TOOLS: Tool[] = [
   {
     id: "t5",
     slug: "editimg",
-    name: "Sửa ảnh Online",
-    description: "Chỉnh sửa ảnh trực tuyến nhanh chóng ngay trên trình duyệt.",
+    name: "Online Image Editor",
+    description: "Edit images quickly, right in the browser.",
     subdomain: "editimg.core47.xyz",
     icon: "Image",
     categoryId: "media",
@@ -66,7 +66,7 @@ export const TOOLS: Tool[] = [
     id: "t6",
     slug: "frame",
     name: "Frame Avatar",
-    description: "Tạo khung frame ảnh đại diện dạng PNG cho chiến dịch.",
+    description: "Generate a PNG avatar frame for a campaign.",
     subdomain: "frame.core47.xyz",
     icon: "Frame",
     categoryId: "media",

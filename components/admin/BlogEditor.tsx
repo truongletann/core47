@@ -27,7 +27,7 @@ function slugify(v: string): string {
   return v
     .toLowerCase()
     .normalize("NFD")
-    .replace(new RegExp("[\\u0300-\\u036f]", "g"), "") // bỏ dấu (Vietnamese diacritics)
+    .replace(new RegExp("[\\u0300-\\u036f]", "g"), "") // strip diacritics
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 120);
@@ -98,7 +98,7 @@ export function BlogEditor({
       });
       const json = (await res.json()) as { success: boolean; data?: { key: string } };
       if (!json.success || !json.data) {
-        setError("Upload ảnh thất bại.");
+        setError("Image upload failed.");
         return;
       }
       setForm((f) => ({ ...f, coverImageKey: json.data!.key }));
@@ -123,7 +123,7 @@ export function BlogEditor({
         data?: { title: string | null; tags: string | null; content: string };
       };
       if (!json.success || !json.data) {
-        setError("Đọc file thất bại.");
+        setError("Failed to read file.");
         return;
       }
       const { title, tags, content } = json.data;
@@ -141,9 +141,9 @@ export function BlogEditor({
 
   const fieldLabel: Record<string, string> = {
     slug: "Slug",
-    title: "Tiêu đề",
-    excerpt: "Mô tả ngắn",
-    content: "Nội dung",
+    title: "Title",
+    excerpt: "Excerpt",
+    content: "Content",
     tags: "Tags",
   };
 
@@ -152,12 +152,12 @@ export function BlogEditor({
     issues?: { path: string; message: string }[];
     message?: string;
   }) {
-    if (json.error === "SLUG_TAKEN") return "Slug này đã tồn tại, chọn slug khác.";
+    if (json.error === "SLUG_TAKEN") return "This slug already exists — pick another one.";
     if (json.error === "INVALID_INPUT" && json.issues?.length) {
       return json.issues.map((i) => `${fieldLabel[i.path] ?? i.path}: ${i.message}`).join(" · ");
     }
-    if (json.error === "SERVER_ERROR" && json.message) return `Lỗi server: ${json.message}`;
-    return "Đã có lỗi xảy ra.";
+    if (json.error === "SERVER_ERROR" && json.message) return `Server error: ${json.message}`;
+    return "Something went wrong.";
   }
 
   async function handleSave() {
@@ -194,11 +194,11 @@ export function BlogEditor({
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Tiêu đề</span>
+            <span className="mb-1 block text-[rgb(var(--muted))]">Title</span>
             <input
               value={form.title}
               onChange={(e) => onTitleChange(e.target.value)}
-              placeholder="Tiêu đề bài viết"
+              placeholder="Post title"
               className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
             />
           </label>
@@ -211,20 +211,20 @@ export function BlogEditor({
                 setSlugTouched(true);
                 setForm({ ...form, slug: e.target.value });
               }}
-              placeholder="tieu-de-bai-viet"
+              placeholder="post-title"
               className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
             />
           </label>
         </div>
 
         <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Mô tả ngắn (tuỳ chọn)</span>
+          <span className="mb-1 block text-[rgb(var(--muted))]">Excerpt (optional)</span>
           <textarea
             value={form.excerpt}
             onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
             rows={2}
             maxLength={300}
-            placeholder="Hiện khi chia sẻ link — để trống thì tự lấy từ đầu nội dung"
+            placeholder="Shown when the link is shared — left blank, it's derived from the start of the content"
             className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
           />
         </label>
@@ -232,14 +232,14 @@ export function BlogEditor({
         <div className="text-sm">
           <div className="mb-1 flex items-center justify-between">
             <div className="flex gap-6">
-              <span className="text-[rgb(var(--muted))]">Soạn thảo</span>
+              <span className="text-[rgb(var(--muted))]">Write</span>
               <span className="flex items-center gap-2 text-[rgb(var(--muted))]">
-                Xem trước
-                {previewLoading && <span className="text-[10px]">(đang cập nhật...)</span>}
+                Preview
+                {previewLoading && <span className="text-[10px]">(updating...)</span>}
               </span>
             </div>
             <div className="flex items-center gap-3">
-              {importing && <span className="text-xs text-[rgb(var(--muted))]">Đang đọc file...</span>}
+              {importing && <span className="text-xs text-[rgb(var(--muted))]">Reading file...</span>}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -267,7 +267,7 @@ export function BlogEditor({
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
               rows={34}
-              placeholder="Viết nội dung bằng Markdown, hoặc bấm 'Import file .md' để đưa file có sẵn vào..."
+              placeholder="Write content in Markdown, or click 'Import file .md' to bring in an existing file..."
               className="font-data min-h-[700px] w-full resize-y rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
             />
             <div className="min-h-[700px] overflow-y-auto rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-4 py-3">
@@ -277,7 +277,7 @@ export function BlogEditor({
                   dangerouslySetInnerHTML={{ __html: previewHtml }}
                 />
               ) : (
-                <p className="text-sm opacity-50">Chưa có nội dung.</p>
+                <p className="text-sm opacity-50">No content yet.</p>
               )}
             </div>
           </div>
@@ -289,7 +289,7 @@ export function BlogEditor({
       <div className="flex w-full shrink-0 flex-col gap-4 lg:w-72">
         <div className="rounded-xl border border-[rgb(var(--border))] p-4">
           <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Ảnh cover (tuỳ chọn)</span>
+            <span className="mb-1 block text-[rgb(var(--muted))]">Cover image (optional)</span>
             {form.coverImageKey && (
               <div className="relative mb-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -303,7 +303,7 @@ export function BlogEditor({
                   onClick={() => setForm((f) => ({ ...f, coverImageKey: null }))}
                   className="absolute right-1.5 top-1.5 rounded-md bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/80"
                 >
-                  Xoá ảnh
+                  Remove
                 </button>
               </div>
             )}
@@ -317,13 +317,13 @@ export function BlogEditor({
               disabled={uploading}
               className="w-full text-xs"
             />
-            {uploading && <p className="mt-1 text-xs text-[rgb(var(--muted))]">Đang upload...</p>}
+            {uploading && <p className="mt-1 text-xs text-[rgb(var(--muted))]">Uploading...</p>}
           </label>
         </div>
 
         <div className="rounded-xl border border-[rgb(var(--border))] p-4">
           <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Tags (cách nhau bởi dấu phẩy)</span>
+            <span className="mb-1 block text-[rgb(var(--muted))]">Tags (comma-separated)</span>
             <input
               value={form.tags}
               onChange={(e) => setForm({ ...form, tags: e.target.value })}
@@ -335,7 +335,7 @@ export function BlogEditor({
 
         <div className="rounded-xl border border-[rgb(var(--border))] p-4">
           <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Trạng thái</span>
+            <span className="mb-1 block text-[rgb(var(--muted))]">Status</span>
             <select
               value={form.status}
               onChange={(e) =>

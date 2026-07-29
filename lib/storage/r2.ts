@@ -4,12 +4,12 @@ export async function getAvatarsBucket() {
   const { env } = await getCloudflareContext({ async: true });
   if (!env.AVATARS) {
     throw new Error(
-      "R2 binding 'AVATARS' không tồn tại. Kiểm tra lại wrangler.jsonc đã khai báo r2_buckets chưa.",
+      "R2 binding 'AVATARS' does not exist. Check that wrangler.jsonc declares r2_buckets.",
     );
   }
   return env.AVATARS;
 }
 
-// Blog cover images dùng chung bucket R2 "AVATARS" (key namespace riêng: blog-covers/)
-// để không phải tạo/khai báo thêm 1 R2 bucket mới.
+// Blog cover images share the "AVATARS" R2 bucket (under its own key
+// namespace: blog-covers/) so we don't need to provision a separate bucket.
 export const getBlogBucket = getAvatarsBucket;

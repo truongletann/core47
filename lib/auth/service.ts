@@ -54,7 +54,7 @@ export async function registerUser(raw: RegisterInput): Promise<{ user: User; se
     }
   }
 
-  // Người đăng ký đầu tiên tự động là admin
+  // The first person to register automatically becomes admin
   const anyUser = await db.select().from(users).limit(1).get();
   const isFirstUser = !anyUser;
 

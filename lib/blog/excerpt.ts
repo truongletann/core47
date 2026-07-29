@@ -1,6 +1,7 @@
 /**
- * Excerpt tự sinh từ nội dung khi admin để trống — dùng cho thẻ SEO/OG
- * description và bất kỳ nơi nào cần một đoạn tóm tắt ngắn.
+ * Auto-generated excerpt from content when the admin leaves it blank —
+ * used for the SEO/OG description tag and anywhere else a short summary
+ * is needed.
  */
 export function fallbackExcerpt(content: string, max = 160): string {
   const plain = content

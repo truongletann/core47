@@ -7,7 +7,7 @@ export async function GET(
 ) {
   const { key } = await params;
 
-  // Chỉ chấp nhận dạng UUID để tránh path traversal
+  // Only accept UUID-like keys to avoid path traversal
   if (!/^[a-zA-Z0-9-]+$/.test(key)) {
     return NextResponse.json({ error: "INVALID_KEY" }, { status: 400 });
   }

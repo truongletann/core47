@@ -10,9 +10,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "INVALID_JSON" }, { status: 400 });
   }
 
-  // Honeypot: field ẩn khỏi mắt người dùng thật, bot điền form thường tự động
-  // fill hết mọi input. Có giá trị => coi như spam, giả vờ thành công để
-  // không lộ cơ chế chặn.
+  // Honeypot: field hidden from real users; bots that auto-fill every input
+  // will fill it in too. A non-empty value is treated as spam — pretend it
+  // succeeded so we don't reveal the mechanism.
   const record = body as Record<string, unknown>;
   if (typeof record.website === "string" && record.website.length > 0) {
     return NextResponse.json({ success: true }, { status: 201 });

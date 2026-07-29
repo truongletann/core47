@@ -15,7 +15,7 @@ const CATEGORY_VAR: Record<string, string> = {
 const statusLabel: Record<Tool["status"], string> = {
   active: "",
   beta: "Beta",
-  soon: "Sắp ra mắt",
+  soon: "Coming soon",
 };
 
 export function ToolCard({ tool, index }: { tool: Tool; index: number }) {
@@ -53,7 +53,7 @@ export function ToolCard({ tool, index }: { tool: Tool; index: number }) {
         flashing && "ring-2 ring-[rgb(var(--accent))]",
       )}
     >
-      {/* Cuống vé bên trái — màu theo category, mã code viết dọc */}
+      {/* Left ticket stub — colored by category, code written vertically */}
       <div
         className="flex w-9 shrink-0 items-center justify-center"
         style={{ backgroundColor: `rgb(var(${catVar}) / 0.12)` }}
@@ -66,13 +66,13 @@ export function ToolCard({ tool, index }: { tool: Tool; index: number }) {
         </span>
       </div>
 
-      {/* Đường đứt nét kiểu xé vé, có 2 chấm tròn khuyết trên/dưới */}
+      {/* Perforated tear line with a notch cutout top and bottom */}
       <div className="relative w-px shrink-0 bg-[repeating-linear-gradient(to_bottom,rgb(var(--border))_0px,rgb(var(--border))_5px,transparent_5px,transparent_10px)]">
         <span className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rounded-full bg-[rgb(var(--bg))]" />
         <span className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rounded-full bg-[rgb(var(--bg))]" />
       </div>
 
-      {/* Nội dung chính */}
+      {/* Main content */}
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div className="flex items-start justify-between">
           <div

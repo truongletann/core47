@@ -7,7 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
   title: "Core47 Toolkits",
-  description: "Bộ công cụ vibe-coding của Core47 — nhanh, gọn, edge-native.",
+  description: "Core47's vibe-coding toolkit — fast, lean, edge-native.",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -15,7 +15,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const isAdminArea = host.startsWith("admin.") || host === "admin";
 
   return (
-    <html lang="vi" suppressHydrationWarning className="h-full">
+    <html lang="en" suppressHydrationWarning className="h-full">
       <body className="flex min-h-screen flex-col">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <Navbar isAdminArea={isAdminArea} />

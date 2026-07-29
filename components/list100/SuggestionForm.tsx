@@ -5,7 +5,7 @@ import { useState } from "react";
 export function SuggestionForm() {
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
-  const [website, setWebsite] = useState(""); // honeypot, phải luôn để trống
+  const [website, setWebsite] = useState(""); // honeypot, must always stay empty
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
 
   const items = content

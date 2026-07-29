@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 
--- Thêm cột theo dõi cho short_links: ai tạo, từ đâu, bằng gì
+-- Add tracking columns to short_links: who created it, from where, with what
 ALTER TABLE short_links ADD COLUMN user_id TEXT;
 ALTER TABLE short_links ADD COLUMN ip_address TEXT;
 ALTER TABLE short_links ADD COLUMN user_agent TEXT;

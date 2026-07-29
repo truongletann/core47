@@ -9,8 +9,8 @@ function normalizeUrl(val: string): string {
 export const CreateShortLinkSchema = z.object({
   url: z
     .string()
-    .min(1, "Vui lòng nhập URL")
-    .max(2048, "URL quá dài")
+    .min(1, "Please enter a URL")
+    .max(2048, "URL is too long")
     .transform(normalizeUrl)
     .refine(
       (val) => {
@@ -22,7 +22,7 @@ export const CreateShortLinkSchema = z.object({
           return false;
         }
       },
-      { message: "URL không hợp lệ, kiểm tra lại chính tả" },
+      { message: "Invalid URL, check the spelling" },
     )
     .refine(
       (val) => {
@@ -32,13 +32,13 @@ export const CreateShortLinkSchema = z.object({
           return false;
         }
       },
-      { message: "Không thể rút gọn link trỏ về chính core47.xyz" },
+      { message: "Can't shorten a link that points back to core47.xyz" },
     ),
   customCode: z
     .string()
-    .min(2, "Mã tối thiểu 2 ký tự")
-    .max(20, "Mã tối đa 20 ký tự")
-    .regex(/^[a-zA-Z0-9-]+$/, "Chỉ chứa chữ, số và dấu gạch ngang")
+    .min(2, "Code must be at least 2 characters")
+    .max(20, "Code must be at most 20 characters")
+    .regex(/^[a-zA-Z0-9-]+$/, "Only letters, numbers, and hyphens allowed")
     .optional(),
 });
 

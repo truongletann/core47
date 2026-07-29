@@ -35,8 +35,9 @@ export function Hero({ tools }: { tools: Tool[] }) {
 
     const baseOpacities: number[] = [];
 
-    // Vị trí ban đầu — set opacity/scale bằng transition (KHÔNG dùng CSS animation)
-    // để JS luôn toàn quyền ghi đè transform về sau, tránh bị animation "khóa" giá trị.
+    // Initial position — set opacity/scale via transition (NOT CSS animation)
+    // so JS always has full control to override transform later, avoiding an
+    // animation "locking in" a value.
     tagRefs.current.forEach((el, i) => {
       if (!el) return;
       const slot = SLOTS[i % SLOTS.length];
@@ -56,18 +57,19 @@ export function Hero({ tools }: { tools: Tool[] }) {
       el.style.transform = `translateY(16px) scale(${(scale - 0.1).toFixed(2)})`;
       el.style.transition = "opacity 0.5s ease, transform 0.5s ease";
 
-      // Kích hoạt hiệu ứng xuất hiện, so le theo thứ tự
+      // Trigger the entrance effect, staggered by order
       window.setTimeout(() => {
         el.style.opacity = String(opacity);
         el.style.transform = `translateY(0) scale(${scale.toFixed(2)})`;
-        // Sau khi vào vị trí, đổi transition riêng cho transform để mượt khi parallax
+        // Once in place, switch to a dedicated transform transition for a
+        // smooth parallax
         window.setTimeout(() => {
           el.style.transition = "top 1.2s ease, left 1.2s ease, box-shadow 0.3s, border-color 0.3s";
         }, 550);
       }, i * 80);
     });
 
-    // Parallax theo chuột
+    // Mouse-driven parallax
     function onMouseMove(e: MouseEvent) {
       const rect = hero!.getBoundingClientRect();
       const mx = (e.clientX - rect.left - rect.width / 2) / rect.width;
@@ -81,7 +83,7 @@ export function Hero({ tools }: { tools: Tool[] }) {
     }
     hero.addEventListener("mousemove", onMouseMove);
 
-    // Radar sweep — sáng viền thẻ khi vệt quét đi qua đúng góc của nó
+    // Radar sweep — lights up a tag's border when the beam passes its angle
     let angle = 0;
     let raf: number;
     function radarTick() {
@@ -104,7 +106,7 @@ export function Hero({ tools }: { tools: Tool[] }) {
     }
     raf = requestAnimationFrame(radarTick);
 
-    // Đổi vị trí mỗi 9s — chỉ hoán đổi giữa các ô an toàn đã định sẵn
+    // Reshuffle position every 9s — only swaps among the predefined safe slots
     const repositionInterval = setInterval(() => {
       const shuffled = [...SLOTS].sort(() => Math.random() - 0.5);
       tagRefs.current.forEach((el, i) => {
@@ -115,7 +117,7 @@ export function Hero({ tools }: { tools: Tool[] }) {
       });
     }, 9000);
 
-    // Mờ dần khi cuộn trang
+    // Fade out on scroll
     function onScroll() {
       const fade = Math.max(0, 1 - window.scrollY / 300);
       tagRefs.current.forEach((el, i) => {
@@ -179,7 +181,7 @@ export function Hero({ tools }: { tools: Tool[] }) {
             className="font-data absolute cursor-pointer whitespace-nowrap rounded-full border bg-[rgb(var(--card))] px-3 py-1.5 text-[11px] text-[rgb(var(--muted))]"
             style={{
               borderColor: `rgb(var(${catVar}) / 0.4)`,
-              // @ts-expect-error custom property dùng cho radar-lit
+              // @ts-expect-error custom property used for radar-lit
               "--cat-color": `rgb(var(${catVar}))`,
             }}
           >

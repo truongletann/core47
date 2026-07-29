@@ -8,12 +8,12 @@ export const ToolSchema = z.object({
     .string()
     .min(1)
     .max(64)
-    .regex(/^[a-z0-9-]+$/, "Slug chỉ chứa chữ thường, số và dấu gạch ngang"),
+    .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
   name: z.string().min(1).max(80),
   description: z.string().min(1).max(240),
   subdomain: z
     .string()
-    .regex(/^[a-z0-9-]+\.core47\.xyz$/, "Subdomain không hợp lệ"),
+    .regex(/^[a-z0-9-]+\.core47\.xyz$/, "Invalid subdomain"),
   icon: z.string().min(1).max(40),
   categoryId: z.string().min(1).max(40),
   status: ToolStatusEnum,
