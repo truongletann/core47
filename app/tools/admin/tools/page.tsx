@@ -31,6 +31,108 @@ const emptyForm = {
   sortOrder: "0",
 };
 
+type FormState = typeof emptyForm;
+
+function ToolForm({
+  form,
+  setForm,
+  categories,
+  error,
+}: {
+  form: FormState;
+  setForm: (f: FormState) => void;
+  categories: Category[];
+  error: string | null;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <label className="text-sm">
+        <span className="mb-1 block text-[rgb(var(--muted))]">Slug</span>
+        <input
+          value={form.slug}
+          onChange={(e) => setForm({ ...form, slug: e.target.value })}
+          placeholder="e.g. genqr"
+          className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+        />
+      </label>
+      <label className="text-sm">
+        <span className="mb-1 block text-[rgb(var(--muted))]">Name</span>
+        <input
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+        />
+      </label>
+      <label className="text-sm">
+        <span className="mb-1 block text-[rgb(var(--muted))]">Description</span>
+        <textarea
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          rows={2}
+          className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+        />
+      </label>
+      <label className="text-sm">
+        <span className="mb-1 block text-[rgb(var(--muted))]">Subdomain</span>
+        <input
+          value={form.subdomain}
+          onChange={(e) => setForm({ ...form, subdomain: e.target.value })}
+          placeholder="e.g. genqr.core47.xyz"
+          className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+        />
+      </label>
+      <label className="text-sm">
+        <span className="mb-1 block text-[rgb(var(--muted))]">
+          Icon (Lucide icon name, e.g. QrCode)
+        </span>
+        <input
+          value={form.icon}
+          onChange={(e) => setForm({ ...form, icon: e.target.value })}
+          className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+        />
+      </label>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="text-sm">
+          <span className="mb-1 block text-[rgb(var(--muted))]">Category</span>
+          <select
+            value={form.categoryId}
+            onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+          >
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-[rgb(var(--muted))]">Status</span>
+          <select
+            value={form.status}
+            onChange={(e) => setForm({ ...form, status: e.target.value as Tool["status"] })}
+            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+          >
+            <option value="active">Active</option>
+            <option value="beta">Beta</option>
+            <option value="soon">Coming soon</option>
+          </select>
+        </label>
+      </div>
+      <label className="text-sm">
+        <span className="mb-1 block text-[rgb(var(--muted))]">Sort order</span>
+        <input
+          type="number"
+          value={form.sortOrder}
+          onChange={(e) => setForm({ ...form, sortOrder: e.target.value })}
+          className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+        />
+      </label>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
 export default function AdminToolsPage() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -145,96 +247,6 @@ export default function AdminToolsPage() {
     load();
   }
 
-  function FormFields() {
-    return (
-      <div className="flex flex-col gap-3">
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Slug</span>
-          <input
-            value={form.slug}
-            onChange={(e) => setForm({ ...form, slug: e.target.value })}
-            placeholder="e.g. genqr"
-            className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Name</span>
-          <input
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Description</span>
-          <textarea
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            rows={2}
-            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Subdomain</span>
-          <input
-            value={form.subdomain}
-            onChange={(e) => setForm({ ...form, subdomain: e.target.value })}
-            placeholder="e.g. genqr.core47.xyz"
-            className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">
-            Icon (Lucide icon name, e.g. QrCode)
-          </span>
-          <input
-            value={form.icon}
-            onChange={(e) => setForm({ ...form, icon: e.target.value })}
-            className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Category</span>
-            <select
-              value={form.categoryId}
-              onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-              className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-            >
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Status</span>
-            <select
-              value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value as Tool["status"] })}
-              className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-            >
-              <option value="active">Active</option>
-              <option value="beta">Beta</option>
-              <option value="soon">Coming soon</option>
-            </select>
-          </label>
-        </div>
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Sort order</span>
-          <input
-            type="number"
-            value={form.sortOrder}
-            onChange={(e) => setForm({ ...form, sortOrder: e.target.value })}
-            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        {error && <p className="text-xs text-red-600">{error}</p>}
-      </div>
-    );
-  }
-
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
@@ -303,7 +315,7 @@ export default function AdminToolsPage() {
 
       {creating && (
         <Modal title="Add tool" onClose={() => setCreating(false)}>
-          <FormFields />
+          <ToolForm form={form} setForm={setForm} categories={categories} error={error} />
           <button
             onClick={handleCreate}
             disabled={saving || !form.slug || !form.name || !form.subdomain}
@@ -316,7 +328,7 @@ export default function AdminToolsPage() {
 
       {editing && (
         <Modal title={`Edit tool: ${editing.name}`} onClose={() => setEditing(null)}>
-          <FormFields />
+          <ToolForm form={form} setForm={setForm} categories={categories} error={error} />
           <button
             onClick={handleUpdate}
             disabled={saving}

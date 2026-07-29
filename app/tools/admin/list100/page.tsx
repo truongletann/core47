@@ -173,11 +173,18 @@ export default function AdminList100Page() {
     link: "Link tham khảo",
   };
 
-  function errorMessage(json: { error?: string; issues?: { path: string; message: string }[] }) {
+  function errorMessage(json: {
+    error?: string;
+    issues?: { path: string; message: string }[];
+    message?: string;
+  }) {
     if (json.error === "INVALID_INPUT" && json.issues?.length) {
       return json.issues
         .map((i) => `${fieldLabel[i.path] ?? i.path}: ${i.message}`)
         .join(" · ");
+    }
+    if (json.error === "SERVER_ERROR" && json.message) {
+      return `Lỗi server: ${json.message}`;
     }
     return "Đã có lỗi xảy ra.";
   }
@@ -196,6 +203,7 @@ export default function AdminList100Page() {
         success: boolean;
         error?: string;
         issues?: { path: string; message: string }[];
+        message?: string;
       };
       if (!json.success) {
         setError(errorMessage(json));
@@ -231,6 +239,7 @@ export default function AdminList100Page() {
         success: boolean;
         error?: string;
         issues?: { path: string; message: string }[];
+        message?: string;
       };
       if (!json.success) {
         setError(errorMessage(json));

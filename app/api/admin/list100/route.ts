@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
   try {
     const item = await createList100Item(parseResult.data);
     return NextResponse.json({ success: true, data: { item } }, { status: 201 });
-  } catch {
-    return NextResponse.json({ success: false, error: "SERVER_ERROR" }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ success: false, error: "SERVER_ERROR", message }, { status: 500 });
   }
 }

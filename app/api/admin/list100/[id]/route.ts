@@ -30,8 +30,9 @@ export async function PUT(
   try {
     await updateList100Item(id, parseResult.data);
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ success: false, error: "SERVER_ERROR" }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ success: false, error: "SERVER_ERROR", message }, { status: 500 });
   }
 }
 

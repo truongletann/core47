@@ -5,7 +5,6 @@ import {
   CategorySchema,
   UpdateCategorySchema,
   ToolSchema,
-  List100ItemSchema,
   type CategoryInput,
   type UpdateCategoryInput,
   type ToolInput,
@@ -126,8 +125,7 @@ export async function listList100Admin() {
   }));
 }
 
-export async function createList100Item(raw: List100ItemInput) {
-  const input = List100ItemSchema.parse(raw);
+export async function createList100Item(input: List100ItemInput) {
   const db = await getDb();
 
   const now = new Date().toISOString();
@@ -147,8 +145,7 @@ export async function createList100Item(raw: List100ItemInput) {
   return record;
 }
 
-export async function updateList100Item(id: string, raw: List100ItemInput) {
-  const input = List100ItemSchema.parse(raw);
+export async function updateList100Item(id: string, input: List100ItemInput) {
   const db = await getDb();
 
   const existing = await db
