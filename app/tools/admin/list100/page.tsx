@@ -7,38 +7,87 @@ interface List100Item {
   id: string;
   rank: number;
   title: string;
-  description: string;
-  category: string | null;
-  tags: string;
-  imageUrl: string | null;
-  link: string | null;
-  status: "not_started" | "in_progress" | "done";
-  targetDate: string | null;
-  completedAt: string | null;
   note: string | null;
+  link: string | null;
+  isDone: boolean;
   isPublic: boolean;
 }
 
 const emptyForm = {
   rank: "1",
   title: "",
-  description: "",
-  category: "",
-  tags: "",
-  imageUrl: "",
-  link: "",
-  status: "not_started" as List100Item["status"],
-  targetDate: "",
-  completedAt: "",
   note: "",
+  link: "",
+  isDone: false,
   isPublic: true,
 };
 
-const statusLabel: Record<List100Item["status"], string> = {
-  not_started: "Chưa bắt đầu",
-  in_progress: "Đang thực hiện",
-  done: "Đã hoàn thành",
-};
+type FormState = typeof emptyForm;
+
+function List100Form({ form, setForm }: { form: FormState; setForm: (f: FormState) => void }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-[100px_1fr] gap-3">
+        <label className="text-sm">
+          <span className="mb-1 block text-[rgb(var(--muted))]">#</span>
+          <input
+            type="number"
+            min={1}
+            max={100}
+            value={form.rank}
+            onChange={(e) => setForm({ ...form, rank: e.target.value })}
+            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+          />
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-[rgb(var(--muted))]">Điều muốn làm</span>
+          <input
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            placeholder="vd: Học tiếng Tây Ban Nha"
+            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+          />
+        </label>
+      </div>
+      <label className="text-sm">
+        <span className="mb-1 block text-[rgb(var(--muted))]">Ghi chú (tuỳ chọn, hiện trong ngoặc)</span>
+        <input
+          value={form.note}
+          onChange={(e) => setForm({ ...form, note: e.target.value })}
+          placeholder="vd: đã làm ở 3 nước: VN, Ấn Độ, Mỹ"
+          className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+        />
+      </label>
+      <label className="text-sm">
+        <span className="mb-1 block text-[rgb(var(--muted))]">Link tham khảo (tuỳ chọn)</span>
+        <input
+          value={form.link}
+          onChange={(e) => setForm({ ...form, link: e.target.value })}
+          placeholder="https://..."
+          className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+        />
+      </label>
+      <div className="flex flex-col gap-2">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.isDone}
+            onChange={(e) => setForm({ ...form, isDone: e.target.checked })}
+          />
+          <span>Đã hoàn thành</span>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.isPublic}
+            onChange={(e) => setForm({ ...form, isPublic: e.target.checked })}
+          />
+          <span>Hiện công khai trên trang List 100</span>
+        </label>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminList100Page() {
   const [items, setItems] = useState<List100Item[]>([]);
@@ -46,7 +95,7 @@ export default function AdminList100Page() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<List100Item | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<List100Item | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState<FormState>(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -73,15 +122,9 @@ export default function AdminList100Page() {
     setForm({
       rank: String(i.rank),
       title: i.title,
-      description: i.description,
-      category: i.category ?? "",
-      tags: i.tags ?? "",
-      imageUrl: i.imageUrl ?? "",
-      link: i.link ?? "",
-      status: i.status,
-      targetDate: i.targetDate ?? "",
-      completedAt: i.completedAt ?? "",
       note: i.note ?? "",
+      link: i.link ?? "",
+      isDone: i.isDone,
       isPublic: i.isPublic,
     });
     setError(null);
@@ -148,147 +191,10 @@ export default function AdminList100Page() {
     load();
   }
 
-  function FormFields() {
-    return (
-      <div className="flex flex-col gap-3">
-        <div className="grid grid-cols-2 gap-3">
-          <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Số thứ tự (1-100)</span>
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={form.rank}
-              onChange={(e) => setForm({ ...form, rank: e.target.value })}
-              className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-            />
-          </label>
-          <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Trạng thái</span>
-            <select
-              value={form.status}
-              onChange={(e) => {
-                const status = e.target.value as List100Item["status"];
-                setForm({
-                  ...form,
-                  status,
-                  completedAt:
-                    status === "done" && !form.completedAt
-                      ? new Date().toISOString().slice(0, 10)
-                      : form.completedAt,
-                });
-              }}
-              className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-            >
-              <option value="not_started">Chưa bắt đầu</option>
-              <option value="in_progress">Đang thực hiện</option>
-              <option value="done">Đã hoàn thành</option>
-            </select>
-          </label>
-        </div>
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Điều muốn làm</span>
-          <input
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="vd: Nhảy dù trên bầu trời"
-            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Mô tả ngắn / vì sao muốn làm</span>
-          <textarea
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            rows={2}
-            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Nhóm (vd: Travel, Career...)</span>
-            <input
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-            />
-          </label>
-          <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Mốc thời gian dự định</span>
-            <input
-              value={form.targetDate}
-              onChange={(e) => setForm({ ...form, targetDate: e.target.value })}
-              placeholder="vd: 2028 hoặc 2028-06"
-              className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-            />
-          </label>
-        </div>
-        {form.status === "done" && (
-          <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Ngày hoàn thành</span>
-            <input
-              type="date"
-              value={form.completedAt}
-              onChange={(e) => setForm({ ...form, completedAt: e.target.value })}
-              className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-            />
-          </label>
-        )}
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">
-            Cảm nghĩ / câu chuyện khi hoàn thành (tuỳ chọn)
-          </span>
-          <textarea
-            value={form.note}
-            onChange={(e) => setForm({ ...form, note: e.target.value })}
-            rows={4}
-            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Ảnh minh hoạ (URL, tuỳ chọn)</span>
-          <input
-            value={form.imageUrl}
-            onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-            placeholder="https://..."
-            className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Link tham khảo (tuỳ chọn)</span>
-          <input
-            value={form.link}
-            onChange={(e) => setForm({ ...form, link: e.target.value })}
-            placeholder="https://..."
-            className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Tags (cách nhau bởi dấu phẩy, tuỳ chọn)</span>
-          <input
-            value={form.tags}
-            onChange={(e) => setForm({ ...form, tags: e.target.value })}
-            placeholder="mạo hiểm, du lịch, gia đình"
-            className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={form.isPublic}
-            onChange={(e) => setForm({ ...form, isPublic: e.target.checked })}
-          />
-          <span>Hiện công khai trên trang List 100</span>
-        </label>
-        {error && <p className="text-xs text-red-600">{error}</p>}
-      </div>
-    );
-  }
-
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold">List 100 — Bucket list</h1>
+        <h1 className="font-display text-2xl font-semibold">List 100</h1>
         <button
           onClick={openCreate}
           className="rounded-lg bg-[rgb(var(--accent))] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
@@ -303,8 +209,7 @@ export default function AdminList100Page() {
             <tr className="border-b border-[rgb(var(--border))] text-xs uppercase text-[rgb(var(--muted))]">
               <th className="px-4 py-2">#</th>
               <th className="px-4 py-2">Điều muốn làm</th>
-              <th className="px-4 py-2">Nhóm</th>
-              <th className="px-4 py-2">Trạng thái</th>
+              <th className="px-4 py-2">Xong?</th>
               <th className="px-4 py-2">Công khai</th>
               <th className="px-4 py-2">Actions</th>
             </tr>
@@ -312,13 +217,13 @@ export default function AdminList100Page() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-[rgb(var(--muted))]">
+                <td colSpan={5} className="px-4 py-6 text-center text-[rgb(var(--muted))]">
                   Loading...
                 </td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-[rgb(var(--muted))]">
+                <td colSpan={5} className="px-4 py-6 text-center text-[rgb(var(--muted))]">
                   Chưa có mục nào.
                 </td>
               </tr>
@@ -326,9 +231,11 @@ export default function AdminList100Page() {
               items.map((i) => (
                 <tr key={i.id} className="border-b border-[rgb(var(--border))] last:border-0">
                   <td className="font-data px-4 py-2 text-xs">{i.rank}</td>
-                  <td className="px-4 py-2">{i.title}</td>
-                  <td className="px-4 py-2 text-xs">{i.category ?? "—"}</td>
-                  <td className="px-4 py-2 text-xs">{statusLabel[i.status]}</td>
+                  <td className="px-4 py-2">
+                    {i.title}
+                    {i.note && <span className="text-[rgb(var(--muted))]"> ({i.note})</span>}
+                  </td>
+                  <td className="px-4 py-2 text-xs">{i.isDone ? "✓" : "✗"}</td>
                   <td className="px-4 py-2 text-xs">{i.isPublic ? "Có" : "Ẩn"}</td>
                   <td className="px-4 py-2">
                     <div className="flex gap-2">
@@ -355,10 +262,11 @@ export default function AdminList100Page() {
 
       {creating && (
         <Modal title="Thêm mục List 100" onClose={() => setCreating(false)}>
-          <FormFields />
+          <List100Form form={form} setForm={setForm} />
+          {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
           <button
             onClick={handleCreate}
-            disabled={saving || !form.title || !form.description}
+            disabled={saving || !form.title}
             className="mt-3 w-fit rounded-lg bg-[rgb(var(--accent))] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             {saving ? "Saving..." : "Create"}
@@ -368,7 +276,8 @@ export default function AdminList100Page() {
 
       {editing && (
         <Modal title={`Edit: ${editing.title}`} onClose={() => setEditing(null)}>
-          <FormFields />
+          <List100Form form={form} setForm={setForm} />
+          {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
           <button
             onClick={handleUpdate}
             disabled={saving}

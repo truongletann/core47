@@ -119,7 +119,11 @@ export async function setUserDisabled(id: string, disabled: boolean) {
 export async function listList100Admin() {
   const db = await getDb();
   const rows = await db.select().from(list100Items).orderBy(asc(list100Items.rank));
-  return rows.map((r) => ({ ...r, tags: r.tags ?? "", isPublic: Boolean(r.isPublic) }));
+  return rows.map((r) => ({
+    ...r,
+    isDone: Boolean(r.isDone),
+    isPublic: Boolean(r.isPublic),
+  }));
 }
 
 export async function createList100Item(raw: List100ItemInput) {
@@ -129,7 +133,12 @@ export async function createList100Item(raw: List100ItemInput) {
   const now = new Date().toISOString();
   const record = {
     id: crypto.randomUUID(),
-    ...input,
+    rank: input.rank,
+    title: input.title,
+    note: input.note,
+    link: input.link,
+    isDone: input.isDone ? 1 : 0,
+    completedAt: input.isDone ? now.slice(0, 10) : null,
     isPublic: input.isPublic ? 1 : 0,
     createdAt: now,
     updatedAt: now,
@@ -142,10 +151,23 @@ export async function updateList100Item(id: string, raw: List100ItemInput) {
   const input = List100ItemSchema.parse(raw);
   const db = await getDb();
 
+  const existing = await db
+    .select({ completedAt: list100Items.completedAt })
+    .from(list100Items)
+    .where(eq(list100Items.id, id))
+    .get();
+
   await db
     .update(list100Items)
     .set({
-      ...input,
+      rank: input.rank,
+      title: input.title,
+      note: input.note,
+      link: input.link,
+      isDone: input.isDone ? 1 : 0,
+      completedAt: input.isDone
+        ? (existing?.completedAt ?? new Date().toISOString().slice(0, 10))
+        : null,
       isPublic: input.isPublic ? 1 : 0,
       updatedAt: new Date().toISOString(),
     })

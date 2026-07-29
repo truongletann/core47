@@ -37,20 +37,14 @@ const emptyToNull = (v: unknown) => (typeof v === "string" && v.length > 0 ? v :
 export const List100ItemSchema = z.object({
   rank: z.coerce.number().int().positive().max(100),
   title: z.string().min(1).max(120),
-  description: z.string().min(1).max(240),
-  category: z.string().max(60).optional().transform(emptyToNull),
-  tags: z.string().max(300).optional().transform(emptyToNull),
-  imageUrl: z.string().max(500).optional().transform(emptyToNull),
+  note: z.string().max(300).optional().transform(emptyToNull),
   link: z
     .string()
     .max(500)
     .optional()
     .transform(emptyToNull)
     .refine((v) => v === null || /^https?:\/\//.test(v), "Link phải bắt đầu bằng http(s)://"),
-  status: z.enum(["not_started", "in_progress", "done"]),
-  targetDate: z.string().max(40).optional().transform(emptyToNull),
-  completedAt: z.string().max(40).optional().transform(emptyToNull),
-  note: z.string().max(4000).optional().transform(emptyToNull),
+  isDone: z.coerce.boolean().default(false),
   isPublic: z.coerce.boolean().default(true),
 });
 

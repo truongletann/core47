@@ -70,17 +70,10 @@ export const list100Items = sqliteTable("list100_items", {
   id: text("id").primaryKey(),
   rank: integer("rank").notNull(),
   title: text("title").notNull(),
-  description: text("description").notNull(),
-  category: text("category"),
-  tags: text("tags"), // comma-separated
-  imageUrl: text("image_url"),
+  note: text("note"), // ghi chú ngắn hiện trong ngoặc, không bắt buộc
   link: text("link"), // link tham khảo/bài viết liên quan, không bắt buộc
-  status: text("status", { enum: ["not_started", "in_progress", "done"] })
-    .notNull()
-    .default("not_started"),
-  targetDate: text("target_date"), // mốc thời gian dự định (không bắt buộc)
-  completedAt: text("completed_at"), // ngày thực sự hoàn thành
-  note: text("note"), // cảm nghĩ/câu chuyện khi hoàn thành
+  isDone: integer("is_done").notNull().default(0),
+  completedAt: text("completed_at"), // tự set khi isDone chuyển sang true
   isPublic: integer("is_public").notNull().default(1), // ẩn khỏi trang public nếu = 0
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
