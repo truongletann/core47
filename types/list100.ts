@@ -1,17 +1,19 @@
-export type List100Status = "published" | "draft";
+export type List100Status = "not_started" | "in_progress" | "done";
 
 export interface List100Item {
   id: string;
   rank: number;
-  name: string;
+  title: string;
   description: string;
-  longDescription: string | null;
-  url: string;
-  imageUrl: string | null;
   category: string | null;
   tags: string[];
-  score: number | null;
+  imageUrl: string | null;
+  link: string | null;
   status: List100Status;
+  targetDate: string | null;
+  completedAt: string | null;
+  note: string | null;
+  isPublic: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -8,32 +8,35 @@ function toList100Item(r: typeof list100Table.$inferSelect): List100Item {
   return {
     id: r.id,
     rank: r.rank,
-    name: r.name,
+    title: r.title,
     description: r.description,
-    longDescription: r.longDescription,
-    url: r.url,
-    imageUrl: r.imageUrl,
     category: r.category,
     tags: r.tags ? r.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
-    score: r.score,
+    imageUrl: r.imageUrl,
+    link: r.link,
     status: r.status as List100Item["status"],
+    targetDate: r.targetDate,
+    completedAt: r.completedAt,
+    note: r.note,
+    isPublic: Boolean(r.isPublic),
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
   };
 }
 
-export async function getPublishedList100Items(
+export async function getPublicList100Items(
   rawQuery: List100ListQuery,
 ): Promise<List100Item[]> {
   const query = List100ListQuerySchema.parse(rawQuery);
   const db = await getDb();
 
   const conditions = [
-    eq(list100Table.status, "published"),
+    eq(list100Table.isPublic, 1),
     query.category ? eq(list100Table.category, query.category) : undefined,
+    query.status ? eq(list100Table.status, query.status) : undefined,
     query.search
       ? or(
-          like(list100Table.name, `%${query.search}%`),
+          like(list100Table.title, `%${query.search}%`),
           like(list100Table.description, `%${query.search}%`),
         )
       : undefined,
@@ -48,16 +51,29 @@ export async function getPublishedList100Items(
   return rows.map(toList100Item);
 }
 
-export async function getPublishedCategories(): Promise<string[]> {
+export async function getPublicCategories(): Promise<string[]> {
   const db = await getDb();
   const rows = await db
     .select({ category: list100Table.category })
     .from(list100Table)
-    .where(eq(list100Table.status, "published"));
+    .where(eq(list100Table.isPublic, 1));
 
   const set = new Set<string>();
   for (const r of rows) {
     if (r.category) set.add(r.category);
   }
   return Array.from(set).sort();
+}
+
+export async function getList100Stats(): Promise<{ total: number; done: number }> {
+  const db = await getDb();
+  const rows = await db
+    .select({ status: list100Table.status })
+    .from(list100Table)
+    .where(eq(list100Table.isPublic, 1));
+
+  return {
+    total: rows.length,
+    done: rows.filter((r) => r.status === "done").length,
+  };
 }

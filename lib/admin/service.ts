@@ -119,7 +119,7 @@ export async function setUserDisabled(id: string, disabled: boolean) {
 export async function listList100Admin() {
   const db = await getDb();
   const rows = await db.select().from(list100Items).orderBy(asc(list100Items.rank));
-  return rows.map((r) => ({ ...r, tags: r.tags ?? "" }));
+  return rows.map((r) => ({ ...r, tags: r.tags ?? "", isPublic: Boolean(r.isPublic) }));
 }
 
 export async function createList100Item(raw: List100ItemInput) {
@@ -130,7 +130,7 @@ export async function createList100Item(raw: List100ItemInput) {
   const record = {
     id: crypto.randomUUID(),
     ...input,
-    score: input.score ?? null,
+    isPublic: input.isPublic ? 1 : 0,
     createdAt: now,
     updatedAt: now,
   };
@@ -144,7 +144,11 @@ export async function updateList100Item(id: string, raw: List100ItemInput) {
 
   await db
     .update(list100Items)
-    .set({ ...input, score: input.score ?? null, updatedAt: new Date().toISOString() })
+    .set({
+      ...input,
+      isPublic: input.isPublic ? 1 : 0,
+      updatedAt: new Date().toISOString(),
+    })
     .where(eq(list100Items.id, id));
 }
 

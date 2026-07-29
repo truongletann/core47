@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 
 export const categories = sqliteTable("categories", {
   id: text("id").primaryKey(),
@@ -65,21 +65,23 @@ export const toolFavorites = sqliteTable("tool_favorites", {
   createdAt: text("created_at").notNull(),
 });
 
-// NEW — item của List 100 (top 100 công cụ/website được xếp hạng)
+// NEW — item của List 100 ("100 điều muốn làm trước khi chết")
 export const list100Items = sqliteTable("list100_items", {
   id: text("id").primaryKey(),
   rank: integer("rank").notNull(),
-  name: text("name").notNull(),
+  title: text("title").notNull(),
   description: text("description").notNull(),
-  longDescription: text("long_description"),
-  url: text("url").notNull(),
-  imageUrl: text("image_url"),
   category: text("category"),
   tags: text("tags"), // comma-separated
-  score: real("score"),
-  status: text("status", { enum: ["published", "draft"] })
+  imageUrl: text("image_url"),
+  link: text("link"), // link tham khảo/bài viết liên quan, không bắt buộc
+  status: text("status", { enum: ["not_started", "in_progress", "done"] })
     .notNull()
-    .default("draft"),
+    .default("not_started"),
+  targetDate: text("target_date"), // mốc thời gian dự định (không bắt buộc)
+  completedAt: text("completed_at"), // ngày thực sự hoàn thành
+  note: text("note"), // cảm nghĩ/câu chuyện khi hoàn thành
+  isPublic: integer("is_public").notNull().default(1), // ẩn khỏi trang public nếu = 0
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

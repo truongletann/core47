@@ -32,36 +32,26 @@ export const ToolSchema = z.object({
   sortOrder: z.coerce.number().int().nonnegative().default(0),
 });
 
+const emptyToNull = (v: unknown) => (typeof v === "string" && v.length > 0 ? v : null);
+
 export const List100ItemSchema = z.object({
   rank: z.coerce.number().int().positive().max(100),
-  name: z.string().min(1).max(120),
+  title: z.string().min(1).max(120),
   description: z.string().min(1).max(240),
-  longDescription: z
-    .string()
-    .max(4000)
-    .optional()
-    .transform((v) => (v && v.length > 0 ? v : null)),
-  url: z.string().url().max(500),
-  imageUrl: z
+  category: z.string().max(60).optional().transform(emptyToNull),
+  tags: z.string().max(300).optional().transform(emptyToNull),
+  imageUrl: z.string().max(500).optional().transform(emptyToNull),
+  link: z
     .string()
     .max(500)
     .optional()
-    .transform((v) => (v && v.length > 0 ? v : null)),
-  category: z
-    .string()
-    .max(60)
-    .optional()
-    .transform((v) => (v && v.length > 0 ? v : null)),
-  tags: z
-    .string()
-    .max(300)
-    .optional()
-    .transform((v) => (v && v.length > 0 ? v : null)),
-  score: z.preprocess(
-    (v) => (v === "" || v === null || v === undefined ? undefined : v),
-    z.coerce.number().min(0).max(10).optional(),
-  ),
-  status: z.enum(["published", "draft"]),
+    .transform(emptyToNull)
+    .refine((v) => v === null || /^https?:\/\//.test(v), "Link phải bắt đầu bằng http(s)://"),
+  status: z.enum(["not_started", "in_progress", "done"]),
+  targetDate: z.string().max(40).optional().transform(emptyToNull),
+  completedAt: z.string().max(40).optional().transform(emptyToNull),
+  note: z.string().max(4000).optional().transform(emptyToNull),
+  isPublic: z.coerce.boolean().default(true),
 });
 
 export type CategoryInput = z.infer<typeof CategorySchema>;

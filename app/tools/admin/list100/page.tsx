@@ -6,28 +6,38 @@ import { Modal } from "@/components/ui/Modal";
 interface List100Item {
   id: string;
   rank: number;
-  name: string;
+  title: string;
   description: string;
-  longDescription: string | null;
-  url: string;
-  imageUrl: string | null;
   category: string | null;
   tags: string;
-  score: number | null;
-  status: "published" | "draft";
+  imageUrl: string | null;
+  link: string | null;
+  status: "not_started" | "in_progress" | "done";
+  targetDate: string | null;
+  completedAt: string | null;
+  note: string | null;
+  isPublic: boolean;
 }
 
 const emptyForm = {
   rank: "1",
-  name: "",
+  title: "",
   description: "",
-  longDescription: "",
-  url: "",
-  imageUrl: "",
   category: "",
   tags: "",
-  score: "",
-  status: "draft" as List100Item["status"],
+  imageUrl: "",
+  link: "",
+  status: "not_started" as List100Item["status"],
+  targetDate: "",
+  completedAt: "",
+  note: "",
+  isPublic: true,
+};
+
+const statusLabel: Record<List100Item["status"], string> = {
+  not_started: "Chưa bắt đầu",
+  in_progress: "Đang thực hiện",
+  done: "Đã hoàn thành",
 };
 
 export default function AdminList100Page() {
@@ -62,18 +72,25 @@ export default function AdminList100Page() {
   function openEdit(i: List100Item) {
     setForm({
       rank: String(i.rank),
-      name: i.name,
+      title: i.title,
       description: i.description,
-      longDescription: i.longDescription ?? "",
-      url: i.url,
-      imageUrl: i.imageUrl ?? "",
       category: i.category ?? "",
       tags: i.tags ?? "",
-      score: i.score !== null ? String(i.score) : "",
+      imageUrl: i.imageUrl ?? "",
+      link: i.link ?? "",
       status: i.status,
+      targetDate: i.targetDate ?? "",
+      completedAt: i.completedAt ?? "",
+      note: i.note ?? "",
+      isPublic: i.isPublic,
     });
     setError(null);
     setEditing(i);
+  }
+
+  function errorMessage(code?: string) {
+    if (code === "INVALID_INPUT") return "Vui lòng kiểm tra lại thông tin (link phải bắt đầu bằng http/https).";
+    return "Đã có lỗi xảy ra.";
   }
 
   async function handleCreate() {
@@ -86,9 +103,9 @@ export default function AdminList100Page() {
         body: JSON.stringify(form),
         credentials: "include",
       });
-      const json = (await res.json()) as { success: boolean };
+      const json = (await res.json()) as { success: boolean; error?: string };
       if (!json.success) {
-        setError("Something went wrong.");
+        setError(errorMessage(json.error));
         return;
       }
       setCreating(false);
@@ -109,9 +126,9 @@ export default function AdminList100Page() {
         body: JSON.stringify(form),
         credentials: "include",
       });
-      const json = (await res.json()) as { success: boolean };
+      const json = (await res.json()) as { success: boolean; error?: string };
       if (!json.success) {
-        setError("Something went wrong.");
+        setError(errorMessage(json.error));
         return;
       }
       setEditing(null);
@@ -136,7 +153,7 @@ export default function AdminList100Page() {
       <div className="flex flex-col gap-3">
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Rank (1-100)</span>
+            <span className="mb-1 block text-[rgb(var(--muted))]">Số thứ tự (1-100)</span>
             <input
               type="number"
               min={1}
@@ -147,29 +164,39 @@ export default function AdminList100Page() {
             />
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Status</span>
+            <span className="mb-1 block text-[rgb(var(--muted))]">Trạng thái</span>
             <select
               value={form.status}
-              onChange={(e) =>
-                setForm({ ...form, status: e.target.value as List100Item["status"] })
-              }
+              onChange={(e) => {
+                const status = e.target.value as List100Item["status"];
+                setForm({
+                  ...form,
+                  status,
+                  completedAt:
+                    status === "done" && !form.completedAt
+                      ? new Date().toISOString().slice(0, 10)
+                      : form.completedAt,
+                });
+              }}
               className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
             >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
+              <option value="not_started">Chưa bắt đầu</option>
+              <option value="in_progress">Đang thực hiện</option>
+              <option value="done">Đã hoàn thành</option>
             </select>
           </label>
         </div>
         <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Name</span>
+          <span className="mb-1 block text-[rgb(var(--muted))]">Điều muốn làm</span>
           <input
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            placeholder="vd: Nhảy dù trên bầu trời"
             className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
           />
         </label>
         <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Short description</span>
+          <span className="mb-1 block text-[rgb(var(--muted))]">Mô tả ngắn / vì sao muốn làm</span>
           <textarea
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -177,36 +204,9 @@ export default function AdminList100Page() {
             className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
           />
         </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Long description (optional)</span>
-          <textarea
-            value={form.longDescription}
-            onChange={(e) => setForm({ ...form, longDescription: e.target.value })}
-            rows={4}
-            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">URL</span>
-          <input
-            value={form.url}
-            onChange={(e) => setForm({ ...form, url: e.target.value })}
-            placeholder="https://example.com"
-            className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Image URL (optional)</span>
-          <input
-            value={form.imageUrl}
-            onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-            placeholder="https://..."
-            className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Category (optional)</span>
+            <span className="mb-1 block text-[rgb(var(--muted))]">Nhóm (vd: Travel, Career...)</span>
             <input
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -214,26 +214,71 @@ export default function AdminList100Page() {
             />
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Score 0-10 (optional)</span>
+            <span className="mb-1 block text-[rgb(var(--muted))]">Mốc thời gian dự định</span>
             <input
-              type="number"
-              min={0}
-              max={10}
-              step={0.1}
-              value={form.score}
-              onChange={(e) => setForm({ ...form, score: e.target.value })}
+              value={form.targetDate}
+              onChange={(e) => setForm({ ...form, targetDate: e.target.value })}
+              placeholder="vd: 2028 hoặc 2028-06"
               className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
             />
           </label>
         </div>
+        {form.status === "done" && (
+          <label className="text-sm">
+            <span className="mb-1 block text-[rgb(var(--muted))]">Ngày hoàn thành</span>
+            <input
+              type="date"
+              value={form.completedAt}
+              onChange={(e) => setForm({ ...form, completedAt: e.target.value })}
+              className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+            />
+          </label>
+        )}
         <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Tags (comma-separated, optional)</span>
+          <span className="mb-1 block text-[rgb(var(--muted))]">
+            Cảm nghĩ / câu chuyện khi hoàn thành (tuỳ chọn)
+          </span>
+          <textarea
+            value={form.note}
+            onChange={(e) => setForm({ ...form, note: e.target.value })}
+            rows={4}
+            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+          />
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-[rgb(var(--muted))]">Ảnh minh hoạ (URL, tuỳ chọn)</span>
+          <input
+            value={form.imageUrl}
+            onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+            placeholder="https://..."
+            className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+          />
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-[rgb(var(--muted))]">Link tham khảo (tuỳ chọn)</span>
+          <input
+            value={form.link}
+            onChange={(e) => setForm({ ...form, link: e.target.value })}
+            placeholder="https://..."
+            className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+          />
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-[rgb(var(--muted))]">Tags (cách nhau bởi dấu phẩy, tuỳ chọn)</span>
           <input
             value={form.tags}
             onChange={(e) => setForm({ ...form, tags: e.target.value })}
-            placeholder="ai, free, cli"
+            placeholder="mạo hiểm, du lịch, gia đình"
             className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
           />
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.isPublic}
+            onChange={(e) => setForm({ ...form, isPublic: e.target.checked })}
+          />
+          <span>Hiện công khai trên trang List 100</span>
         </label>
         {error && <p className="text-xs text-red-600">{error}</p>}
       </div>
@@ -243,12 +288,12 @@ export default function AdminList100Page() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold">List 100</h1>
+        <h1 className="font-display text-2xl font-semibold">List 100 — Bucket list</h1>
         <button
           onClick={openCreate}
           className="rounded-lg bg-[rgb(var(--accent))] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
         >
-          + Add item
+          + Thêm mục
         </button>
       </div>
 
@@ -257,10 +302,10 @@ export default function AdminList100Page() {
           <thead>
             <tr className="border-b border-[rgb(var(--border))] text-xs uppercase text-[rgb(var(--muted))]">
               <th className="px-4 py-2">#</th>
-              <th className="px-4 py-2">Name</th>
-              <th className="px-4 py-2">Category</th>
-              <th className="px-4 py-2">Score</th>
-              <th className="px-4 py-2">Status</th>
+              <th className="px-4 py-2">Điều muốn làm</th>
+              <th className="px-4 py-2">Nhóm</th>
+              <th className="px-4 py-2">Trạng thái</th>
+              <th className="px-4 py-2">Công khai</th>
               <th className="px-4 py-2">Actions</th>
             </tr>
           </thead>
@@ -274,17 +319,17 @@ export default function AdminList100Page() {
             ) : items.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-6 text-center text-[rgb(var(--muted))]">
-                  No items yet.
+                  Chưa có mục nào.
                 </td>
               </tr>
             ) : (
               items.map((i) => (
                 <tr key={i.id} className="border-b border-[rgb(var(--border))] last:border-0">
                   <td className="font-data px-4 py-2 text-xs">{i.rank}</td>
-                  <td className="px-4 py-2">{i.name}</td>
+                  <td className="px-4 py-2">{i.title}</td>
                   <td className="px-4 py-2 text-xs">{i.category ?? "—"}</td>
-                  <td className="px-4 py-2 text-xs">{i.score ?? "—"}</td>
-                  <td className="px-4 py-2 text-xs">{i.status}</td>
+                  <td className="px-4 py-2 text-xs">{statusLabel[i.status]}</td>
+                  <td className="px-4 py-2 text-xs">{i.isPublic ? "Có" : "Ẩn"}</td>
                   <td className="px-4 py-2">
                     <div className="flex gap-2">
                       <button
@@ -309,11 +354,11 @@ export default function AdminList100Page() {
       </div>
 
       {creating && (
-        <Modal title="Add List 100 item" onClose={() => setCreating(false)}>
+        <Modal title="Thêm mục List 100" onClose={() => setCreating(false)}>
           <FormFields />
           <button
             onClick={handleCreate}
-            disabled={saving || !form.name || !form.description || !form.url}
+            disabled={saving || !form.title || !form.description}
             className="mt-3 w-fit rounded-lg bg-[rgb(var(--accent))] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             {saving ? "Saving..." : "Create"}
@@ -322,7 +367,7 @@ export default function AdminList100Page() {
       )}
 
       {editing && (
-        <Modal title={`Edit: ${editing.name}`} onClose={() => setEditing(null)}>
+        <Modal title={`Edit: ${editing.title}`} onClose={() => setEditing(null)}>
           <FormFields />
           <button
             onClick={handleUpdate}
@@ -337,7 +382,7 @@ export default function AdminList100Page() {
       {deleteTarget && (
         <Modal title="Delete item" onClose={() => setDeleteTarget(null)}>
           <p className="text-sm">
-            Delete <strong>{deleteTarget.name}</strong>? This cannot be undone.
+            Delete <strong>{deleteTarget.title}</strong>? This cannot be undone.
           </p>
           <div className="mt-4 flex justify-end gap-2">
             <button
