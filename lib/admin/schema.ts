@@ -32,22 +32,24 @@ export const ToolSchema = z.object({
   sortOrder: z.coerce.number().int().nonnegative().default(0),
 });
 
+// Accepts "" | null | undefined and normalizes all of them to null — the
+// client may legitimately send an explicit null (e.g. after clearing a
+// field), which a plain z.string().optional() rejects since optional()
+// only allows undefined, not null.
 const emptyToNull = (v: unknown) => (typeof v === "string" && v.length > 0 ? v : null);
+const nullableString = (max: number) => z.string().trim().max(max).nullable().optional().transform(emptyToNull);
 
 export const List100ItemSchema = z.object({
   rank: z.coerce.number().int().positive().max(100),
   title: z.string().trim().min(1).max(280),
-  note: z.string().trim().max(300).optional().transform(emptyToNull),
-  link: z
-    .string()
-    .trim()
-    .max(500)
-    .optional()
-    .transform(emptyToNull)
-    .refine((v) => v === null || /^https?:\/\//.test(v), "Link must start with http(s)://"),
+  note: nullableString(300),
+  link: nullableString(500).refine(
+    (v) => v === null || /^https?:\/\//.test(v),
+    "Link must start with http(s)://",
+  ),
   isDone: z.coerce.boolean().default(false),
   isPublic: z.coerce.boolean().default(true),
-  suggestedBy: z.string().trim().max(60).optional().transform(emptyToNull),
+  suggestedBy: nullableString(60),
 });
 
 export const BlogPostSchema = z.object({
@@ -60,8 +62,8 @@ export const BlogPostSchema = z.object({
   title: z.string().trim().min(1).max(160),
   excerpt: z.string().trim().max(300),
   content: z.string().min(1).max(50000),
-  coverImageKey: z.string().trim().max(200).optional().transform(emptyToNull),
-  tags: z.string().trim().max(300).optional().transform(emptyToNull),
+  coverImageKey: nullableString(200),
+  tags: nullableString(300),
   status: z.enum(["draft", "published"]),
 });
 

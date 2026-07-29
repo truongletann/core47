@@ -52,6 +52,7 @@ export function BlogEditor({
   const [previewHtml, setPreviewHtml] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!form.content) {
@@ -300,7 +301,10 @@ export function BlogEditor({
                 />
                 <button
                   type="button"
-                  onClick={() => setForm((f) => ({ ...f, coverImageKey: null }))}
+                  onClick={() => {
+                    setForm((f) => ({ ...f, coverImageKey: null }));
+                    if (coverInputRef.current) coverInputRef.current.value = "";
+                  }}
                   className="absolute right-1.5 top-1.5 rounded-md bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/80"
                 >
                   Remove
@@ -308,6 +312,7 @@ export function BlogEditor({
               </div>
             )}
             <input
+              ref={coverInputRef}
               type="file"
               accept="image/png,image/jpeg,image/webp"
               onChange={(e) => {
