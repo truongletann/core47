@@ -78,3 +78,11 @@ export const list100Items = sqliteTable("list100_items", {
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
+
+// NEW — góp ý item cho List 100 gửi từ trang public, admin duyệt thủ công
+export const list100Suggestions = sqliteTable("list100_suggestions", {
+  id: text("id").primaryKey(),
+  name: text("name"), // tên người gợi ý, không bắt buộc
+  content: text("content").notNull(),
+  createdAt: text("created_at").notNull(),
+});

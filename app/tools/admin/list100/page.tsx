@@ -13,6 +13,13 @@ interface List100Item {
   isPublic: boolean;
 }
 
+interface Suggestion {
+  id: string;
+  name: string | null;
+  content: string;
+  createdAt: string;
+}
+
 const emptyForm = {
   rank: "1",
   title: "",
@@ -100,6 +107,8 @@ export default function AdminList100Page() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [approvingSuggestionId, setApprovingSuggestionId] = useState<string | null>(null);
 
   function load() {
     setLoading(true);
@@ -109,15 +118,39 @@ export default function AdminList100Page() {
       .finally(() => setLoading(false));
   }
 
+  function loadSuggestions() {
+    fetch("/api/admin/list100/suggestions", { credentials: "include" })
+      .then((r) => r.json() as Promise<{ data?: { suggestions?: Suggestion[] } }>)
+      .then((json) => setSuggestions(json?.data?.suggestions ?? []));
+  }
+
   useEffect(() => {
     load();
+    loadSuggestions();
   }, []);
 
   function openCreate() {
     const nextRank = items.length > 0 ? Math.max(...items.map((i) => i.rank)) + 1 : 1;
     setForm({ ...emptyForm, rank: String(Math.min(nextRank, 100)) });
+    setApprovingSuggestionId(null);
     setError(null);
     setCreating(true);
+  }
+
+  function openApprove(s: Suggestion) {
+    const nextRank = items.length > 0 ? Math.max(...items.map((i) => i.rank)) + 1 : 1;
+    setForm({ ...emptyForm, rank: String(Math.min(nextRank, 100)), title: s.content.slice(0, 280) });
+    setApprovingSuggestionId(s.id);
+    setError(null);
+    setCreating(true);
+  }
+
+  async function handleRejectSuggestion(id: string) {
+    await fetch(`/api/admin/list100/suggestions/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    loadSuggestions();
   }
 
   function openEdit(i: List100Item) {
@@ -167,6 +200,14 @@ export default function AdminList100Page() {
       if (!json.success) {
         setError(errorMessage(json));
         return;
+      }
+      if (approvingSuggestionId) {
+        await fetch(`/api/admin/list100/suggestions/${approvingSuggestionId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        setApprovingSuggestionId(null);
+        loadSuggestions();
       }
       setCreating(false);
       load();
@@ -223,6 +264,46 @@ export default function AdminList100Page() {
           + Thêm mục
         </button>
       </div>
+
+      {suggestions.length > 0 && (
+        <div className="mb-6 rounded-xl border border-[rgb(var(--border))]">
+          <div className="border-b border-[rgb(var(--border))] px-4 py-2.5">
+            <h2 className="text-sm font-semibold">
+              Góp ý chờ duyệt{" "}
+              <span className="font-data text-xs font-normal text-[rgb(var(--muted))]">
+                ({suggestions.length})
+              </span>
+            </h2>
+          </div>
+          <ul className="divide-y divide-[rgb(var(--border))]">
+            {suggestions.map((s) => (
+              <li key={s.id} className="flex items-start justify-between gap-4 px-4 py-3">
+                <div className="min-w-0 flex-1 text-sm">
+                  <p>{s.content}</p>
+                  <p className="mt-1 text-xs text-[rgb(var(--muted))]">
+                    {s.name ? `Gửi bởi ${s.name}` : "Ẩn danh"} ·{" "}
+                    {new Date(s.createdAt).toLocaleDateString("vi-VN")}
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    onClick={() => openApprove(s)}
+                    className="rounded-md border border-[rgb(var(--border))] px-2 py-1 text-xs hover:bg-[rgb(var(--border)/0.5)]"
+                  >
+                    Duyệt
+                  </button>
+                  <button
+                    onClick={() => handleRejectSuggestion(s.id)}
+                    className="rounded-md border border-[rgb(var(--border))] px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                  >
+                    Từ chối
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded-xl border border-[rgb(var(--border))]">
         <table className="w-full text-left text-sm">
@@ -282,7 +363,13 @@ export default function AdminList100Page() {
       </div>
 
       {creating && (
-        <Modal title="Thêm mục List 100" onClose={() => setCreating(false)}>
+        <Modal
+          title={approvingSuggestionId ? "Duyệt góp ý → Thêm mục List 100" : "Thêm mục List 100"}
+          onClose={() => {
+            setCreating(false);
+            setApprovingSuggestionId(null);
+          }}
+        >
           <List100Form form={form} setForm={setForm} />
           {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
           <button
@@ -290,7 +377,7 @@ export default function AdminList100Page() {
             disabled={saving || !form.title}
             className="mt-3 w-fit rounded-lg bg-[rgb(var(--accent))] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
-            {saving ? "Saving..." : "Create"}
+            {saving ? "Saving..." : approvingSuggestionId ? "Duyệt & tạo mục" : "Create"}
           </button>
         </Modal>
       )}

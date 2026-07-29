@@ -1,6 +1,6 @@
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, desc } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { categories, tools, users, list100Items } from "@/db/schema";
+import { categories, tools, users, list100Items, list100Suggestions } from "@/db/schema";
 import {
   CategorySchema,
   UpdateCategorySchema,
@@ -177,4 +177,14 @@ export async function updateList100Item(id: string, raw: List100ItemInput) {
 export async function deleteList100Item(id: string) {
   const db = await getDb();
   await db.delete(list100Items).where(eq(list100Items.id, id));
+}
+
+export async function listSuggestionsAdmin() {
+  const db = await getDb();
+  return db.select().from(list100Suggestions).orderBy(desc(list100Suggestions.createdAt));
+}
+
+export async function deleteSuggestion(id: string) {
+  const db = await getDb();
+  await db.delete(list100Suggestions).where(eq(list100Suggestions.id, id));
 }

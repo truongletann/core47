@@ -1,7 +1,8 @@
 import { eq, asc } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { list100Items as list100Table } from "@/db/schema";
+import { list100Items as list100Table, list100Suggestions } from "@/db/schema";
 import type { List100Item } from "@/types/list100";
+import type { CreateSuggestionInput } from "./schema";
 
 function toList100Item(r: typeof list100Table.$inferSelect): List100Item {
   return {
@@ -40,4 +41,16 @@ export async function getList100Stats(): Promise<{ total: number; done: number }
     total: rows.length,
     done: rows.filter((r) => r.isDone === 1).length,
   };
+}
+
+export async function createSuggestion(input: CreateSuggestionInput) {
+  const db = await getDb();
+  const record = {
+    id: crypto.randomUUID(),
+    name: input.name,
+    content: input.content,
+    createdAt: new Date().toISOString(),
+  };
+  await db.insert(list100Suggestions).values(record);
+  return record;
 }

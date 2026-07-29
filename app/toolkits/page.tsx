@@ -1,5 +1,6 @@
 import { getPublicList100Items, getList100Stats } from "@/lib/list100/service";
 import { List100ItemRow } from "@/components/list100/List100Item";
+import { SuggestionForm } from "@/components/list100/SuggestionForm";
 
 export default async function ToolkitsPage() {
   const [items, stats] = await Promise.all([getPublicList100Items(), getList100Stats()]);
@@ -31,6 +32,8 @@ export default async function ToolkitsPage() {
           ))}
         </div>
       )}
+
+      <SuggestionForm />
     </main>
   );
 }

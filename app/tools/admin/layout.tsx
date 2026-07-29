@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { getUserBySessionId } from "@/lib/auth/service";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/config";
+import { listSuggestionsAdmin } from "@/lib/admin/service";
 
 const NAV = [
   { href: "/", label: "Overview" },
@@ -20,6 +21,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!user) redirect("https://core47.xyz/login?returnTo=https://admin.core47.xyz/");
   if (!user.isAdmin) redirect("https://core47.xyz/");
 
+  const suggestionCount = (await listSuggestionsAdmin()).length;
+
   return (
     <main className="mx-auto flex max-w-7xl gap-8 px-6 py-12">
       <nav className="w-40 shrink-0">
@@ -31,9 +34,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <li key={item.href}>
               <Link
                 href={item.href}
-                className="block rounded-md px-2 py-1.5 text-sm text-[rgb(var(--muted))] hover:bg-[rgb(var(--border)/0.5)] hover:text-[rgb(var(--fg))]"
+                className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm text-[rgb(var(--muted))] hover:bg-[rgb(var(--border)/0.5)] hover:text-[rgb(var(--fg))]"
               >
-                {item.label}
+                <span>{item.label}</span>
+                {item.href === "/list100" && suggestionCount > 0 && (
+                  <span className="font-data rounded-full bg-[rgb(var(--accent))] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                    {suggestionCount}
+                  </span>
+                )}
               </Link>
             </li>
           ))}

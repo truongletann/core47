@@ -10,3 +10,10 @@ export interface List100Item {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface List100Suggestion {
+  id: string;
+  name: string | null;
+  content: string;
+  createdAt: string;
+}
