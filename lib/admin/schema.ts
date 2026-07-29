@@ -58,7 +58,7 @@ export const BlogPostSchema = z.object({
     .max(120)
     .regex(/^[a-z0-9-]+$/, "Chỉ chữ thường, số và dấu gạch ngang"),
   title: z.string().trim().min(1).max(160),
-  excerpt: z.string().trim().min(1).max(300),
+  excerpt: z.string().trim().max(300),
   content: z.string().min(1).max(50000),
   coverImageKey: z.string().trim().max(200).optional().transform(emptyToNull),
   tags: z.string().trim().max(300).optional().transform(emptyToNull),

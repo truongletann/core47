@@ -48,7 +48,7 @@ export function BlogGrid({ posts, tags }: { posts: BlogPost[]; tags: string[] })
       {filtered.length === 0 ? (
         <p className="text-center text-sm text-[rgb(var(--muted))]">No posts here yet.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex max-w-2xl flex-col gap-6">
           {filtered.map((post) => (
             <BlogCard key={post.id} post={post} />
           ))}

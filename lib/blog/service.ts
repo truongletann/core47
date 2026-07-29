@@ -2,13 +2,14 @@ import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { blogPosts } from "@/db/schema";
 import type { BlogPost } from "@/types/blog";
+import { fallbackExcerpt } from "./excerpt";
 
 function toBlogPost(r: typeof blogPosts.$inferSelect): BlogPost {
   return {
     id: r.id,
     slug: r.slug,
     title: r.title,
-    excerpt: r.excerpt,
+    excerpt: r.excerpt || fallbackExcerpt(r.content),
     content: r.content,
     coverImageUrl: r.coverImageKey ? `/api/blog/cover/${r.coverImageKey}` : null,
     tags: r.tags ? r.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],

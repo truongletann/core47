@@ -218,13 +218,13 @@ export function BlogEditor({
         </div>
 
         <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Mô tả ngắn (excerpt)</span>
+          <span className="mb-1 block text-[rgb(var(--muted))]">Mô tả ngắn (tuỳ chọn)</span>
           <textarea
             value={form.excerpt}
             onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
             rows={2}
             maxLength={300}
-            placeholder="Hiện ở trang danh sách và khi chia sẻ link"
+            placeholder="Hiện khi chia sẻ link — để trống thì tự lấy từ đầu nội dung"
             className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
           />
         </label>
@@ -289,14 +289,23 @@ export function BlogEditor({
       <div className="flex w-full shrink-0 flex-col gap-4 lg:w-72">
         <div className="rounded-xl border border-[rgb(var(--border))] p-4">
           <label className="text-sm">
-            <span className="mb-1 block text-[rgb(var(--muted))]">Ảnh cover</span>
+            <span className="mb-1 block text-[rgb(var(--muted))]">Ảnh cover (tuỳ chọn)</span>
             {form.coverImageKey && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={`/api/blog/cover/${form.coverImageKey}`}
-                alt=""
-                className="mb-2 aspect-video w-full rounded-md object-cover"
-              />
+              <div className="relative mb-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/api/blog/cover/${form.coverImageKey}`}
+                  alt=""
+                  className="aspect-video w-full rounded-md object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, coverImageKey: null }))}
+                  className="absolute right-1.5 top-1.5 rounded-md bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/80"
+                >
+                  Xoá ảnh
+                </button>
+              </div>
             )}
             <input
               type="file"
@@ -342,7 +351,7 @@ export function BlogEditor({
 
         <button
           onClick={handleSave}
-          disabled={saving || !form.title || !form.slug || !form.excerpt || !form.content}
+          disabled={saving || !form.title || !form.slug || !form.content}
           className="rounded-lg bg-[rgb(var(--accent))] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
           {saving ? "Saving..." : mode === "create" ? "Create post" : "Save changes"}
