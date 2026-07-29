@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// Query contract for GET /toolkits (public) — no filters needed yet,
+// Query contract for GET /list100 (public) — no filters needed yet,
 // left as a placeholder for search if it's ever needed.
 export const List100ListQuerySchema = z.object({
   search: z.string().max(80).optional(),
