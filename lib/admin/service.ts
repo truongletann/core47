@@ -138,6 +138,7 @@ export async function createList100Item(input: List100ItemInput) {
     isDone: input.isDone ? 1 : 0,
     completedAt: input.isDone ? now.slice(0, 10) : null,
     isPublic: input.isPublic ? 1 : 0,
+    suggestedBy: input.suggestedBy,
     createdAt: now,
     updatedAt: now,
   };
@@ -166,6 +167,7 @@ export async function updateList100Item(id: string, input: List100ItemInput) {
         ? (existing?.completedAt ?? new Date().toISOString().slice(0, 10))
         : null,
       isPublic: input.isPublic ? 1 : 0,
+      suggestedBy: input.suggestedBy,
       updatedAt: new Date().toISOString(),
     })
     .where(eq(list100Items.id, id));
@@ -174,6 +176,20 @@ export async function updateList100Item(id: string, input: List100ItemInput) {
 export async function deleteList100Item(id: string) {
   const db = await getDb();
   await db.delete(list100Items).where(eq(list100Items.id, id));
+}
+
+export async function swapList100Rank(idA: string, idB: string) {
+  const db = await getDb();
+  const [a, b] = await Promise.all([
+    db.select({ rank: list100Items.rank }).from(list100Items).where(eq(list100Items.id, idA)).get(),
+    db.select({ rank: list100Items.rank }).from(list100Items).where(eq(list100Items.id, idB)).get(),
+  ]);
+  if (!a || !b) throw new Error("ITEM_NOT_FOUND");
+
+  await Promise.all([
+    db.update(list100Items).set({ rank: b.rank }).where(eq(list100Items.id, idA)),
+    db.update(list100Items).set({ rank: a.rank }).where(eq(list100Items.id, idB)),
+  ]);
 }
 
 export async function listSuggestionsAdmin() {

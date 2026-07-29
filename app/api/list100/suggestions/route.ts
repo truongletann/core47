@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CreateSuggestionSchema } from "@/lib/list100/schema";
-import { createSuggestion } from "@/lib/list100/service";
+import { createSuggestions } from "@/lib/list100/service";
 
 export async function POST(req: NextRequest) {
   let body: unknown;
@@ -23,6 +23,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "INVALID_INPUT" }, { status: 400 });
   }
 
-  await createSuggestion(parseResult.data);
+  await createSuggestions(parseResult.data);
   return NextResponse.json({ success: true }, { status: 201 });
 }

@@ -8,14 +8,20 @@ export function SuggestionForm() {
   const [website, setWebsite] = useState(""); // honeypot, phải luôn để trống
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
 
+  const items = content
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (items.length === 0) return;
     setStatus("saving");
     try {
       const res = await fetch("/api/list100/suggestions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, content, website }),
+        body: JSON.stringify({ name, items, website }),
       });
       const json = (await res.json()) as { success: boolean };
       if (!json.success) {
@@ -43,9 +49,10 @@ export function SuggestionForm() {
       onSubmit={handleSubmit}
       className="mt-10 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-5"
     >
-      <h2 className="text-sm font-semibold">Got an idea for the list?</h2>
+      <h2 className="text-sm font-semibold">Got ideas for the list?</h2>
       <p className="mt-1 text-xs text-[rgb(var(--muted))]">
-        Suggest something you think I should add. I'll review it before it goes up.
+        Suggest things you think I should add — one per line if you've got a few. I'll review
+        each before it goes up.
       </p>
 
       <input
@@ -69,10 +76,10 @@ export function SuggestionForm() {
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          rows={2}
-          maxLength={500}
+          rows={4}
+          maxLength={4000}
           required
-          placeholder="e.g. Watch the northern lights in Iceland"
+          placeholder={"e.g. Watch the northern lights in Iceland\nLearn to surf\nRun a marathon"}
           className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
         />
         {status === "error" && (
@@ -80,10 +87,14 @@ export function SuggestionForm() {
         )}
         <button
           type="submit"
-          disabled={status === "saving" || content.trim().length < 3}
+          disabled={status === "saving" || items.length === 0}
           className="w-fit rounded-lg bg-[rgb(var(--accent))] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
-          {status === "saving" ? "Sending..." : "Send suggestion"}
+          {status === "saving"
+            ? "Sending..."
+            : items.length > 1
+              ? `Send ${items.length} suggestions`
+              : "Send suggestion"}
         </button>
       </div>
     </form>

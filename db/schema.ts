@@ -75,6 +75,7 @@ export const list100Items = sqliteTable("list100_items", {
   isDone: integer("is_done").notNull().default(0),
   completedAt: text("completed_at"), // tự set khi isDone chuyển sang true
   isPublic: integer("is_public").notNull().default(1), // ẩn khỏi trang public nếu = 0
+  suggestedBy: text("suggested_by"), // tên người gợi ý (nếu tạo từ duyệt suggestion), chỉ admin thấy
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

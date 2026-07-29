@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ArrowUp, ArrowDown } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 
 interface List100Item {
@@ -11,6 +12,7 @@ interface List100Item {
   link: string | null;
   isDone: boolean;
   isPublic: boolean;
+  suggestedBy: string | null;
 }
 
 interface Suggestion {
@@ -27,6 +29,7 @@ const emptyForm = {
   link: "",
   isDone: false,
   isPublic: true,
+  suggestedBy: "",
 };
 
 type FormState = typeof emptyForm;
@@ -58,12 +61,18 @@ function List100Form({ form, setForm }: { form: FormState; setForm: (f: FormStat
           />
         </label>
       </div>
+      {form.suggestedBy && (
+        <p className="text-xs text-[rgb(var(--muted))]">
+          Gợi ý bởi <strong>{form.suggestedBy}</strong> — chỉ hiện trong admin.
+        </p>
+      )}
       <label className="text-sm">
         <span className="mb-1 block text-[rgb(var(--muted))]">Ghi chú (tuỳ chọn, hiện trong ngoặc)</span>
         <input
           value={form.note}
           onChange={(e) => setForm({ ...form, note: e.target.value })}
           placeholder="vd: đã làm ở 3 nước: VN, Ấn Độ, Mỹ"
+          maxLength={300}
           className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
         />
       </label>
@@ -73,6 +82,7 @@ function List100Form({ form, setForm }: { form: FormState; setForm: (f: FormStat
           value={form.link}
           onChange={(e) => setForm({ ...form, link: e.target.value })}
           placeholder="https://..."
+          maxLength={500}
           className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
         />
       </label>
@@ -139,7 +149,12 @@ export default function AdminList100Page() {
 
   function openApprove(s: Suggestion) {
     const nextRank = items.length > 0 ? Math.max(...items.map((i) => i.rank)) + 1 : 1;
-    setForm({ ...emptyForm, rank: String(Math.min(nextRank, 100)), title: s.content.slice(0, 280) });
+    setForm({
+      ...emptyForm,
+      rank: String(Math.min(nextRank, 100)),
+      title: s.content.slice(0, 280),
+      suggestedBy: s.name ?? "",
+    });
     setApprovingSuggestionId(s.id);
     setError(null);
     setCreating(true);
@@ -161,9 +176,22 @@ export default function AdminList100Page() {
       link: i.link ?? "",
       isDone: i.isDone,
       isPublic: i.isPublic,
+      suggestedBy: i.suggestedBy ?? "",
     });
     setError(null);
     setEditing(i);
+  }
+
+  async function moveRank(index: number, direction: -1 | 1) {
+    const otherIndex = index + direction;
+    if (otherIndex < 0 || otherIndex >= items.length) return;
+    await fetch("/api/admin/list100/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idA: items[index].id, idB: items[otherIndex].id }),
+      credentials: "include",
+    });
+    load();
   }
 
   const fieldLabel: Record<string, string> = {
@@ -339,12 +367,39 @@ export default function AdminList100Page() {
                 </td>
               </tr>
             ) : (
-              items.map((i) => (
+              items.map((i, index) => (
                 <tr key={i.id} className="border-b border-[rgb(var(--border))] last:border-0">
-                  <td className="font-data px-4 py-2 text-xs">{i.rank}</td>
+                  <td className="px-4 py-2">
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex flex-col">
+                        <button
+                          onClick={() => moveRank(index, -1)}
+                          disabled={index === 0}
+                          aria-label="Đưa lên"
+                          className="text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] disabled:opacity-25"
+                        >
+                          <ArrowUp size={12} />
+                        </button>
+                        <button
+                          onClick={() => moveRank(index, 1)}
+                          disabled={index === items.length - 1}
+                          aria-label="Đưa xuống"
+                          className="text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] disabled:opacity-25"
+                        >
+                          <ArrowDown size={12} />
+                        </button>
+                      </div>
+                      <span className="font-data text-xs">{i.rank}</span>
+                    </div>
+                  </td>
                   <td className="px-4 py-2">
                     {i.title}
                     {i.note && <span className="text-[rgb(var(--muted))]"> ({i.note})</span>}
+                    {i.suggestedBy && (
+                      <span className="mt-0.5 block text-[10px] text-[rgb(var(--muted))]">
+                        Gợi ý bởi {i.suggestedBy}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-2 text-xs">{i.isDone ? "✓" : "✗"}</td>
                   <td className="px-4 py-2 text-xs">{i.isPublic ? "Có" : "Ẩn"}</td>

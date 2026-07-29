@@ -43,14 +43,15 @@ export async function getList100Stats(): Promise<{ total: number; done: number }
   };
 }
 
-export async function createSuggestion(input: CreateSuggestionInput) {
+export async function createSuggestions(input: CreateSuggestionInput) {
   const db = await getDb();
-  const record = {
+  const now = new Date().toISOString();
+  const records = input.items.map((content) => ({
     id: crypto.randomUUID(),
     name: input.name,
-    content: input.content,
-    createdAt: new Date().toISOString(),
-  };
-  await db.insert(list100Suggestions).values(record);
-  return record;
+    content,
+    createdAt: now,
+  }));
+  await db.insert(list100Suggestions).values(records);
+  return records;
 }

@@ -36,16 +36,18 @@ const emptyToNull = (v: unknown) => (typeof v === "string" && v.length > 0 ? v :
 
 export const List100ItemSchema = z.object({
   rank: z.coerce.number().int().positive().max(100),
-  title: z.string().min(1).max(280),
-  note: z.string().max(300).optional().transform(emptyToNull),
+  title: z.string().trim().min(1).max(280),
+  note: z.string().trim().max(300).optional().transform(emptyToNull),
   link: z
     .string()
+    .trim()
     .max(500)
     .optional()
     .transform(emptyToNull)
     .refine((v) => v === null || /^https?:\/\//.test(v), "Link phải bắt đầu bằng http(s)://"),
   isDone: z.coerce.boolean().default(false),
   isPublic: z.coerce.boolean().default(true),
+  suggestedBy: z.string().trim().max(60).optional().transform(emptyToNull),
 });
 
 export type CategoryInput = z.infer<typeof CategorySchema>;
