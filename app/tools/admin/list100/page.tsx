@@ -45,6 +45,8 @@ function List100Form({ form, setForm }: { form: FormState; setForm: (f: FormStat
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             placeholder="vd: Học tiếng Tây Ban Nha"
+            autoComplete="off"
+            maxLength={280}
             className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
           />
         </label>
@@ -131,8 +133,19 @@ export default function AdminList100Page() {
     setEditing(i);
   }
 
-  function errorMessage(code?: string) {
-    if (code === "INVALID_INPUT") return "Vui lòng kiểm tra lại thông tin (link phải bắt đầu bằng http/https).";
+  const fieldLabel: Record<string, string> = {
+    rank: "Số thứ tự",
+    title: "Điều muốn làm",
+    note: "Ghi chú",
+    link: "Link tham khảo",
+  };
+
+  function errorMessage(json: { error?: string; issues?: { path: string; message: string }[] }) {
+    if (json.error === "INVALID_INPUT" && json.issues?.length) {
+      return json.issues
+        .map((i) => `${fieldLabel[i.path] ?? i.path}: ${i.message}`)
+        .join(" · ");
+    }
     return "Đã có lỗi xảy ra.";
   }
 
@@ -146,9 +159,13 @@ export default function AdminList100Page() {
         body: JSON.stringify(form),
         credentials: "include",
       });
-      const json = (await res.json()) as { success: boolean; error?: string };
+      const json = (await res.json()) as {
+        success: boolean;
+        error?: string;
+        issues?: { path: string; message: string }[];
+      };
       if (!json.success) {
-        setError(errorMessage(json.error));
+        setError(errorMessage(json));
         return;
       }
       setCreating(false);
@@ -169,9 +186,13 @@ export default function AdminList100Page() {
         body: JSON.stringify(form),
         credentials: "include",
       });
-      const json = (await res.json()) as { success: boolean; error?: string };
+      const json = (await res.json()) as {
+        success: boolean;
+        error?: string;
+        issues?: { path: string; message: string }[];
+      };
       if (!json.success) {
-        setError(errorMessage(json.error));
+        setError(errorMessage(json));
         return;
       }
       setEditing(null);

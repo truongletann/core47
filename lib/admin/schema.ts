@@ -36,7 +36,7 @@ const emptyToNull = (v: unknown) => (typeof v === "string" && v.length > 0 ? v :
 
 export const List100ItemSchema = z.object({
   rank: z.coerce.number().int().positive().max(100),
-  title: z.string().min(1).max(120),
+  title: z.string().min(1).max(280),
   note: z.string().max(300).optional().transform(emptyToNull),
   link: z
     .string()

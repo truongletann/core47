@@ -24,7 +24,11 @@ export async function POST(req: NextRequest) {
 
   const parseResult = List100ItemSchema.safeParse(body);
   if (!parseResult.success) {
-    return NextResponse.json({ success: false, error: "INVALID_INPUT" }, { status: 400 });
+    const issues = parseResult.error.issues.map((i) => ({
+      path: i.path.join("."),
+      message: i.message,
+    }));
+    return NextResponse.json({ success: false, error: "INVALID_INPUT", issues }, { status: 400 });
   }
 
   try {
