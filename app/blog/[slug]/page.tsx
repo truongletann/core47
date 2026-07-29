@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { marked } from "marked";
 import { getPublishedPostBySlug } from "@/lib/blog/service";
+import { renderMarkdown } from "@/lib/blog/markdown";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -27,7 +27,7 @@ export default async function BlogPostPage({
   const post = await getPublishedPostBySlug(slug);
   if (!post) notFound();
 
-  const html = await marked.parse(post.content);
+  const html = renderMarkdown(post.content);
   const date = post.publishedAt
     ? new Date(post.publishedAt).toLocaleDateString("en-US", {
         month: "long",

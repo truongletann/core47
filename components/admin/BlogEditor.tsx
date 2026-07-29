@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { marked } from "marked";
+import { useEffect, useRef, useState } from "react";
 
 interface EditorInitial {
   slug: string;
@@ -47,9 +46,38 @@ export function BlogEditor({
   const [form, setForm] = useState<EditorInitial>(initial ?? emptyInitial);
   const [slugTouched, setSlugTouched] = useState(mode === "edit");
   const [uploading, setUploading] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
+  const [tab, setTab] = useState<"write" | "preview">("write");
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (tab !== "preview") return;
+    let cancelled = false;
+    setPreviewLoading(true);
+    const timer = setTimeout(() => {
+      fetch("/api/admin/blog/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: form.content }),
+        credentials: "include",
+      })
+        .then((r) => r.json() as Promise<{ success: boolean; data?: { html: string } }>)
+        .then((json) => {
+          if (!cancelled && json.success && json.data) setPreviewHtml(json.data.html);
+        })
+        .finally(() => {
+          if (!cancelled) setPreviewLoading(false);
+        });
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [tab, form.content]);
 
   function onTitleChange(title: string) {
     setForm((f) => ({ ...f, title, slug: slugTouched ? f.slug : slugify(title) }));
@@ -74,6 +102,39 @@ export function BlogEditor({
       setForm((f) => ({ ...f, coverImageKey: json.data!.key }));
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleImportFile(file: File) {
+    setImporting(true);
+    setError(null);
+    try {
+      const raw = await file.text();
+      const res = await fetch("/api/admin/blog/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ raw }),
+        credentials: "include",
+      });
+      const json = (await res.json()) as {
+        success: boolean;
+        data?: { title: string | null; tags: string | null; content: string };
+      };
+      if (!json.success || !json.data) {
+        setError("Đọc file thất bại.");
+        return;
+      }
+      const { title, tags, content } = json.data;
+      setForm((f) => ({
+        ...f,
+        title: f.title || title || f.title,
+        slug: f.title || title ? (slugTouched ? f.slug : slugify(title || f.title)) : f.slug,
+        tags: f.tags || tags || f.tags,
+        content,
+      }));
+      setTab("write");
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -128,7 +189,7 @@ export function BlogEditor({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]">
       <div className="flex flex-col gap-4">
         <label className="text-sm">
           <span className="mb-1 block text-[rgb(var(--muted))]">Tiêu đề</span>
@@ -167,30 +228,79 @@ export function BlogEditor({
 
         <div className="text-sm">
           <div className="mb-1 flex items-center justify-between">
-            <span className="text-[rgb(var(--muted))]">Nội dung (Markdown)</span>
-            <button
-              type="button"
-              onClick={() => setShowPreview((v) => !v)}
-              className="text-xs text-[rgb(var(--accent))] hover:underline"
-            >
-              {showPreview ? "Ẩn preview" : "Xem preview"}
-            </button>
+            <div className="flex gap-1 rounded-md border border-[rgb(var(--border))] p-0.5">
+              <button
+                type="button"
+                onClick={() => setTab("write")}
+                className={`rounded px-2.5 py-1 text-xs ${
+                  tab === "write"
+                    ? "bg-[rgb(var(--accent))] text-white"
+                    : "text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+                }`}
+              >
+                Soạn thảo
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab("preview")}
+                className={`rounded px-2.5 py-1 text-xs ${
+                  tab === "preview"
+                    ? "bg-[rgb(var(--accent))] text-white"
+                    : "text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+                }`}
+              >
+                Xem trước
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              {importing && <span className="text-xs text-[rgb(var(--muted))]">Đang đọc file...</span>}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={importing}
+                className="text-xs text-[rgb(var(--accent))] hover:underline disabled:opacity-50"
+              >
+                Import file .md
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".md,.markdown,text/markdown,text/plain"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImportFile(file);
+                  e.target.value = "";
+                }}
+                className="hidden"
+              />
+            </div>
           </div>
-          <div className={showPreview ? "grid grid-cols-2 gap-3" : ""}>
+
+          {tab === "write" ? (
             <textarea
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
-              rows={20}
-              placeholder="Viết nội dung bằng Markdown..."
-              className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+              rows={30}
+              placeholder="Viết nội dung bằng Markdown, hoặc bấm 'Import file .md' để đưa file có sẵn vào..."
+              className="font-data w-full resize-y rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
             />
-            {showPreview && (
-              <div
-                className="prose prose-sm dark:prose-invert max-w-none overflow-y-auto rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2"
-                dangerouslySetInnerHTML={{ __html: marked.parse(form.content || "") as string }}
-              />
-            )}
-          </div>
+          ) : (
+            <div className="relative min-h-[600px] rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-4 py-3">
+              {previewLoading && (
+                <span className="absolute right-3 top-2 text-xs text-[rgb(var(--muted))]">
+                  Đang cập nhật...
+                </span>
+              )}
+              {form.content ? (
+                <div
+                  className="prose dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+                />
+              ) : (
+                <p className="text-sm opacity-50">Chưa có nội dung.</p>
+              )}
+            </div>
+          )}
         </div>
 
         {error && <p className="text-xs text-red-600">{error}</p>}

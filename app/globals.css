@@ -79,3 +79,23 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .led-dot::after, .radar-sweep { animation: none; }
 }
+
+/* Callout box cho cú pháp container kiểu VitePress/Docusaurus (:::warning...:::)
+   trong nội dung blog markdown. */
+.md-callout {
+  margin: 1.25rem 0;
+  border-radius: 0.5rem;
+  border-left: 4px solid rgb(var(--border));
+  background: rgb(var(--card));
+  padding: 0.25rem 1rem;
+}
+.md-callout-title {
+  margin: 0.75rem 0 0.25rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.md-callout-warning { border-left-color: #f59e0b; background: rgb(245 158 11 / 0.08); }
+.md-callout-danger { border-left-color: #ef4444; background: rgb(239 68 68 / 0.08); }
+.md-callout-info { border-left-color: #3b82f6; background: rgb(59 130 246 / 0.08); }
+.md-callout-success { border-left-color: #10b981; background: rgb(16 185 129 / 0.08); }
+.md-callout-tip { border-left-color: rgb(var(--accent)); background: rgb(var(--accent) / 0.08); }
