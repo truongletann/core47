@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UserMenu } from "@/components/ui/UserMenu";
+import { cn } from "@/lib/utils/cn";
 
 const ROOT_DOMAIN = "core47.xyz";
 
-export function Navbar() {
+export function Navbar({ isAdminArea = false }: { isAdminArea?: boolean }) {
   const [homeUrl, setHomeUrl] = useState("/");
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -31,7 +32,12 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-[rgb(var(--border))] bg-[rgb(var(--bg)/0.8)] backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
+      <div
+        className={cn(
+          "mx-auto flex h-14 items-center justify-between px-6",
+          isAdminArea ? "max-w-none" : "max-w-7xl",
+        )}
+      >
         <a href={homeUrl}>
           <LogoMark />
         </a>

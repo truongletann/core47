@@ -25,7 +25,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const suggestionCount = (await listSuggestionsAdmin()).length;
 
   return (
-    <main className="mx-auto flex max-w-7xl gap-8 px-6 py-12">
+    <main className="flex w-full gap-8 px-6 py-8">
       <nav className="w-40 shrink-0">
         <p className="mb-2 px-2 text-xs font-medium uppercase tracking-wide text-[rgb(var(--muted))]">
           Admin CMS
