@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { BlogPost } from "@/types/blog";
 
-export function BlogCard({ post }: { post: BlogPost }) {
+export function BlogListItem({ post }: { post: BlogPost }) {
   const date = post.publishedAt
     ? new Date(post.publishedAt).toLocaleDateString("en-US", {
         month: "short",
