@@ -38,34 +38,32 @@ export default async function BlogPostPage({
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-16">
-      <div className="mx-auto max-w-2xl">
-        {post.coverImageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={post.coverImageUrl}
-            alt=""
-            className="mb-8 aspect-video w-full rounded-xl object-cover"
-          />
-        )}
-
-        <h1 className="font-display text-3xl font-semibold">{post.title}</h1>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {date && <span className="font-data text-xs text-[rgb(var(--muted))]">{date}</span>}
-          {post.tags.map((tag) => (
-            <span
-              key={tag}
-              className="font-data rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-1.5 py-0.5 text-[11px] text-[rgb(var(--muted))]"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        <div
-          className="prose dark:prose-invert mt-8 max-w-none"
-          dangerouslySetInnerHTML={{ __html: html }}
+      {post.coverImageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={post.coverImageUrl}
+          alt=""
+          className="mb-8 aspect-video w-full rounded-xl object-cover"
         />
+      )}
+
+      <h1 className="font-display text-3xl font-semibold">{post.title}</h1>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {date && <span className="font-data text-xs text-[rgb(var(--muted))]">{date}</span>}
+        {post.tags.map((tag) => (
+          <span
+            key={tag}
+            className="font-data rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-1.5 py-0.5 text-[11px] text-[rgb(var(--muted))]"
+          >
+            {tag}
+          </span>
+        ))}
       </div>
+
+      <div
+        className="prose dark:prose-invert mt-8 max-w-none"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
     </main>
   );
 }
