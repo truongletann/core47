@@ -49,13 +49,15 @@ export function BlogEditor({
   const [importing, setImporting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<"write" | "preview">("write");
   const [previewHtml, setPreviewHtml] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (tab !== "preview") return;
+    if (!form.content) {
+      setPreviewHtml("");
+      return;
+    }
     let cancelled = false;
     setPreviewLoading(true);
     const timer = setTimeout(() => {
@@ -77,7 +79,7 @@ export function BlogEditor({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [tab, form.content]);
+  }, [form.content]);
 
   function onTitleChange(title: string) {
     setForm((f) => ({ ...f, title, slug: slugTouched ? f.slug : slugify(title) }));
@@ -132,7 +134,6 @@ export function BlogEditor({
         tags: f.tags || tags || f.tags,
         content,
       }));
-      setTab("write");
     } finally {
       setImporting(false);
     }
@@ -189,30 +190,32 @@ export function BlogEditor({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]">
-      <div className="flex flex-col gap-4">
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Tiêu đề</span>
-          <input
-            value={form.title}
-            onChange={(e) => onTitleChange(e.target.value)}
-            placeholder="Tiêu đề bài viết"
-            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
+    <div className="flex flex-col gap-6 lg:flex-row">
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label className="text-sm">
+            <span className="mb-1 block text-[rgb(var(--muted))]">Tiêu đề</span>
+            <input
+              value={form.title}
+              onChange={(e) => onTitleChange(e.target.value)}
+              placeholder="Tiêu đề bài viết"
+              className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+            />
+          </label>
 
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Slug</span>
-          <input
-            value={form.slug}
-            onChange={(e) => {
-              setSlugTouched(true);
-              setForm({ ...form, slug: e.target.value });
-            }}
-            placeholder="tieu-de-bai-viet"
-            className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-[rgb(var(--muted))]">Slug</span>
+            <input
+              value={form.slug}
+              onChange={(e) => {
+                setSlugTouched(true);
+                setForm({ ...form, slug: e.target.value });
+              }}
+              placeholder="tieu-de-bai-viet"
+              className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+            />
+          </label>
+        </div>
 
         <label className="text-sm">
           <span className="mb-1 block text-[rgb(var(--muted))]">Mô tả ngắn (excerpt)</span>
@@ -228,29 +231,12 @@ export function BlogEditor({
 
         <div className="text-sm">
           <div className="mb-1 flex items-center justify-between">
-            <div className="flex gap-1 rounded-md border border-[rgb(var(--border))] p-0.5">
-              <button
-                type="button"
-                onClick={() => setTab("write")}
-                className={`rounded px-2.5 py-1 text-xs ${
-                  tab === "write"
-                    ? "bg-[rgb(var(--accent))] text-white"
-                    : "text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
-                }`}
-              >
-                Soạn thảo
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab("preview")}
-                className={`rounded px-2.5 py-1 text-xs ${
-                  tab === "preview"
-                    ? "bg-[rgb(var(--accent))] text-white"
-                    : "text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
-                }`}
-              >
+            <div className="flex gap-6">
+              <span className="text-[rgb(var(--muted))]">Soạn thảo</span>
+              <span className="flex items-center gap-2 text-[rgb(var(--muted))]">
                 Xem trước
-              </button>
+                {previewLoading && <span className="text-[10px]">(đang cập nhật...)</span>}
+              </span>
             </div>
             <div className="flex items-center gap-3">
               {importing && <span className="text-xs text-[rgb(var(--muted))]">Đang đọc file...</span>}
@@ -276,21 +262,15 @@ export function BlogEditor({
             </div>
           </div>
 
-          {tab === "write" ? (
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <textarea
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
-              rows={30}
+              rows={34}
               placeholder="Viết nội dung bằng Markdown, hoặc bấm 'Import file .md' để đưa file có sẵn vào..."
-              className="font-data w-full resize-y rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+              className="font-data min-h-[700px] w-full resize-y rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
             />
-          ) : (
-            <div className="relative min-h-[600px] rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-4 py-3">
-              {previewLoading && (
-                <span className="absolute right-3 top-2 text-xs text-[rgb(var(--muted))]">
-                  Đang cập nhật...
-                </span>
-              )}
+            <div className="min-h-[700px] overflow-y-auto rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-4 py-3">
               {form.content ? (
                 <div
                   className="prose dark:prose-invert max-w-none"
@@ -300,13 +280,13 @@ export function BlogEditor({
                 <p className="text-sm opacity-50">Chưa có nội dung.</p>
               )}
             </div>
-          )}
+          </div>
         </div>
 
         {error && <p className="text-xs text-red-600">{error}</p>}
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex w-full shrink-0 flex-col gap-4 lg:w-72">
         <div className="rounded-xl border border-[rgb(var(--border))] p-4">
           <label className="text-sm">
             <span className="mb-1 block text-[rgb(var(--muted))]">Ảnh cover</span>

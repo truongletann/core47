@@ -99,3 +99,34 @@ body {
 .md-callout-info { border-left-color: #3b82f6; background: rgb(59 130 246 / 0.08); }
 .md-callout-success { border-left-color: #10b981; background: rgb(16 185 129 / 0.08); }
 .md-callout-tip { border-left-color: rgb(var(--accent)); background: rgb(var(--accent) / 0.08); }
+
+/* Mục lục tự sinh từ shortcode [TOC] trong nội dung blog markdown. */
+.md-toc {
+  margin: 1.25rem 0;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(var(--border));
+  background: rgb(var(--card));
+  padding: 0.75rem 1rem;
+}
+.md-toc-title {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: rgb(var(--muted));
+}
+.md-toc ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.md-toc a {
+  color: rgb(var(--accent));
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+.md-toc a:hover { text-decoration: underline; }
