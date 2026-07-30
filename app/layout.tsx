@@ -13,14 +13,23 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const host = (await headers()).get("host") ?? "";
   const isAdminArea = host.startsWith("admin.") || host === "admin";
+  // Focus is a full-screen immersive experience (like a focus-room app) —
+  // site chrome would eat into the viewport and break the effect.
+  const isFocusArea = host.startsWith("focus.") || host === "focus";
 
   return (
     <html lang="en" suppressHydrationWarning className="h-full">
       <body className="flex min-h-screen flex-col">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          <Navbar isAdminArea={isAdminArea} />
-          <div className="flex-1">{children}</div>
-          <Footer isAdminArea={isAdminArea} />
+          {isFocusArea ? (
+            children
+          ) : (
+            <>
+              <Navbar isAdminArea={isAdminArea} />
+              <div className="flex-1">{children}</div>
+              <Footer isAdminArea={isAdminArea} />
+            </>
+          )}
         </ThemeProvider>
       </body>
     </html>

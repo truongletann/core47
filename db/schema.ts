@@ -218,6 +218,110 @@ export const priceSettings = sqliteTable("price_settings", {
   updatedAt: text("updated_at").notNull(),
 });
 
+// NEW — Focus: Pomodoro tasks. Anonymous data lives only in localStorage
+// and never reaches these tables until the user logs in and imports it.
+export const focusTasks = sqliteTable("focus_tasks", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  title: text("title").notNull(),
+  estimatedPomodoros: integer("estimated_pomodoros").notNull().default(1),
+  completedPomodoros: integer("completed_pomodoros").notNull().default(0),
+  isDone: integer("is_done").notNull().default(0),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: text("created_at").notNull(),
+});
+
+// NEW — Focus: a completed Pomodoro work/break session, logged for stats.
+export const focusSessions = sqliteTable("focus_sessions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  taskId: text("task_id"),
+  type: text("type", { enum: ["work", "break"] }).notNull(),
+  durationMinutes: integer("duration_minutes").notNull(),
+  completedAt: text("completed_at").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+// NEW — Focus: user-defined habits (separate from Pomodoro tasks)
+export const focusHabits = sqliteTable("focus_habits", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: text("created_at").notNull(),
+});
+
+// NEW — Focus: one check-in per habit per day
+export const focusHabitLogs = sqliteTable("focus_habit_logs", {
+  id: text("id").primaryKey(),
+  habitId: text("habit_id").notNull(),
+  logDate: text("log_date").notNull(), // "YYYY-MM-DD"
+  createdAt: text("created_at").notNull(),
+});
+
+// NEW — Focus: saved sound+scene+duration combos for one-tap reuse
+export const focusPresets = sqliteTable("focus_presets", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  soundIds: text("sound_ids").notNull(), // JSON array of {id, volume}
+  sceneKey: text("scene_key").notNull(),
+  workMinutes: integer("work_minutes").notNull().default(25),
+  breakMinutes: integer("break_minutes").notNull().default(5),
+  createdAt: text("created_at").notNull(),
+});
+
+// NEW — Focus: singleton row of default timer durations, admin-editable
+export const focusSettings = sqliteTable("focus_settings", {
+  id: text("id").primaryKey(), // fixed to "default", single row
+  workMinutes: integer("work_minutes").notNull().default(25),
+  breakMinutes: integer("break_minutes").notNull().default(5),
+  longBreakMinutes: integer("long_break_minutes").notNull().default(15),
+  sessionsBeforeLongBreak: integer("sessions_before_long_break").notNull().default(4),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// NEW — Focus: ambient sound library, admin-managed. "bundled" tracks ship
+// as static files in public/sounds/, "r2" tracks are uploaded to the
+// FOCUS_SOUNDS bucket, "external" tracks point straight at a CDN URL.
+export const focusSoundTracks = sqliteTable("focus_sound_tracks", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  category: text("category").notNull(), // free text, e.g. "rain", "thunder", "nature"
+  source: text("source", { enum: ["bundled", "r2", "external"] }).notNull(),
+  urlOrKey: text("url_or_key").notNull(), // public path, R2 key, or external URL
+  isEnabled: integer("is_enabled").notNull().default(1),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: text("created_at").notNull(),
+});
+
+// NEW — Focus: curated Spotify playlist embeds, admin-managed
+export const focusPlaylists = sqliteTable("focus_playlists", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  spotifyEmbedUrl: text("spotify_embed_url").notNull(),
+  category: text("category"), // free text, e.g. "lofi", "jazz", "chill"
+  isEnabled: integer("is_enabled").notNull().default(1),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: text("created_at").notNull(),
+  // Cover art fetched lazily from Spotify's public oEmbed endpoint (official
+  // metadata meant for embedding, not scraped) and cached here.
+  thumbnailUrl: text("thumbnail_url"),
+});
+
+// NEW — Focus: admin-uploaded "live background" image/video per scene,
+// overriding the procedural canvas animation when set. Shares the
+// FOCUS_SOUNDS R2 bucket under a backgrounds/ prefix (same sharing
+// convention blog covers use with the AVATARS bucket).
+export const focusSceneBackgrounds = sqliteTable("focus_scene_backgrounds", {
+  id: text("id").primaryKey(),
+  sceneKey: text("scene_key").notNull().unique(),
+  mediaType: text("media_type", { enum: ["image", "video"] }).notNull(),
+  source: text("source", { enum: ["r2", "external"] }).notNull(),
+  urlOrKey: text("url_or_key").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
 // NEW — Market: World prices (OANDA + Binance instruments) shown on
 // /market/prices. Admin manages which symbols are tracked ("+ Add symbol");
 // the fetch job writes the latest quote directly onto each row (small

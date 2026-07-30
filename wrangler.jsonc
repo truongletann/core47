@@ -22,6 +22,10 @@
   {
     "binding": "AVATARS",
     "bucket_name": "core47-avatars"
+  },
+  {
+    "binding": "FOCUS_SOUNDS",
+    "bucket_name": "core47-focus-sounds"
   }
 ]
 }
