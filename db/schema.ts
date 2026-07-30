@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 
 export const categories = sqliteTable("categories", {
   id: text("id").primaryKey(),
@@ -103,4 +103,55 @@ export const blogPosts = sqliteTable("blog_posts", {
   publishedAt: text("published_at"), // auto-set the first time it switches to published
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
+});
+
+// NEW — Market: portfolio assets a user tracks for DCA/PnL. currentPrice is
+// manually entered by the user until a live price feed is wired up later.
+export const portfolioAssets = sqliteTable("portfolio_assets", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  assetType: text("asset_type", {
+    enum: ["gold", "silver", "forex", "coffee", "pepper", "custom"],
+  }).notNull(),
+  customName: text("custom_name"), // required when assetType = "custom"
+  unit: text("unit").notNull(), // e.g. "lượng", "ounce", "kg", "USD"
+  currentPrice: real("current_price").notNull().default(0),
+  currentPriceUpdatedAt: text("current_price_updated_at"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// NEW — Market: buy/sell transactions against a portfolio asset
+export const portfolioTransactions = sqliteTable("portfolio_transactions", {
+  id: text("id").primaryKey(),
+  assetId: text("asset_id").notNull(),
+  userId: text("user_id").notNull(), // denormalized for admin cross-user queries
+  type: text("type", { enum: ["buy", "sell"] }).notNull(),
+  quantity: real("quantity").notNull(),
+  pricePerUnit: real("price_per_unit").notNull(),
+  note: text("note"),
+  txDate: text("tx_date").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+// NEW — Market: RSS feed sources, admin-managed
+export const rssSources = sqliteTable("rss_sources", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  url: text("url").notNull().unique(),
+  category: text("category"), // free text, e.g. "forex", "macro", "crypto"
+  enabled: integer("enabled").notNull().default(1),
+  createdAt: text("created_at").notNull(),
+});
+
+// NEW — Market: aggregated news articles fetched from rss_sources
+export const newsArticles = sqliteTable("news_articles", {
+  id: text("id").primaryKey(),
+  sourceId: text("source_id").notNull(),
+  title: text("title").notNull(),
+  link: text("link").notNull().unique(), // dedup key
+  summary: text("summary"),
+  imageUrl: text("image_url"),
+  publishedAt: text("published_at").notNull(),
+  fetchedAt: text("fetched_at").notNull(),
 });

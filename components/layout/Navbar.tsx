@@ -50,6 +50,9 @@ export function Navbar({ isAdminArea = false }: { isAdminArea?: boolean }) {
             <a href={homeUrl.replace(/\/$/, "") + "/list100"} className="hover:text-[rgb(var(--fg))] transition-colors">
               List 100
             </a>
+            <a href={homeUrl.replace(/\/$/, "") + "/market"} className="hover:text-[rgb(var(--fg))] transition-colors">
+              Market
+            </a>
             {isAdmin && (
               <a
                 href="https://admin.core47.xyz/"
