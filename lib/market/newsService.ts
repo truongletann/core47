@@ -1,4 +1,4 @@
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { rssSources, newsArticles } from "@/db/schema";
 import { RssSourceSchema, type RssSourceInput } from "./newsSchema";
@@ -13,6 +13,17 @@ export async function listEnabledSources() {
   const db = await getDb();
   const rows = await db.select().from(rssSources).where(eq(rssSources.enabled, 1));
   return rows;
+}
+
+// Public-safe subset for the News page's filter dropdowns — no admin-only
+// fields (url, createdAt).
+export async function listSourceOptions() {
+  const db = await getDb();
+  return db
+    .select({ id: rssSources.id, name: rssSources.name, category: rssSources.category })
+    .from(rssSources)
+    .where(eq(rssSources.enabled, 1))
+    .orderBy(rssSources.name);
 }
 
 export async function createSource(raw: RssSourceInput) {
@@ -58,23 +69,64 @@ export async function deleteSource(id: string) {
   await db.delete(rssSources).where(eq(rssSources.id, id));
 }
 
-export async function listArticles(limit = 50) {
+const articleColumns = {
+  id: newsArticles.id,
+  title: newsArticles.title,
+  link: newsArticles.link,
+  summary: newsArticles.summary,
+  imageUrl: newsArticles.imageUrl,
+  publishedAt: newsArticles.publishedAt,
+  sourceId: newsArticles.sourceId,
+  sourceName: rssSources.name,
+};
+
+interface ListArticlesOptions {
+  limit?: number;
+  sourceId?: string;
+  category?: string;
+  // Unfiltered view only: caps how many articles any single source can
+  // contribute, so a high-frequency source doesn't crowd out quieter ones.
+  maxPerSource?: number;
+}
+
+export async function listArticles(options: ListArticlesOptions = {}) {
+  const { limit = 50, sourceId, category, maxPerSource = 12 } = options;
   const db = await getDb();
-  const rows = await db
-    .select({
-      id: newsArticles.id,
-      title: newsArticles.title,
-      link: newsArticles.link,
-      summary: newsArticles.summary,
-      imageUrl: newsArticles.imageUrl,
-      publishedAt: newsArticles.publishedAt,
-      sourceName: rssSources.name,
-    })
-    .from(newsArticles)
-    .leftJoin(rssSources, eq(newsArticles.sourceId, rssSources.id))
-    .orderBy(desc(newsArticles.publishedAt))
-    .limit(limit);
-  return rows;
+
+  if (sourceId || category) {
+    const conditions = [];
+    if (sourceId) conditions.push(eq(newsArticles.sourceId, sourceId));
+    if (category) conditions.push(eq(rssSources.category, category));
+
+    return db
+      .select(articleColumns)
+      .from(newsArticles)
+      .leftJoin(rssSources, eq(newsArticles.sourceId, rssSources.id))
+      .where(and(...conditions))
+      .orderBy(desc(newsArticles.publishedAt))
+      .limit(limit);
+  }
+
+  // No filter — fetch each enabled source's most recent maxPerSource
+  // articles in parallel, then merge/sort so one prolific source can't
+  // fill the whole list.
+  const sources = await listEnabledSources();
+  const perSource = await Promise.all(
+    sources.map((s) =>
+      db
+        .select(articleColumns)
+        .from(newsArticles)
+        .leftJoin(rssSources, eq(newsArticles.sourceId, rssSources.id))
+        .where(eq(newsArticles.sourceId, s.id))
+        .orderBy(desc(newsArticles.publishedAt))
+        .limit(maxPerSource),
+    ),
+  );
+
+  return perSource
+    .flat()
+    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+    .slice(0, limit);
 }
 
 // Newest fetchedAt across all articles — used to decide whether a lazy
