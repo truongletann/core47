@@ -155,3 +155,23 @@ export const newsArticles = sqliteTable("news_articles", {
   publishedAt: text("published_at").notNull(),
   fetchedAt: text("fetched_at").notNull(),
 });
+
+// NEW — Market: economic calendar events, mirrored from ForexFactory's
+// unofficial weekly XML feed. Refreshed wholesale (delete + reinsert) since
+// it's always a rolling week snapshot, not a historical log.
+export const calendarEvents = sqliteTable("calendar_events", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  country: text("country").notNull(), // currency code, e.g. USD, EUR, JPY
+  eventDate: text("event_date").notNull(), // ISO date, e.g. 2026-07-27
+  eventTime: text("event_time"), // raw string from feed, e.g. "8:00am", "All Day", "Tentative"
+  impact: text("impact", { enum: ["holiday", "low", "medium", "high"] })
+    .notNull()
+    .default("low"),
+  forecast: text("forecast"),
+  previous: text("previous"),
+  actual: text("actual"),
+  sourceUrl: text("source_url"),
+  sortOrder: integer("sort_order").notNull().default(0), // preserves the feed's original ordering
+  fetchedAt: text("fetched_at").notNull(),
+});
