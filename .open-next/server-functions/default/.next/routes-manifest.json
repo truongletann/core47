@@ -23,12 +23,52 @@
   },
   "dynamicRoutes": [
     {
+      "page": "/api/admin/blog/[id]",
+      "regex": "^/api/admin/blog/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/blog/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/api/admin/categories/[id]",
       "regex": "^/api/admin/categories/([^/]+?)(?:/)?$",
       "routeKeys": {
         "nxtPid": "nxtPid"
       },
       "namedRegex": "^/api/admin/categories/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/list100/suggestions/[id]",
+      "regex": "^/api/admin/list100/suggestions/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/list100/suggestions/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/list100/[id]",
+      "regex": "^/api/admin/list100/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/list100/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/market/news-sources/[id]",
+      "regex": "^/api/admin/market/news\\-sources/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/market/news\\-sources/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/market/price-symbols/[id]",
+      "regex": "^/api/admin/market/price\\-symbols/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/market/price\\-symbols/(?<nxtPid>[^/]+?)(?:/)?$"
     },
     {
       "page": "/api/admin/tools/[id]",
@@ -55,6 +95,46 @@
       "namedRegex": "^/api/avatar/(?<nxtPuserId>[^/]+?)(?:/)?$"
     },
     {
+      "page": "/api/blog/cover/[key]",
+      "regex": "^/api/blog/cover/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPkey": "nxtPkey"
+      },
+      "namedRegex": "^/api/blog/cover/(?<nxtPkey>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/market/portfolio/assets/[id]",
+      "regex": "^/api/market/portfolio/assets/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/market/portfolio/assets/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/market/portfolio/assets/[id]/price",
+      "regex": "^/api/market/portfolio/assets/([^/]+?)/price(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/market/portfolio/assets/(?<nxtPid>[^/]+?)/price(?:/)?$"
+    },
+    {
+      "page": "/api/market/portfolio/assets/[id]/transactions",
+      "regex": "^/api/market/portfolio/assets/([^/]+?)/transactions(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/market/portfolio/assets/(?<nxtPid>[^/]+?)/transactions(?:/)?$"
+    },
+    {
+      "page": "/api/market/portfolio/transactions/[id]",
+      "regex": "^/api/market/portfolio/transactions/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/market/portfolio/transactions/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/api/shortlink/[code]",
       "regex": "^/api/shortlink/([^/]+?)(?:/)?$",
       "routeKeys": {
@@ -69,6 +149,22 @@
         "nxtPslug": "nxtPslug"
       },
       "namedRegex": "^/api/toolbox/favorites/(?<nxtPslug>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/blog/[slug]",
+      "regex": "^/blog/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/blog/(?<nxtPslug>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/tools/admin/blog/[id]",
+      "regex": "^/tools/admin/blog/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/tools/admin/blog/(?<nxtPid>[^/]+?)(?:/)?$"
     },
     {
       "page": "/tools/shortlink/[code]",
@@ -121,10 +217,82 @@
       "namedRegex": "^/admin(?:/)?$"
     },
     {
+      "page": "/api/admin/blog",
+      "regex": "^/api/admin/blog(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/blog(?:/)?$"
+    },
+    {
+      "page": "/api/admin/blog/cover",
+      "regex": "^/api/admin/blog/cover(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/blog/cover(?:/)?$"
+    },
+    {
+      "page": "/api/admin/blog/parse",
+      "regex": "^/api/admin/blog/parse(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/blog/parse(?:/)?$"
+    },
+    {
+      "page": "/api/admin/blog/preview",
+      "regex": "^/api/admin/blog/preview(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/blog/preview(?:/)?$"
+    },
+    {
       "page": "/api/admin/categories",
       "regex": "^/api/admin/categories(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/admin/categories(?:/)?$"
+    },
+    {
+      "page": "/api/admin/list100",
+      "regex": "^/api/admin/list100(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/list100(?:/)?$"
+    },
+    {
+      "page": "/api/admin/list100/reorder",
+      "regex": "^/api/admin/list100/reorder(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/list100/reorder(?:/)?$"
+    },
+    {
+      "page": "/api/admin/list100/suggestions",
+      "regex": "^/api/admin/list100/suggestions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/list100/suggestions(?:/)?$"
+    },
+    {
+      "page": "/api/admin/market/calendar-settings",
+      "regex": "^/api/admin/market/calendar\\-settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/market/calendar\\-settings(?:/)?$"
+    },
+    {
+      "page": "/api/admin/market/news-sources",
+      "regex": "^/api/admin/market/news\\-sources(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/market/news\\-sources(?:/)?$"
+    },
+    {
+      "page": "/api/admin/market/portfolios",
+      "regex": "^/api/admin/market/portfolios(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/market/portfolios(?:/)?$"
+    },
+    {
+      "page": "/api/admin/market/price-settings",
+      "regex": "^/api/admin/market/price\\-settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/market/price\\-settings(?:/)?$"
+    },
+    {
+      "page": "/api/admin/market/price-symbols",
+      "regex": "^/api/admin/market/price\\-symbols(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/market/price\\-symbols(?:/)?$"
     },
     {
       "page": "/api/admin/tools",
@@ -181,6 +349,36 @@
       "namedRegex": "^/api/auth/register(?:/)?$"
     },
     {
+      "page": "/api/list100/suggestions",
+      "regex": "^/api/list100/suggestions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/list100/suggestions(?:/)?$"
+    },
+    {
+      "page": "/api/market/instruments",
+      "regex": "^/api/market/instruments(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/market/instruments(?:/)?$"
+    },
+    {
+      "page": "/api/market/news",
+      "regex": "^/api/market/news(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/market/news(?:/)?$"
+    },
+    {
+      "page": "/api/market/portfolio/assets",
+      "regex": "^/api/market/portfolio/assets(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/market/portfolio/assets(?:/)?$"
+    },
+    {
+      "page": "/api/market/prices/stream",
+      "regex": "^/api/market/prices/stream(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/market/prices/stream(?:/)?$"
+    },
+    {
       "page": "/api/shortlink",
       "regex": "^/api/shortlink(?:/)?$",
       "routeKeys": {},
@@ -199,10 +397,22 @@
       "namedRegex": "^/api/toolbox/favorites(?:/)?$"
     },
     {
+      "page": "/blog",
+      "regex": "^/blog(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/blog(?:/)?$"
+    },
+    {
       "page": "/favicon.ico",
       "regex": "^/favicon\\.ico(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/favicon\\.ico(?:/)?$"
+    },
+    {
+      "page": "/list100",
+      "regex": "^/list100(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/list100(?:/)?$"
     },
     {
       "page": "/login",
@@ -211,10 +421,58 @@
       "namedRegex": "^/login(?:/)?$"
     },
     {
+      "page": "/market",
+      "regex": "^/market(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/market(?:/)?$"
+    },
+    {
+      "page": "/market/calendar",
+      "regex": "^/market/calendar(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/market/calendar(?:/)?$"
+    },
+    {
+      "page": "/market/fxtin-news",
+      "regex": "^/market/fxtin\\-news(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/market/fxtin\\-news(?:/)?$"
+    },
+    {
+      "page": "/market/news",
+      "regex": "^/market/news(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/market/news(?:/)?$"
+    },
+    {
+      "page": "/market/portfolio",
+      "regex": "^/market/portfolio(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/market/portfolio(?:/)?$"
+    },
+    {
+      "page": "/market/prices",
+      "regex": "^/market/prices(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/market/prices(?:/)?$"
+    },
+    {
       "page": "/profile",
       "regex": "^/profile(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/profile(?:/)?$"
+    },
+    {
+      "page": "/rss.xml",
+      "regex": "^/rss\\.xml(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/rss\\.xml(?:/)?$"
+    },
+    {
+      "page": "/toolkits",
+      "regex": "^/toolkits(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/toolkits(?:/)?$"
     },
     {
       "page": "/tools/admin",
@@ -223,10 +481,58 @@
       "namedRegex": "^/tools/admin(?:/)?$"
     },
     {
+      "page": "/tools/admin/blog",
+      "regex": "^/tools/admin/blog(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/blog(?:/)?$"
+    },
+    {
+      "page": "/tools/admin/blog/new",
+      "regex": "^/tools/admin/blog/new(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/blog/new(?:/)?$"
+    },
+    {
       "page": "/tools/admin/categories",
       "regex": "^/tools/admin/categories(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/tools/admin/categories(?:/)?$"
+    },
+    {
+      "page": "/tools/admin/list100",
+      "regex": "^/tools/admin/list100(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/list100(?:/)?$"
+    },
+    {
+      "page": "/tools/admin/market/calendar-settings",
+      "regex": "^/tools/admin/market/calendar\\-settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/market/calendar\\-settings(?:/)?$"
+    },
+    {
+      "page": "/tools/admin/market/news-sources",
+      "regex": "^/tools/admin/market/news\\-sources(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/market/news\\-sources(?:/)?$"
+    },
+    {
+      "page": "/tools/admin/market/portfolios",
+      "regex": "^/tools/admin/market/portfolios(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/market/portfolios(?:/)?$"
+    },
+    {
+      "page": "/tools/admin/market/price-settings",
+      "regex": "^/tools/admin/market/price\\-settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/market/price\\-settings(?:/)?$"
+    },
+    {
+      "page": "/tools/admin/market/price-symbols",
+      "regex": "^/tools/admin/market/price\\-symbols(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/market/price\\-symbols(?:/)?$"
     },
     {
       "page": "/tools/admin/tools",
@@ -257,6 +563,12 @@
       "regex": "^/tools/tools/base64(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/tools/tools/base64(?:/)?$"
+    },
+    {
+      "page": "/tools/tools/cron-parser",
+      "regex": "^/tools/tools/cron\\-parser(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/tools/cron\\-parser(?:/)?$"
     },
     {
       "page": "/tools/tools/hash-generator",

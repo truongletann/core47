@@ -7,11 +7,11 @@ export interface ToolboxCategory {
 export interface ToolboxTool {
   slug: string;
   name: string;
-  shortName?: string; // tên rút gọn hiện trong sidebar, ví dụ "Date" thay vì "Date Converter"
+  shortName?: string; // short name shown in the sidebar, e.g. "Date" instead of "Date Converter"
   description: string;
   categorySlug: string;
   icon: string;
-  implemented: boolean; // false = trang "Coming soon" tự động
+  implemented: boolean; // false = auto "Coming soon" page
 }
 
 export const TOOLBOX_CATEGORIES: ToolboxCategory[] = [
@@ -30,7 +30,7 @@ export const TOOLBOX_TOOLS: ToolboxTool[] = [
     description: "Parse Cron expression to get scheduled dates",
     categorySlug: "converters",
     icon: "Clock",
-    implemented: false,
+    implemented: true,
   },
   {
     slug: "date-converter",
@@ -217,4 +217,16 @@ export function getToolBySlug(slug: string): ToolboxTool | undefined {
 
 export function getCategoryBySlug(slug: string): ToolboxCategory | undefined {
   return TOOLBOX_CATEGORIES.find((c) => c.slug === slug);
+}
+
+// "Related tools" suggestions for the Output panel dropdown — same-category first.
+export function getRelatedTools(slug: string, count = 4): ToolboxTool[] {
+  const current = getToolBySlug(slug);
+  const rest = TOOLBOX_TOOLS.filter((t) => t.slug !== slug && t.implemented);
+
+  if (!current) return rest.slice(0, count);
+
+  const sameCategory = rest.filter((t) => t.categorySlug === current.categorySlug);
+  const others = rest.filter((t) => t.categorySlug !== current.categorySlug);
+  return [...sameCategory, ...others].slice(0, count);
 }

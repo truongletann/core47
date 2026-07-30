@@ -3,17 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import * as Icons from "lucide-react";
 import { ChevronDown, ChevronUp, Home, Star } from "lucide-react";
 import { TOOLBOX_CATEGORIES, TOOLBOX_TOOLS } from "@/lib/toolbox/registry";
-
-function Icon({ name, size = 15 }: { name: string; size?: number }) {
-  const LucideIcon = (Icons as unknown as Record<string, React.ComponentType<{ size?: number }>>)[
-    name
-  ];
-  if (!LucideIcon) return null;
-  return <LucideIcon size={size} />;
-}
+import { DynamicIcon as Icon } from "@/components/toolbox/DynamicIcon";
 
 export function ToolboxSidebar() {
   const pathname = usePathname();

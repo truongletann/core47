@@ -1,68 +1,91 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { ArrowRightLeft, ChevronDown, Link2 } from "lucide-react";
 import { ToolShell } from "@/components/toolbox/ToolShell";
+import { EditorPanel } from "@/components/toolbox/EditorPanel";
+import { ConfigPanel, ConfigRow } from "@/components/toolbox/ConfigPanel";
+import { ModeToggle } from "@/components/toolbox/ModeToggle";
+import { getRelatedTools } from "@/lib/toolbox/registry";
+
+function toBase64(text: string, urlSafe: boolean) {
+  const base64 = btoa(unescape(encodeURIComponent(text)));
+  return urlSafe ? base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") : base64;
+}
+
+function fromBase64(text: string, urlSafe: boolean) {
+  let normalized = text;
+  if (urlSafe) {
+    normalized = normalized.replace(/-/g, "+").replace(/_/g, "/");
+    while (normalized.length % 4 !== 0) normalized += "=";
+  }
+  return decodeURIComponent(escape(atob(normalized)));
+}
+
+const suggestions = getRelatedTools("base64");
 
 export default function Base64Page() {
   const [input, setInput] = useState("");
-  const [output, setOutput] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [encode, setEncode] = useState(true);
+  const [urlSafe, setUrlSafe] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
 
-  function encode() {
+  const { output, error } = useMemo(() => {
+    if (!input) return { output: "", error: null as string | null };
     try {
-      setOutput(btoa(unescape(encodeURIComponent(input))));
-      setError(null);
+      const result = encode ? toBase64(input, urlSafe) : fromBase64(input, urlSafe);
+      return { output: result, error: null };
     } catch {
-      setError("Could not encode this input.");
+      return { output: "", error: encode ? "Could not encode this input." : "Invalid Base64 string." };
     }
-  }
-
-  function decode() {
-    try {
-      setOutput(decodeURIComponent(escape(atob(input))));
-      setError(null);
-    } catch {
-      setError("Invalid Base64 string.");
-    }
-  }
+  }, [input, encode, urlSafe]);
 
   return (
-    <ToolShell slug="base64" title="Base64 Encoder / Decoder" description="Encode and decode Base64 text data.">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div>
-          <p className="mb-1 text-sm text-[rgb(var(--muted))]">Input</p>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            rows={10}
-            className="font-data w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-3 text-sm outline-none focus:ring-2 focus:ring-[rgb(var(--accent)/0.3)]"
-          />
-          <div className="mt-2 flex gap-2">
-            <button
-              onClick={encode}
-              className="rounded-md bg-[rgb(var(--accent))] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
-            >
-              Encode
-            </button>
-            <button
-              onClick={decode}
-              className="rounded-md border border-[rgb(var(--border))] px-3 py-1.5 text-xs hover:bg-[rgb(var(--border)/0.5)]"
-            >
-              Decode
-            </button>
-          </div>
-          {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
-        </div>
-        <div>
-          <p className="mb-1 text-sm text-[rgb(var(--muted))]">Output</p>
-          <textarea
-            readOnly
-            value={output}
-            rows={10}
-            className="font-data w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] p-3 text-sm outline-none"
-          />
-        </div>
+    <ToolShell
+      slug="base64"
+      title="Base64 Text Encoder / Decoder"
+      description="Encode and decode Base64 text data."
+    >
+      <ConfigPanel>
+        <ConfigRow
+          icon={<ArrowRightLeft size={16} />}
+          title="Conversion"
+          description="Select which conversion mode you want to use"
+        >
+          <span className="text-sm text-[rgb(var(--muted))]">{encode ? "Encode" : "Decode"}</span>
+          <ModeToggle checked={encode} onChange={setEncode} />
+          <button
+            type="button"
+            onClick={() => setShowOptions((v) => !v)}
+            aria-label="More options"
+            className="text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+          >
+            <ChevronDown size={16} className={`transition-transform ${showOptions ? "rotate-180" : ""}`} />
+          </button>
+        </ConfigRow>
+
+        {showOptions && (
+          <ConfigRow
+            icon={<Link2 size={16} />}
+            title="URL-safe alphabet"
+            description="Use - and _ instead of + and /, no padding"
+          >
+            <ModeToggle checked={urlSafe} onChange={setUrlSafe} />
+          </ConfigRow>
+        )}
+      </ConfigPanel>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <EditorPanel
+          label="Input"
+          value={input}
+          onChange={setInput}
+          placeholder={encode ? "Type or paste text to encode..." : "Type or paste Base64 to decode..."}
+        />
+        <EditorPanel label="Output" value={output} readOnly suggestions={suggestions} />
       </div>
+
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
     </ToolShell>
   );
 }
