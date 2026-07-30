@@ -64,6 +64,7 @@ export default function AdminMarketNewsSourcesPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   function load() {
     setLoading(true);
@@ -157,6 +158,21 @@ export default function AdminMarketNewsSourcesPage() {
     }
   }
 
+  async function handleToggleEnabled(s: RssSource) {
+    setTogglingId(s.id);
+    try {
+      await fetch(`/api/admin/market/news-sources/${s.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: s.name, url: s.url, category: s.category, enabled: !s.enabled }),
+        credentials: "include",
+      });
+      setSources((prev) => prev.map((x) => (x.id === s.id ? { ...x, enabled: !x.enabled } : x)));
+    } finally {
+      setTogglingId(null);
+    }
+  }
+
   async function handleDelete() {
     if (!deleteTarget) return;
     await fetch(`/api/admin/market/news-sources/${deleteTarget.id}`, {
@@ -209,7 +225,22 @@ export default function AdminMarketNewsSourcesPage() {
                   <td className="px-4 py-2">{s.name}</td>
                   <td className="font-data max-w-xs truncate px-4 py-2 text-xs">{s.url}</td>
                   <td className="px-4 py-2 text-xs">{s.category ?? "—"}</td>
-                  <td className="px-4 py-2 text-xs">{s.enabled ? "Yes" : "No"}</td>
+                  <td className="px-4 py-2">
+                    <button
+                      onClick={() => handleToggleEnabled(s)}
+                      disabled={togglingId === s.id}
+                      className={`relative h-5 w-9 rounded-full transition-colors disabled:opacity-50 ${
+                        s.enabled ? "bg-[rgb(var(--accent))]" : "bg-[rgb(var(--border))]"
+                      }`}
+                      aria-label={s.enabled ? "Disable source" : "Enable source"}
+                    >
+                      <span
+                        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
+                          s.enabled ? "translate-x-4" : "translate-x-0.5"
+                        }`}
+                      />
+                    </button>
+                  </td>
                   <td className="px-4 py-2">
                     <div className="flex gap-2">
                       <button
