@@ -182,5 +182,9 @@ export const calendarSettings = sqliteTable("calendar_settings", {
   id: text("id").primaryKey(), // fixed to "default", single row
   todayFeedUrl: text("today_feed_url"),
   thisWeekFeedUrl: text("thisweek_feed_url").notNull(),
+  // JSON string mapping our logical fields (title/country/date/...) to the
+  // feed's actual tag/key names — lets a renamed/moved field be fixed from
+  // the admin CMS instead of a code deploy. NULL = use the built-in default.
+  fieldMapping: text("field_mapping"),
   updatedAt: text("updated_at").notNull(),
 });

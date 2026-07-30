@@ -23,6 +23,7 @@ export async function getCalendarSettings() {
     id: SETTINGS_ID,
     todayFeedUrl: FALLBACK_TODAY_URL,
     thisWeekFeedUrl: FALLBACK_THISWEEK_URL,
+    fieldMapping: null,
     updatedAt: new Date().toISOString(),
   };
   await db.insert(calendarSettings).values(record);
@@ -39,6 +40,7 @@ export async function updateCalendarSettings(raw: CalendarSettingsInput) {
     .set({
       todayFeedUrl: input.todayFeedUrl,
       thisWeekFeedUrl: input.thisWeekFeedUrl,
+      fieldMapping: input.fieldMapping,
       updatedAt: new Date().toISOString(),
     })
     .where(eq(calendarSettings.id, SETTINGS_ID));
