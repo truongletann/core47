@@ -89,7 +89,7 @@ function DayTable({ events }: { events: CalendarEvent[] }) {
             <tr key={e.id} className="border-b border-[rgb(var(--border))] last:border-0">
               <td className="font-data px-4 py-2 text-xs">
                 {e.eventTime ?? "—"}
-                {vnTime && <span className="text-[rgb(var(--muted))]"> ({vnTime} giờ VN)</span>}
+                {vnTime && <span className="text-[rgb(var(--muted))]"> (UTC+7: {vnTime})</span>}
               </td>
               <td className="px-4 py-2 text-xs font-semibold">{e.country}</td>
               <td className="px-4 py-2">
