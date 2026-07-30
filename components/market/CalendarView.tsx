@@ -42,6 +42,31 @@ function fullLabel(iso: string): string {
   return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 }
 
+// The feed's raw times are UTC (confirmed against ForexFactory's own
+// browser-local display — VN is UTC+7, no DST). Only clock-style values
+// ("8:00am", "11:50pm") can be shifted; "All Day"/"Tentative" pass through.
+function formatVnTime(rawTime: string | null): string | null {
+  if (!rawTime) return null;
+  const match = rawTime.trim().match(/^(\d{1,2}):(\d{2})(am|pm)$/i);
+  if (!match) return null;
+
+  const [, hourStr, minuteStr, period] = match;
+  let hour24 = Number(hourStr) % 12;
+  if (period.toLowerCase() === "pm") hour24 += 12;
+  const minute = Number(minuteStr);
+
+  const totalMinutes = hour24 * 60 + minute + 7 * 60;
+  const dayShift = Math.floor(totalMinutes / (24 * 60));
+  const remMinutes = totalMinutes % (24 * 60);
+  const vnHour24 = Math.floor(remMinutes / 60);
+  const vnMinute = remMinutes % 60;
+
+  const vnPeriod = vnHour24 >= 12 ? "pm" : "am";
+  const vnHour12 = vnHour24 % 12 === 0 ? 12 : vnHour24 % 12;
+  const timeLabel = `${vnHour12}:${String(vnMinute).padStart(2, "0")}${vnPeriod}`;
+  return dayShift > 0 ? `${timeLabel} +1` : timeLabel;
+}
+
 function DayTable({ events }: { events: CalendarEvent[] }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-[rgb(var(--border))]">
@@ -58,9 +83,14 @@ function DayTable({ events }: { events: CalendarEvent[] }) {
           </tr>
         </thead>
         <tbody>
-          {events.map((e) => (
+          {events.map((e) => {
+            const vnTime = formatVnTime(e.eventTime);
+            return (
             <tr key={e.id} className="border-b border-[rgb(var(--border))] last:border-0">
-              <td className="font-data px-4 py-2 text-xs">{e.eventTime ?? "—"}</td>
+              <td className="font-data px-4 py-2 text-xs">
+                {e.eventTime ?? "—"}
+                {vnTime && <span className="text-[rgb(var(--muted))]"> ({vnTime} giờ VN)</span>}
+              </td>
               <td className="px-4 py-2 text-xs font-semibold">{e.country}</td>
               <td className="px-4 py-2">
                 {e.sourceUrl ? (
@@ -87,7 +117,8 @@ function DayTable({ events }: { events: CalendarEvent[] }) {
               <td className="font-data px-4 py-2 text-xs text-[rgb(var(--muted))]">{e.forecast ?? "—"}</td>
               <td className="font-data px-4 py-2 text-xs text-[rgb(var(--muted))]">{e.previous ?? "—"}</td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>
