@@ -12,7 +12,7 @@ const VIEW_STORAGE_KEY = "core47-blog-view";
 
 export function BlogGrid({ posts, tags }: { posts: BlogPost[]; tags: string[] }) {
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [view, setView] = useState<ViewMode>("grid");
+  const [view, setView] = useState<ViewMode>("list");
 
   useEffect(() => {
     const saved = window.localStorage.getItem(VIEW_STORAGE_KEY);
