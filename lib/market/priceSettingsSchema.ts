@@ -5,7 +5,9 @@ const nullableString = (max: number) =>
   z.string().trim().max(max).nullable().optional().transform(emptyToNull);
 
 export const PriceSettingsSchema = z.object({
-  twelveDataApiKey: nullableString(200),
+  oandaApiKey: nullableString(200),
+  oandaAccountId: nullableString(50),
+  oandaEnvironment: z.enum(["practice", "live"]).default("practice"),
 });
 
 export type PriceSettingsInput = z.infer<typeof PriceSettingsSchema>;

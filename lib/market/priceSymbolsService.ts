@@ -24,6 +24,7 @@ export async function createSymbol(raw: PriceSymbolInput) {
   const record = {
     id: crypto.randomUUID(),
     symbol: input.symbol,
+    source: input.source,
     label: input.label,
     unit: input.unit,
     enabled: input.enabled ? 1 : 0,
@@ -48,6 +49,7 @@ export async function updateSymbol(id: string, raw: PriceSymbolInput) {
     .update(priceSymbols)
     .set({
       symbol: input.symbol,
+      source: input.source,
       label: input.label,
       unit: input.unit,
       enabled: input.enabled ? 1 : 0,

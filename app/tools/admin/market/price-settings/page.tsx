@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const emptyForm = { twelveDataApiKey: "" };
+const emptyForm = { oandaApiKey: "", oandaAccountId: "", oandaEnvironment: "practice" as "practice" | "live" };
 type FormState = typeof emptyForm;
 
 export default function AdminMarketPriceSettingsPage() {
@@ -15,10 +15,27 @@ export default function AdminMarketPriceSettingsPage() {
 
   useEffect(() => {
     fetch("/api/admin/market/price-settings", { credentials: "include" })
-      .then((r) => r.json() as Promise<{ data?: { settings?: { twelveDataApiKey: string | null } } }>)
+      .then(
+        (r) =>
+          r.json() as Promise<{
+            data?: {
+              settings?: {
+                oandaApiKey: string | null;
+                oandaAccountId: string | null;
+                oandaEnvironment: "practice" | "live";
+              };
+            };
+          }>,
+      )
       .then((json) => {
         const s = json?.data?.settings;
-        if (s) setForm({ twelveDataApiKey: s.twelveDataApiKey ?? "" });
+        if (s) {
+          setForm({
+            oandaApiKey: s.oandaApiKey ?? "",
+            oandaAccountId: s.oandaAccountId ?? "",
+            oandaEnvironment: s.oandaEnvironment ?? "practice",
+          });
+        }
       })
       .finally(() => setLoading(false));
   }, []);
@@ -70,18 +87,18 @@ export default function AdminMarketPriceSettingsPage() {
     <div>
       <h1 className="font-display text-2xl font-semibold">Market: Price Settings</h1>
       <p className="mt-1 text-sm text-[rgb(var(--muted))]">
-        API key Twelve Data (twelvedata.com) — dùng để lấy giá vàng/forex cho trang /market/prices.
-        Free tier: 800 request/ngày. Lưu ý: Silver (XAG/USD) không khả dụng ở gói free.
+        API key OANDA (oanda.com) — dùng để lấy giá vàng/forex (snapshot + live stream) cho trang
+        /market/prices. Cần token cá nhân (Manage API Access trong tài khoản OANDA) và Account ID.
       </p>
 
       <div className="mt-6 flex max-w-xl flex-col gap-3">
         <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Twelve Data API key</span>
+          <span className="mb-1 block text-[rgb(var(--muted))]">OANDA API key (token)</span>
           <div className="flex gap-2">
             <input
               type={reveal ? "text" : "password"}
-              value={form.twelveDataApiKey}
-              onChange={(e) => setForm({ twelveDataApiKey: e.target.value })}
+              value={form.oandaApiKey}
+              onChange={(e) => setForm({ ...form, oandaApiKey: e.target.value })}
               className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
             />
             <button
@@ -92,6 +109,28 @@ export default function AdminMarketPriceSettingsPage() {
               {reveal ? "Ẩn" : "Hiện"}
             </button>
           </div>
+        </label>
+
+        <label className="text-sm">
+          <span className="mb-1 block text-[rgb(var(--muted))]">OANDA Account ID</span>
+          <input
+            value={form.oandaAccountId}
+            onChange={(e) => setForm({ ...form, oandaAccountId: e.target.value })}
+            placeholder="101-004-xxxxxxx-001"
+            className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+          />
+        </label>
+
+        <label className="text-sm">
+          <span className="mb-1 block text-[rgb(var(--muted))]">Môi trường</span>
+          <select
+            value={form.oandaEnvironment}
+            onChange={(e) => setForm({ ...form, oandaEnvironment: e.target.value as "practice" | "live" })}
+            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+          >
+            <option value="practice">Practice (fxPractice / demo)</option>
+            <option value="live">Live (fxTrade)</option>
+          </select>
         </label>
 
         {error && <p className="text-xs text-red-600">{error}</p>}

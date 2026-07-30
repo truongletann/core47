@@ -10,7 +10,14 @@ export async function getPriceSettings() {
   const existing = await db.select().from(priceSettings).where(eq(priceSettings.id, SETTINGS_ID)).get();
   if (existing) return existing;
 
-  const record = { id: SETTINGS_ID, twelveDataApiKey: null, updatedAt: new Date().toISOString() };
+  const record = {
+    id: SETTINGS_ID,
+    twelveDataApiKey: null,
+    oandaApiKey: null,
+    oandaAccountId: null,
+    oandaEnvironment: "practice" as const,
+    updatedAt: new Date().toISOString(),
+  };
   await db.insert(priceSettings).values(record);
   return record;
 }
@@ -18,7 +25,15 @@ export async function getPriceSettings() {
 // Admin-only view — never expose the raw key value to non-admin callers.
 export async function hasPriceApiKey(): Promise<boolean> {
   const settings = await getPriceSettings();
-  return Boolean(settings.twelveDataApiKey);
+  return Boolean(settings.oandaApiKey && settings.oandaAccountId);
+}
+
+export function oandaApiHost(environment: string): string {
+  return environment === "live" ? "https://api-fxtrade.oanda.com" : "https://api-fxpractice.oanda.com";
+}
+
+export function oandaStreamHost(environment: string): string {
+  return environment === "live" ? "https://stream-fxtrade.oanda.com" : "https://stream-fxpractice.oanda.com";
 }
 
 export async function updatePriceSettings(raw: PriceSettingsInput) {
@@ -28,6 +43,11 @@ export async function updatePriceSettings(raw: PriceSettingsInput) {
   await getPriceSettings(); // ensure the row exists before updating
   await db
     .update(priceSettings)
-    .set({ twelveDataApiKey: input.twelveDataApiKey, updatedAt: new Date().toISOString() })
+    .set({
+      oandaApiKey: input.oandaApiKey,
+      oandaAccountId: input.oandaAccountId,
+      oandaEnvironment: input.oandaEnvironment,
+      updatedAt: new Date().toISOString(),
+    })
     .where(eq(priceSettings.id, SETTINGS_ID));
 }

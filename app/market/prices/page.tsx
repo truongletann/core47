@@ -1,5 +1,7 @@
-import { shouldRefresh, listPrices } from "@/lib/market/priceService";
+import { shouldRefresh, listPrices, getLastFetchedAt } from "@/lib/market/priceService";
 import { fetchAndStorePrices } from "@/lib/market/prices";
+import { PriceRefreshInfo } from "@/components/market/PriceRefreshInfo";
+import { LivePrices } from "@/components/market/LivePrices";
 
 // TODO: VN domestic prices (SJC/DOJI/PNJ gold, cà phê/hồ tiêu nội địa) still
 // need their own source (scrape) — UI shell only, mock data for now.
@@ -20,10 +22,6 @@ const VN_PRICES: PriceCard[] = [
 ];
 
 const REFRESH_THRESHOLD_MINUTES = 15;
-
-function formatPrice(value: number): string {
-  return value.toLocaleString("en-US", { maximumFractionDigits: value < 10 ? 4 : 2 });
-}
 
 function MockPriceGrid({ title, items }: { title: string; items: PriceCard[] }) {
   return (
@@ -60,7 +58,7 @@ export default async function MarketPricesPage() {
     await fetchAndStorePrices();
   }
 
-  const worldPrices = await listPrices();
+  const [worldPrices, lastFetchedAt] = await Promise.all([listPrices(), getLastFetchedAt()]);
 
   return (
     <main className="py-10">
@@ -68,7 +66,8 @@ export default async function MarketPricesPage() {
         <div>
           <h1 className="font-display text-2xl font-semibold">Prices</h1>
           <p className="mt-1 text-sm text-[rgb(var(--muted))]">
-            Giá vàng/forex thế giới lấy từ Twelve Data (real-time) — giá Việt Nam vẫn là dữ liệu mẫu.
+            Giá vàng/forex/crypto thế giới lấy trực tiếp từ OANDA + Binance (live khi mở trang) — giá Việt Nam vẫn
+            là dữ liệu mẫu.
           </p>
         </div>
       </div>
@@ -78,39 +77,18 @@ export default async function MarketPricesPage() {
 
         <div>
           <h2 className="font-display text-lg font-semibold">World</h2>
+          <PriceRefreshInfo lastFetchedAt={lastFetchedAt} thresholdMinutes={REFRESH_THRESHOLD_MINUTES} />
           {worldPrices.length === 0 ? (
             <p className="mt-3 text-sm text-[rgb(var(--muted))]">
-              Chưa có dữ liệu — admin cần cấu hình Twelve Data API key ở trang quản trị.
+              Chưa có dữ liệu — admin cần cấu hình OANDA API key + account ID ở trang quản trị.
             </p>
           ) : (
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {worldPrices.map((p) => {
-                const changePct = p.lastChangePercent;
-                const isUp = changePct !== null && changePct >= 0;
-                return (
-                  <div key={p.id} className="rounded-xl border border-[rgb(var(--border))] p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="font-data text-xs text-[rgb(var(--muted))]">{p.symbol}</span>
-                      {changePct !== null && (
-                        <span
-                          className={`font-data text-xs font-semibold ${
-                            isUp ? "text-emerald-600" : "text-red-600"
-                          }`}
-                        >
-                          {isUp ? "+" : ""}
-                          {changePct.toFixed(2)}%
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-1 text-sm font-medium">{p.label}</p>
-                    <p className="font-data mt-1 text-lg font-semibold">
-                      {p.lastPrice !== null ? formatPrice(p.lastPrice) : "—"}
-                    </p>
-                    {p.unit && <p className="text-xs text-[rgb(var(--muted))]">{p.unit}</p>}
-                  </div>
-                );
-              })}
-            </div>
+            <LivePrices
+              initial={worldPrices.map((p) => ({
+                ...p,
+                source: p.source === "binance" ? "binance" : "oanda",
+              }))}
+            />
           )}
         </div>
       </div>

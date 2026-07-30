@@ -204,22 +204,28 @@ export const fxtinNews = sqliteTable("fxtin_news", {
   fetchedAt: text("fetched_at").notNull(),
 });
 
-// NEW — Market: singleton row holding the Twelve Data API key, editable
+// NEW — Market: singleton row holding the OANDA credentials, editable
 // from the admin CMS. Never committed to git — set directly via SQL or the
 // admin form, same secret-handling convention as any other credential.
+// twelveDataApiKey is a leftover column from the retired Twelve Data
+// integration; no code reads/writes it anymore.
 export const priceSettings = sqliteTable("price_settings", {
   id: text("id").primaryKey(), // fixed to "default", single row
   twelveDataApiKey: text("twelve_data_api_key"),
+  oandaApiKey: text("oanda_api_key"),
+  oandaAccountId: text("oanda_account_id"),
+  oandaEnvironment: text("oanda_environment").notNull().default("practice"), // "practice" | "live"
   updatedAt: text("updated_at").notNull(),
 });
 
-// NEW — Market: World prices (Twelve Data symbols) shown on /market/prices.
-// Admin manages which symbols are tracked ("+ Add symbol"); the fetch job
-// writes the latest quote directly onto each row (small dataset, no need
-// for a separate quotes table).
+// NEW — Market: World prices (OANDA + Binance instruments) shown on
+// /market/prices. Admin manages which symbols are tracked ("+ Add symbol");
+// the fetch job writes the latest quote directly onto each row (small
+// dataset, no need for a separate quotes table).
 export const priceSymbols = sqliteTable("price_symbols", {
   id: text("id").primaryKey(),
-  symbol: text("symbol").notNull().unique(), // Twelve Data format, e.g. "XAU/USD"
+  symbol: text("symbol").notNull().unique(), // "XAU_USD" (OANDA) or "BTCUSDT" (Binance)
+  source: text("source").notNull().default("oanda"), // "oanda" | "binance"
   label: text("label").notNull(), // display name, e.g. "Gold"
   unit: text("unit").notNull(), // e.g. "USD/oz", "VND"
   enabled: integer("enabled").notNull().default(1),
