@@ -1,6 +1,7 @@
 import { shouldRefresh, listArticles } from "@/lib/market/fxtinNewsService";
 import { fetchAndStoreFxtinNews } from "@/lib/market/fxtinNews";
 import { FxtinNewsLive } from "@/components/market/FxtinNewsLive";
+import { LiveClock } from "@/components/market/LiveClock";
 
 const REFRESH_THRESHOLD_MINUTES = 5;
 
@@ -27,6 +28,10 @@ export default async function MarketFxtinNewsPage() {
         Tin tức thị trường real-time từ fxtin.com (unofficial) — tự cập nhật ngay khi có tin mới qua
         WebSocket.
       </p>
+
+      <div className="mt-4">
+        <LiveClock />
+      </div>
 
       <FxtinNewsLive initialArticles={initialArticles} />
     </main>
