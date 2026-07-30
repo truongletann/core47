@@ -156,35 +156,50 @@ export const newsArticles = sqliteTable("news_articles", {
   fetchedAt: text("fetched_at").notNull(),
 });
 
-// NEW — Market: economic calendar events, mirrored from ForexFactory's
-// unofficial weekly XML feed. Refreshed wholesale (delete + reinsert) since
-// it's always a rolling week snapshot, not a historical log.
+// NEW — Market: economic calendar events, mirrored from fxtin.com's
+// calendarEvents endpoint (per-day, so a full week is 7 requests).
+// Refreshed wholesale (delete + reinsert) since it's always a rolling week
+// snapshot, not a historical log.
 export const calendarEvents = sqliteTable("calendar_events", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
   country: text("country").notNull(), // currency code, e.g. USD, EUR, JPY
   eventDate: text("event_date").notNull(), // ISO date, e.g. 2026-07-27
-  eventTime: text("event_time"), // raw string from feed, e.g. "8:00am", "All Day", "Tentative"
+  eventTime: text("event_time"), // raw "HH:MM", already Asia/Bangkok (= VN time)
   impact: text("impact", { enum: ["holiday", "low", "medium", "high"] })
     .notNull()
-    .default("low"),
+    .default("low"), // derived from star: >=4 high, ==3 medium, else low
   forecast: text("forecast"),
   previous: text("previous"),
   actual: text("actual"),
-  sourceUrl: text("source_url"),
+  sourceUrl: text("source_url"), // unused by fxtin (no per-event article link)
   sortOrder: integer("sort_order").notNull().default(0), // preserves the feed's original ordering
   fetchedAt: text("fetched_at").notNull(),
+  star: integer("star").notNull().default(0), // fxtin's raw 0-5 importance rating
+  influence: integer("influence"), // fxtin's bull/bear/neutral marker, nullable
+  flagUrl: text("flag_url"), // country flag image URL
+  eventKind: text("event_kind", { enum: ["economic", "speech"] }).notNull().default("economic"),
 });
 
-// NEW — Market: singleton row holding the calendar feed URLs, editable from
-// the admin CMS so the source can change without a code deploy.
+// NEW — Market: singleton row holding the calendar API base URL, editable
+// from the admin CMS so the source can change without a code deploy.
 export const calendarSettings = sqliteTable("calendar_settings", {
   id: text("id").primaryKey(), // fixed to "default", single row
-  todayFeedUrl: text("today_feed_url"),
-  thisWeekFeedUrl: text("thisweek_feed_url").notNull(),
-  // JSON string mapping our logical fields (title/country/date/...) to the
-  // feed's actual tag/key names — lets a renamed/moved field be fixed from
-  // the admin CMS instead of a code deploy. NULL = use the built-in default.
-  fieldMapping: text("field_mapping"),
+  todayFeedUrl: text("today_feed_url"), // unused, kept for schema compat
+  thisWeekFeedUrl: text("thisweek_feed_url").notNull(), // fxtin calendarEvents base URL
+  fieldMapping: text("field_mapping"), // unused, kept for schema compat
   updatedAt: text("updated_at").notNull(),
+});
+
+// NEW — Market: fxtin.com's real-time flash news ("Latest Stories"),
+// distinct from the RSS-aggregated News tab. Polled via lazy refresh
+// (no server-side WebSocket in this serverless deployment).
+export const fxtinNews = sqliteTable("fxtin_news", {
+  id: text("id").primaryKey(),
+  informationId: text("information_id").notNull().unique(), // fxtin's own id, dedup key
+  content: text("content").notNull(), // Vietnamese-translated text
+  time: text("time"), // raw "HH:MM:SS", Asia/Bangkok
+  important: integer("important").notNull().default(0),
+  publishedAt: text("published_at").notNull(), // "YYYY-MM-DD HH:MM:SS", Asia/Bangkok
+  fetchedAt: text("fetched_at").notNull(),
 });

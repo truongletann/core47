@@ -1,118 +1,189 @@
-import { XMLParser } from "fast-xml-parser";
 import { getDb } from "@/db/client";
 import { calendarEvents } from "@/db/schema";
 import { getCalendarSettings } from "./calendarSettingsService";
-import { getPath, resolveFieldMapping, type CalendarFieldMapping } from "./calendarFieldMapping";
 
-// Unofficial ForexFactory calendar feed. No official API exists — see prior
-// research on TradingEconomics/Finnhub pricing. Feed URLs AND the field
-// mapping (which tag/key holds title/date/actual/etc.) live in
-// calendar_settings (admin-editable) rather than hardcoded here, so a dead
-// URL or a renamed field doesn't need a code deploy to fix. The "today"
-// variant 404s outside certain windows, so this always pulls the weekly
-// feed (a superset containing today) — thisWeekFeedUrl is the one used.
-
-const parser = new XMLParser({ ignoreAttributes: true });
+// fxtin.com's economic calendar — used by permission of the project author
+// (a prior project of theirs called this same endpoint). Unofficial/
+// undocumented: no SLA, could change or block at any time. The base URL
+// lives in calendar_settings (admin-editable); the date is appended per
+// request since this endpoint returns one day at a time — a full week is
+// 7 requests, not 1.
 
 type Impact = "holiday" | "low" | "medium" | "high";
+type EventKind = "economic" | "speech";
 
 interface ParsedEvent {
   title: string;
   country: string;
   eventDate: string;
   eventTime: string | null;
-  impact: Impact;
+  star: number;
+  influence: number | null;
+  flagUrl: string | null;
+  eventKind: EventKind;
   forecast: string | null;
   previous: string | null;
   actual: string | null;
-  sourceUrl: string | null;
 }
 
-function textOf(v: unknown): string {
-  if (typeof v === "string") return v.trim();
-  if (v && typeof v === "object" && "#text" in (v as Record<string, unknown>)) {
-    return String((v as Record<string, unknown>)["#text"]).trim();
-  }
-  return "";
+interface FxtinContentItem {
+  translate?: string;
+  currency?: string;
+  country_flag?: string;
+  pub_time_tz?: string;
+  pub_time?: string;
+  previous?: string;
+  consensus?: string;
+  actual?: string;
+  star?: string | number;
+  influence?: number;
 }
 
-function nullableTextOf(v: unknown): string | null {
-  const t = textOf(v);
-  return t.length > 0 ? t : null;
+interface FxtinGroup {
+  content?: FxtinContentItem[];
+  events_translate?: string;
+  currency?: string;
+  country_flag?: string;
+  pub_time_tz?: string;
+  pub_time?: string;
+  star?: string | number;
+  influence?: number;
 }
 
-// Feed dates come as MM-DD-YYYY — convert to ISO (YYYY-MM-DD) so the DB can
-// sort/filter by date lexicographically.
-function toIsoDate(raw: string): string | null {
-  const match = raw.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-  if (!match) return null;
-  const [, mm, dd, yyyy] = match;
-  return `${yyyy}-${mm}-${dd}`;
+function nullableString(v: string | undefined): string | null {
+  if (!v) return null;
+  const t = v.trim();
+  if (t.length === 0 || t === "null" || t === "-%" || t === "-") return null;
+  return t;
 }
 
-function normalizeImpact(raw: string): Impact {
-  const lower = raw.trim().toLowerCase();
-  if (lower === "holiday" || lower === "medium" || lower === "high") return lower;
+// pub_time_tz looks like "2026-07-30 01:00:00", already in Asia/Bangkok
+// (= Vietnam time, same UTC+7 offset) per the API's date_time_zone field.
+function splitDateTime(raw: string | undefined, fallbackDate: string, fallbackTime: string | null) {
+  if (!raw) return { date: fallbackDate, time: fallbackTime };
+  const [date, time] = raw.split(" ");
+  return { date: date ?? fallbackDate, time: time ? time.slice(0, 5) : fallbackTime };
+}
+
+function starToImpact(star: number): Impact {
+  if (star >= 4) return "high";
+  if (star === 3) return "medium";
   return "low";
 }
 
-function parseFeed(xml: string, mapping: CalendarFieldMapping): ParsedEvent[] {
-  const doc = parser.parse(xml) as Record<string, unknown>;
-  const raw = getPath(doc, mapping.itemPath);
-  if (!raw) return [];
-  const items = Array.isArray(raw) ? raw : [raw];
+function parseDayResponse(json: unknown, fallbackDate: string): ParsedEvent[] {
+  const groups = (json as { data?: { list?: FxtinGroup[] } })?.data?.list;
+  if (!Array.isArray(groups)) return [];
 
-  return items
-    .map((item): ParsedEvent | null => {
-      const title = textOf(getPath(item, mapping.title));
-      const country = textOf(getPath(item, mapping.country));
-      const eventDate = toIsoDate(textOf(getPath(item, mapping.date)));
-      if (!title || !eventDate) return null;
+  const events: ParsedEvent[] = [];
 
-      return {
-        title,
-        country: country || "—",
-        eventDate,
-        eventTime: nullableTextOf(getPath(item, mapping.time)),
-        impact: normalizeImpact(textOf(getPath(item, mapping.impact))),
-        forecast: nullableTextOf(getPath(item, mapping.forecast)),
-        previous: nullableTextOf(getPath(item, mapping.previous)),
-        actual: nullableTextOf(getPath(item, mapping.actual)),
-        sourceUrl: nullableTextOf(getPath(item, mapping.url)),
-      };
-    })
-    .filter((e): e is ParsedEvent => e !== null);
+  for (const group of groups) {
+    if (Array.isArray(group.content)) {
+      for (const c of group.content) {
+        const title = nullableString(c.translate);
+        if (!title) continue;
+        const { date, time } = splitDateTime(c.pub_time_tz, fallbackDate, c.pub_time ?? null);
+        events.push({
+          title,
+          country: nullableString(c.currency) ?? "—",
+          eventDate: date,
+          eventTime: time,
+          star: Number(c.star ?? 0),
+          influence: c.influence ?? null,
+          flagUrl: nullableString(c.country_flag),
+          eventKind: "economic",
+          forecast: nullableString(c.consensus),
+          previous: nullableString(c.previous),
+          actual: nullableString(c.actual),
+        });
+      }
+    }
+
+    const speechTitle = nullableString(group.events_translate);
+    if (speechTitle) {
+      const { date, time } = splitDateTime(group.pub_time_tz, fallbackDate, group.pub_time ?? null);
+      events.push({
+        title: speechTitle,
+        country: nullableString(group.currency) ?? "—",
+        eventDate: date,
+        eventTime: time,
+        star: Number(group.star ?? 0),
+        influence: group.influence ?? null,
+        flagUrl: nullableString(group.country_flag),
+        eventKind: "speech",
+        forecast: null,
+        previous: null,
+        actual: null,
+      });
+    }
+  }
+
+  return events;
 }
 
-const ROWS_PER_INSERT = 8; // calendar_events has 12 columns — D1 caps at 100 bound params/statement
+// fxtin's own date format: "YYYY/M/D" (no zero-padding).
+function toFxtinDate(d: Date): string {
+  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function currentWeekDates(): Date[] {
+  const today = new Date();
+  const sunday = new Date(today);
+  sunday.setDate(today.getDate() - today.getDay());
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(sunday);
+    d.setDate(sunday.getDate() + i);
+    return d;
+  });
+}
+
+const ROWS_PER_INSERT = 6; // calendar_events has ~16 columns — D1 caps at 100 bound params/statement
 
 export async function fetchAndStoreCalendar(): Promise<void> {
   const settings = await getCalendarSettings();
-  const mapping = resolveFieldMapping(settings.fieldMapping);
+  const baseUrl = settings.thisWeekFeedUrl;
 
-  const res = await fetch(settings.thisWeekFeedUrl, {
-    headers: { "User-Agent": "core47-market-calendar/1.0" },
-  });
-  if (!res.ok) return;
+  const days = currentWeekDates();
+  const results = await Promise.all(
+    days.map(async (d) => {
+      const fxtinDate = toFxtinDate(d);
+      const isoDate = d.toISOString().slice(0, 10);
+      try {
+        const url = `${baseUrl}?important=0&date=${encodeURIComponent(fxtinDate)}`;
+        const res = await fetch(url, { headers: { "User-Agent": "core47-market-calendar/1.0" } });
+        if (!res.ok) return [];
+        const json = await res.json();
+        return parseDayResponse(json, isoDate);
+      } catch (err) {
+        console.error(`[market/calendar] failed to fetch ${fxtinDate}:`, err);
+        return [];
+      }
+    }),
+  );
 
-  const xml = await res.text();
-  const events = parseFeed(xml, mapping);
-  if (events.length === 0) return;
+  const allEvents = results.flat();
+  if (allEvents.length === 0) return;
+
+  allEvents.sort((a, b) => (a.eventDate + (a.eventTime ?? "")).localeCompare(b.eventDate + (b.eventTime ?? "")));
 
   const now = new Date().toISOString();
-  const rows = events.map((e, index) => ({
+  const rows = allEvents.map((e, index) => ({
     id: crypto.randomUUID(),
     title: e.title,
     country: e.country,
     eventDate: e.eventDate,
     eventTime: e.eventTime,
-    impact: e.impact,
+    impact: starToImpact(e.star),
     forecast: e.forecast,
     previous: e.previous,
     actual: e.actual,
-    sourceUrl: e.sourceUrl,
+    sourceUrl: null,
     sortOrder: index,
     fetchedAt: now,
+    star: e.star,
+    influence: e.influence,
+    flagUrl: e.flagUrl,
+    eventKind: e.eventKind,
   }));
 
   const db = await getDb();

@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DEFAULT_FIELD_MAPPING } from "@/lib/market/calendarFieldMapping";
 
-const DEFAULT_MAPPING_JSON = JSON.stringify(DEFAULT_FIELD_MAPPING, null, 2);
-
-const emptyForm = { todayFeedUrl: "", thisWeekFeedUrl: "", fieldMapping: "" };
+const emptyForm = { thisWeekFeedUrl: "" };
 type FormState = typeof emptyForm;
 
 export default function AdminMarketCalendarSettingsPage() {
@@ -17,27 +14,10 @@ export default function AdminMarketCalendarSettingsPage() {
 
   useEffect(() => {
     fetch("/api/admin/market/calendar-settings", { credentials: "include" })
-      .then(
-        (r) =>
-          r.json() as Promise<{
-            data?: {
-              settings?: {
-                todayFeedUrl: string | null;
-                thisWeekFeedUrl: string;
-                fieldMapping: string | null;
-              };
-            };
-          }>,
-      )
+      .then((r) => r.json() as Promise<{ data?: { settings?: { thisWeekFeedUrl: string } } }>)
       .then((json) => {
         const s = json?.data?.settings;
-        if (s) {
-          setForm({
-            todayFeedUrl: s.todayFeedUrl ?? "",
-            thisWeekFeedUrl: s.thisWeekFeedUrl,
-            fieldMapping: s.fieldMapping ?? "",
-          });
-        }
+        if (s) setForm({ thisWeekFeedUrl: s.thisWeekFeedUrl });
       })
       .finally(() => setLoading(false));
   }, []);
@@ -89,54 +69,18 @@ export default function AdminMarketCalendarSettingsPage() {
     <div>
       <h1 className="font-display text-2xl font-semibold">Market: Calendar Settings</h1>
       <p className="mt-1 text-sm text-[rgb(var(--muted))]">
-        URL nguồn lịch kinh tế — đổi ở đây không cần deploy lại code. Trang /market/calendar dùng "This week
-        feed URL" để tải dữ liệu (feed "today" hiện không ổn định, chỉ lưu lại để dùng sau nếu cần).
+        URL nguồn lịch kinh tế (fxtin.com) — đổi ở đây không cần deploy lại code. Trang /market/calendar
+        gọi endpoint này 7 lần/lần refresh (mỗi ngày trong tuần 1 lần, vì API chỉ trả dữ liệu theo ngày).
       </p>
 
       <div className="mt-6 flex max-w-xl flex-col gap-3">
         <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">This week feed URL (đang dùng)</span>
+          <span className="mb-1 block text-[rgb(var(--muted))]">Calendar API URL</span>
           <input
             value={form.thisWeekFeedUrl}
             onChange={(e) => setForm({ ...form, thisWeekFeedUrl: e.target.value })}
             className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
           />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">Today feed URL (dự phòng, chưa dùng)</span>
-          <input
-            value={form.todayFeedUrl}
-            onChange={(e) => setForm({ ...form, todayFeedUrl: e.target.value })}
-            placeholder="https://..."
-            className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-          />
-        </label>
-
-        <label className="text-sm">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-[rgb(var(--muted))]">
-              Field mapping (JSON) — để trống = dùng mặc định
-            </span>
-            <button
-              type="button"
-              onClick={() => setForm({ ...form, fieldMapping: DEFAULT_MAPPING_JSON })}
-              className="text-xs text-[rgb(var(--accent))] hover:opacity-80"
-            >
-              Điền mặc định
-            </button>
-          </div>
-          <textarea
-            value={form.fieldMapping}
-            onChange={(e) => setForm({ ...form, fieldMapping: e.target.value })}
-            rows={12}
-            placeholder={DEFAULT_MAPPING_JSON}
-            className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-xs outline-none"
-          />
-          <p className="mt-1 text-xs text-[rgb(var(--muted))]">
-            Khi nguồn đổi tên tag (vd &lt;date&gt; → &lt;event_date&gt;), sửa giá trị tương ứng ở đây —
-            không cần deploy lại. itemPath là đường dẫn tới danh sách sự kiện trong XML đã parse (vd
-            "weeklyevents.event"); các field còn lại là đường dẫn bên trong 1 event.
-          </p>
         </label>
 
         {error && <p className="text-xs text-red-600">{error}</p>}

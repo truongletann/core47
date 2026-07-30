@@ -5,8 +5,7 @@ import { CalendarSettingsSchema, type CalendarSettingsInput } from "./calendarSe
 
 const SETTINGS_ID = "default";
 
-const FALLBACK_THISWEEK_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.xml";
-const FALLBACK_TODAY_URL = "https://nfs.faireconomy.media/ff_calendar_today.xml";
+const FALLBACK_CALENDAR_URL = "https://www.fxtin.com/page/finance/calendarEvents";
 
 export async function getCalendarSettings() {
   const db = await getDb();
@@ -21,8 +20,8 @@ export async function getCalendarSettings() {
   // ever missing (e.g. a fresh DB that skipped the seed insert).
   const record = {
     id: SETTINGS_ID,
-    todayFeedUrl: FALLBACK_TODAY_URL,
-    thisWeekFeedUrl: FALLBACK_THISWEEK_URL,
+    todayFeedUrl: null,
+    thisWeekFeedUrl: FALLBACK_CALENDAR_URL,
     fieldMapping: null,
     updatedAt: new Date().toISOString(),
   };
@@ -38,9 +37,7 @@ export async function updateCalendarSettings(raw: CalendarSettingsInput) {
   await db
     .update(calendarSettings)
     .set({
-      todayFeedUrl: input.todayFeedUrl,
       thisWeekFeedUrl: input.thisWeekFeedUrl,
-      fieldMapping: input.fieldMapping,
       updatedAt: new Date().toISOString(),
     })
     .where(eq(calendarSettings.id, SETTINGS_ID));

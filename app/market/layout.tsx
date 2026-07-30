@@ -10,6 +10,7 @@ const TABS = [
   { href: "/market/prices", label: "Prices" },
   { href: "/market/portfolio", label: "Portfolio" },
   { href: "/market/news", label: "News" },
+  { href: "/market/fxtin-news", label: "Fxtin News" },
 ];
 
 export default function MarketLayout({ children }: { children: React.ReactNode }) {

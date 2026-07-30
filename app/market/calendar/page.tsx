@@ -18,8 +18,8 @@ export default async function MarketCalendarPage() {
     <main className="py-10">
       <h1 className="font-display text-2xl font-semibold">Forex / World Calendar</h1>
       <p className="mt-1 text-sm text-[rgb(var(--muted))]">
-        Nguồn: ForexFactory (unofficial feed) — cột giờ hiển thị giờ gốc kèm giờ Việt Nam trong ngoặc
-        (múi giờ nguồn = UTC, VN = UTC+7). Chỉ có dữ liệu tuần hiện tại (không có feed tuần trước/sau).
+        Nguồn: fxtin.com (unofficial) — giờ hiển thị đã là giờ Việt Nam (UTC+7). Chỉ có dữ liệu tuần
+        hiện tại (không có API tuần trước/sau).
       </p>
 
       {events.length === 0 ? (
