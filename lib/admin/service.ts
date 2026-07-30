@@ -1,5 +1,6 @@
 import { eq, asc, desc } from "drizzle-orm";
 import { getDb } from "@/db/client";
+import { getBlogBucket } from "@/lib/storage/r2";
 import { categories, tools, users, list100Items, list100Suggestions, blogPosts } from "@/db/schema";
 import {
   CategorySchema,
@@ -213,6 +214,17 @@ export async function getBlogPostAdminById(id: string) {
   return db.select().from(blogPosts).where(eq(blogPosts.id, id)).get();
 }
 
+// Best-effort cleanup — a missing/already-gone key should never fail the
+// caller's actual DB operation.
+async function deleteBlogCoverImage(key: string) {
+  try {
+    const bucket = await getBlogBucket();
+    await bucket.delete(`blog-covers/${key}`);
+  } catch {
+    // ignore
+  }
+}
+
 export async function createBlogPost(input: BlogPostInput) {
   const db = await getDb();
 
@@ -244,7 +256,7 @@ export async function updateBlogPost(id: string, input: BlogPostInput) {
   if (existingSlug && existingSlug.id !== id) throw new Error("SLUG_TAKEN");
 
   const existing = await db
-    .select({ publishedAt: blogPosts.publishedAt })
+    .select({ publishedAt: blogPosts.publishedAt, coverImageKey: blogPosts.coverImageKey })
     .from(blogPosts)
     .where(eq(blogPosts.id, id))
     .get();
@@ -266,9 +278,25 @@ export async function updateBlogPost(id: string, input: BlogPostInput) {
       updatedAt: new Date().toISOString(),
     })
     .where(eq(blogPosts.id, id));
+
+  // Cover image was replaced or removed — the old R2 object is now orphaned.
+  if (existing?.coverImageKey && existing.coverImageKey !== input.coverImageKey) {
+    await deleteBlogCoverImage(existing.coverImageKey);
+  }
 }
 
 export async function deleteBlogPost(id: string) {
   const db = await getDb();
+
+  const existing = await db
+    .select({ coverImageKey: blogPosts.coverImageKey })
+    .from(blogPosts)
+    .where(eq(blogPosts.id, id))
+    .get();
+
   await db.delete(blogPosts).where(eq(blogPosts.id, id));
+
+  if (existing?.coverImageKey) {
+    await deleteBlogCoverImage(existing.coverImageKey);
+  }
 }
