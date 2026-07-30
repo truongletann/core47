@@ -203,3 +203,29 @@ export const fxtinNews = sqliteTable("fxtin_news", {
   publishedAt: text("published_at").notNull(), // "YYYY-MM-DD HH:MM:SS", Asia/Bangkok
   fetchedAt: text("fetched_at").notNull(),
 });
+
+// NEW — Market: singleton row holding the Twelve Data API key, editable
+// from the admin CMS. Never committed to git — set directly via SQL or the
+// admin form, same secret-handling convention as any other credential.
+export const priceSettings = sqliteTable("price_settings", {
+  id: text("id").primaryKey(), // fixed to "default", single row
+  twelveDataApiKey: text("twelve_data_api_key"),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// NEW — Market: World prices (Twelve Data symbols) shown on /market/prices.
+// Admin manages which symbols are tracked ("+ Add symbol"); the fetch job
+// writes the latest quote directly onto each row (small dataset, no need
+// for a separate quotes table).
+export const priceSymbols = sqliteTable("price_symbols", {
+  id: text("id").primaryKey(),
+  symbol: text("symbol").notNull().unique(), // Twelve Data format, e.g. "XAU/USD"
+  label: text("label").notNull(), // display name, e.g. "Gold"
+  unit: text("unit").notNull(), // e.g. "USD/oz", "VND"
+  enabled: integer("enabled").notNull().default(1),
+  sortOrder: integer("sort_order").notNull().default(0),
+  lastPrice: real("last_price"),
+  lastChangePercent: real("last_change_percent"),
+  lastFetchedAt: text("last_fetched_at"),
+  createdAt: text("created_at").notNull(),
+});

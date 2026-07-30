@@ -14,6 +14,8 @@ const NAV = [
   { href: "/blog", label: "Blog" },
   { href: "/market/news-sources", label: "Market: News Sources" },
   { href: "/market/calendar-settings", label: "Market: Calendar Settings" },
+  { href: "/market/price-settings", label: "Market: Price Settings" },
+  { href: "/market/price-symbols", label: "Market: Price Symbols" },
   { href: "/market/portfolios", label: "Market: Portfolios" },
 ];
 
