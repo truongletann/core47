@@ -175,3 +175,12 @@ export const calendarEvents = sqliteTable("calendar_events", {
   sortOrder: integer("sort_order").notNull().default(0), // preserves the feed's original ordering
   fetchedAt: text("fetched_at").notNull(),
 });
+
+// NEW — Market: singleton row holding the calendar feed URLs, editable from
+// the admin CMS so the source can change without a code deploy.
+export const calendarSettings = sqliteTable("calendar_settings", {
+  id: text("id").primaryKey(), // fixed to "default", single row
+  todayFeedUrl: text("today_feed_url"),
+  thisWeekFeedUrl: text("thisweek_feed_url").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});

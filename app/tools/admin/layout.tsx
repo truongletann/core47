@@ -13,6 +13,7 @@ const NAV = [
   { href: "/list100", label: "List 100" },
   { href: "/blog", label: "Blog" },
   { href: "/market/news-sources", label: "Market: News Sources" },
+  { href: "/market/calendar-settings", label: "Market: Calendar Settings" },
   { href: "/market/portfolios", label: "Market: Portfolios" },
 ];
 

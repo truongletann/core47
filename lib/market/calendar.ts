@@ -1,12 +1,14 @@
 import { XMLParser } from "fast-xml-parser";
 import { getDb } from "@/db/client";
 import { calendarEvents } from "@/db/schema";
+import { getCalendarSettings } from "./calendarSettingsService";
 
-// Unofficial ForexFactory weekly calendar feed. No official API exists —
-// see prior research on TradingEconomics/Finnhub pricing. The "today" feed
-// (ff_calendar_today.xml) 404s outside specific windows, so this always
-// pulls the weekly feed (a superset containing today) instead.
-const CALENDAR_FEED_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.xml";
+// Unofficial ForexFactory calendar feed. No official API exists — see prior
+// research on TradingEconomics/Finnhub pricing. Feed URLs live in
+// calendar_settings (admin-editable) rather than hardcoded here, so a dead
+// or changed URL doesn't need a code deploy to fix. The "today" variant
+// 404s outside certain windows, so this always pulls the weekly feed (a
+// superset containing today) — thisWeekFeedUrl is the one actually used.
 
 const parser = new XMLParser({ ignoreAttributes: true });
 
@@ -85,7 +87,8 @@ function parseFeed(xml: string): ParsedEvent[] {
 const ROWS_PER_INSERT = 8; // calendar_events has 12 columns — D1 caps at 100 bound params/statement
 
 export async function fetchAndStoreCalendar(): Promise<void> {
-  const res = await fetch(CALENDAR_FEED_URL, {
+  const settings = await getCalendarSettings();
+  const res = await fetch(settings.thisWeekFeedUrl, {
     headers: { "User-Agent": "core47-market-calendar/1.0" },
   });
   if (!res.ok) return;
