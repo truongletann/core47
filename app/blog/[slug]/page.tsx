@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getPublishedPostBySlug } from "@/lib/blog/service";
 import { renderMarkdown } from "@/lib/blog/markdown";
+import { estimateReadingTime } from "@/lib/blog/readingTime";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -35,6 +36,7 @@ export default async function BlogPostPage({
         year: "numeric",
       })
     : null;
+  const readingTime = estimateReadingTime(post.content);
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-16">
@@ -49,7 +51,11 @@ export default async function BlogPostPage({
 
       <h1 className="font-display text-3xl font-semibold">{post.title}</h1>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {date && <span className="font-data text-xs text-[rgb(var(--muted))]">{date}</span>}
+        <span className="font-data text-xs text-[rgb(var(--muted))]">
+          {date}
+          {date && " · "}
+          {readingTime} min read
+        </span>
         {post.tags.map((tag) => (
           <span
             key={tag}

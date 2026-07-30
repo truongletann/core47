@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { List, LayoutGrid } from "lucide-react";
+import { List, LayoutGrid, Search } from "lucide-react";
 import type { BlogPost } from "@/types/blog";
 import { BlogListItem } from "./BlogListItem";
 import { BlogGridCard } from "./BlogGridCard";
@@ -12,6 +12,7 @@ const VIEW_STORAGE_KEY = "core47-blog-view";
 
 export function BlogGrid({ posts, tags }: { posts: BlogPost[]; tags: string[] }) {
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
   const [view, setView] = useState<ViewMode>("list");
 
   useEffect(() => {
@@ -25,12 +26,28 @@ export function BlogGrid({ posts, tags }: { posts: BlogPost[]; tags: string[] })
   }
 
   const filtered = useMemo(() => {
-    if (!activeTag) return posts;
-    return posts.filter((p) => p.tags.includes(activeTag));
-  }, [posts, activeTag]);
+    return posts.filter((p) => {
+      const matchTag = activeTag ? p.tags.includes(activeTag) : true;
+      const matchSearch = search
+        ? `${p.title} ${p.excerpt} ${p.tags.join(" ")}`.toLowerCase().includes(search.toLowerCase())
+        : true;
+      return matchTag && matchSearch;
+    });
+  }, [posts, activeTag, search]);
 
   return (
     <div>
+      <div className="relative mb-4 w-full sm:w-64">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--muted))]" size={15} />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search posts..."
+          maxLength={80}
+          className="font-data w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] py-2 pl-9 pr-3 text-sm text-[rgb(var(--fg))] shadow-sm outline-none focus:ring-2 focus:ring-[rgb(var(--accent)/0.3)]"
+        />
+      </div>
+
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         {tags.length > 0 ? (
           <div className="flex flex-wrap gap-2">
@@ -93,7 +110,9 @@ export function BlogGrid({ posts, tags }: { posts: BlogPost[]; tags: string[] })
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-center text-sm text-[rgb(var(--muted))]">No posts here yet.</p>
+        <p className="text-center text-sm text-[rgb(var(--muted))]">
+          {search || activeTag ? "No matching posts." : "No posts here yet."}
+        </p>
       ) : view === "grid" ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((post) => (

@@ -1,6 +1,7 @@
 import { marked, type Tokens } from "marked";
 import matter from "gray-matter";
 import { emojify } from "node-emoji";
+import { highlightCode } from "./highlight";
 
 // VitePress/Docusaurus-style container syntax: :::type Optional Title\n...\n:::
 const CONTAINER_RE = /^:::([a-zA-Z]+)(?:[ \t]+(.*))?\r?\n([\s\S]*?)\r?\n:::[ \t]*$/gm;
@@ -66,10 +67,11 @@ function buildTocHtml(headings: HeadingEntry[]): string {
   return `\n\n<nav class="md-toc"><p class="md-toc-title">Contents</p><ul>${items}</ul></nav>\n\n`;
 }
 
-// Assigns an id to each heading tag in the same order precomputed by
-// extractHeadings, so links in the table of contents (#slug) jump to the
-// right spot.
-class HeadingIdRenderer extends marked.Renderer {
+// - Assigns an id to each heading tag in the same order precomputed by
+//   extractHeadings, so links in the table of contents (#slug) jump to the
+//   right spot.
+// - Syntax-highlights fenced code blocks via highlight.js.
+class BlogRenderer extends marked.Renderer {
   private queue: HeadingEntry[];
 
   constructor(headings: HeadingEntry[]) {
@@ -81,6 +83,12 @@ class HeadingIdRenderer extends marked.Renderer {
     const text = this.parser.parseInline(tokens);
     const next = this.queue.shift();
     return next ? `<h${depth} id="${next.slug}">${text}</h${depth}>\n` : `<h${depth}>${text}</h${depth}>\n`;
+  }
+
+  override code({ text, lang }: Tokens.Code): string {
+    const { html, language } = highlightCode(text, lang);
+    const langClass = language ? ` language-${language}` : "";
+    return `<pre><code class="hljs${langClass}">${html}</code></pre>\n`;
   }
 }
 
@@ -101,7 +109,7 @@ export function stripFrontmatter(raw: string): string {
 function renderContainers(text: string): string {
   return text.replace(CONTAINER_RE, (_match, rawType: string, title: string | undefined, inner: string) => {
     const type = CONTAINER_ALIASES[rawType.toLowerCase()] ?? "info";
-    const innerHtml = marked.parse(inner, { async: false }) as string;
+    const innerHtml = marked.parse(inner, { async: false, renderer: new BlogRenderer([]) }) as string;
     const titleHtml = title ? `<p class="md-callout-title">${title}</p>` : "";
     return `\n\n<div class="md-callout md-callout-${type}">\n\n${titleHtml}\n\n${innerHtml}\n\n</div>\n\n`;
   });
@@ -113,6 +121,7 @@ function renderContainers(text: string): string {
  * - Containers like :::warning / :::info / :::success / :::tip / :::danger
  * - Emoji shortcodes like :small_blue_diamond:
  * - [TOC] auto-generates a table of contents with heading ids to jump to
+ * - Fenced code blocks (```lang) get syntax highlighting via highlight.js
  * - Raw HTML embedded directly (center, div, img...) — marked already
  *   passes this through unchanged by default
  */
@@ -131,6 +140,6 @@ export function renderMarkdown(raw: string): string {
 
   return marked.parse(withContainers, {
     async: false,
-    renderer: new HeadingIdRenderer(headings),
+    renderer: new BlogRenderer(headings),
   }) as string;
 }

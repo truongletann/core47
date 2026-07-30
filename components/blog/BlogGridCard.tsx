@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { BlogPost } from "@/types/blog";
+import { estimateReadingTime } from "@/lib/blog/readingTime";
 
 export function BlogGridCard({ post }: { post: BlogPost }) {
   const date = post.publishedAt
@@ -9,6 +10,7 @@ export function BlogGridCard({ post }: { post: BlogPost }) {
         year: "numeric",
       })
     : null;
+  const readingTime = estimateReadingTime(post.content);
 
   return (
     <Link
@@ -39,7 +41,11 @@ export function BlogGridCard({ post }: { post: BlogPost }) {
           {post.excerpt}
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-2">
-          {date && <span className="font-data text-xs text-[rgb(var(--muted))]">{date}</span>}
+          <span className="font-data text-xs text-[rgb(var(--muted))]">
+            {date}
+            {date && " · "}
+            {readingTime} min read
+          </span>
           {post.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
