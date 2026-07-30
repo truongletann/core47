@@ -98,9 +98,16 @@ export async function fetchAndStoreNews(): Promise<void> {
     sources.map(async (source) => {
       try {
         const res = await fetch(source.url, {
-          headers: { "User-Agent": "core47-market-news/1.0" },
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+            Accept: "application/rss+xml, application/xml, text/xml, */*",
+          },
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+          console.error(`[market/rss] ${source.url} returned HTTP ${res.status}`);
+          return;
+        }
 
         const xml = await res.text();
         const articles = parseFeed(xml);
