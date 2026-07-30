@@ -1,9 +1,7 @@
 interface Article {
-  id: string;
   content: string;
   time: string | null;
   important: boolean;
-  publishedAt: string;
 }
 
 export function FxtinNewsRow({ article }: { article: Article }) {
