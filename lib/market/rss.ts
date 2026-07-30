@@ -29,6 +29,24 @@ function textOf(v: unknown): string {
   return "";
 }
 
+// Some feeds (Google News search RSS in particular) put raw HTML — often
+// just a link wrapping the headline — inside <description>. We render
+// summaries as plain text, so strip tags rather than show "<a href=...>".
+// fast-xml-parser only decodes the 5 predefined XML entities, so a
+// double-escaped feed (&amp;nbsp; -> &nbsp; after one pass) still needs the
+// common HTML entities decoded here.
+function stripHtml(v: string): string {
+  return v
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function linkOf(v: unknown): string {
   // Atom <link href="..."/> vs RSS <link>text</link>
   if (v && typeof v === "object") {
@@ -75,7 +93,7 @@ function parseFeed(xml: string): ParsedArticle[] {
       const link = linkOf(item.link);
       if (!title || !link) return null;
 
-      const summary = textOf(item.description ?? item.summary ?? item.content) || null;
+      const summary = stripHtml(textOf(item.description ?? item.summary ?? item.content)) || null;
       return {
         title,
         link,
