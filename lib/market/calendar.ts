@@ -150,7 +150,13 @@ export async function fetchAndStoreCalendar(): Promise<void> {
       const isoDate = d.toISOString().slice(0, 10);
       try {
         const url = `${baseUrl}?important=0&date=${encodeURIComponent(fxtinDate)}`;
-        const res = await fetch(url, { headers: { "User-Agent": "core47-market-calendar/1.0" } });
+        const res = await fetch(url, {
+          headers: {
+            Accept: "application/json, text/plain, */*",
+            "Accept-Language": "vi,en-US;q=0.9,en;q=0.8",
+            Referer: "https://fxtin.com/",
+          },
+        });
         if (!res.ok) return [];
         const json = await res.json();
         return parseDayResponse(json, isoDate);

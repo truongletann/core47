@@ -29,7 +29,12 @@ const ARTICLE_RETENTION_DAYS = 14;
 export async function fetchAndStoreFxtinNews(): Promise<void> {
   const res = await fetch(FXTIN_NEWS_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json;charset=UTF-8",
+      Accept: "application/json, text/plain, */*",
+      "Accept-Language": "vi,en-US;q=0.9,en;q=0.8",
+      Referer: "https://fxtin.com/",
+    },
     body: JSON.stringify({ limit: FETCH_LIMIT, page: 1 }),
   });
   if (!res.ok) return;
