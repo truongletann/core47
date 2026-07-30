@@ -37,7 +37,7 @@ export default async function BlogPostPage({
     : null;
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-16">
+    <main className="mx-auto max-w-5xl px-6 py-16">
       {post.coverImageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
