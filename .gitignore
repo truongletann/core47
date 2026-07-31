@@ -42,3 +42,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude Code local-only permission overrides (personal, not shared config)
+.claude/settings.local.json

@@ -1,37 +1,30 @@
 import { marked, type Tokens } from "marked";
 import matter from "gray-matter";
 import { emojify } from "node-emoji";
-import sanitizeHtml from "sanitize-html";
 import { highlightCode } from "./highlight";
 
-// Allow the tags/attributes actually produced by this renderer (headings
-// with ids, highlighted code blocks, callout containers, table of contents)
-// plus common rich-content tags editors paste raw HTML for, while still
-// blocking script/style/iframe/on*-handlers/javascript: URLs.
-const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
-  allowedTags: sanitizeHtml.defaults.allowedTags.concat([
-    "img",
-    "h1",
-    "h2",
-    "span",
-    "div",
-    "video",
-    "audio",
-    "source",
-    "nav",
-    "center",
-  ]),
-  allowedAttributes: {
-    ...sanitizeHtml.defaults.allowedAttributes,
-    "*": ["id", "class", "style", "title"],
-    a: ["href", "name", "target", "rel"],
-    img: ["src", "alt", "width", "height", "loading"],
-    video: ["src", "controls", "width", "height", "poster"],
-    source: ["src", "type"],
-  },
-  allowedSchemes: ["http", "https", "mailto", "data"],
-  allowedSchemesByTag: { img: ["http", "https", "data"] },
-};
+// Deliberately not using sanitize-html/DOMPurify here: they pull in enough
+// weight (htmlparser2, deepmerge, a full DOM shim, ...) to push the deployed
+// Worker over Cloudflare's 3 MiB free-plan size limit. This regex-based
+// sanitizer is a narrower defense-in-depth pass — it strips the tags/attrs
+// that actually execute code (script/style/iframe/object/embed/svg/math,
+// on*= handlers, javascript:/vbscript: URLs) rather than allow-listing the
+// full HTML grammar. It is not a substitute for treating post content as
+// untrusted; content here is only ever authored by an admin.
+const DANGEROUS_ELEMENTS = /<(script|style|iframe|object|embed|link|meta|base|form|svg|math)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
+const DANGEROUS_TAGS = /<\/?(script|style|iframe|object|embed|link|meta|base|form|svg|math)\b[^>]*\/?>/gi;
+const EVENT_HANDLER_ATTR = /\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi;
+const JS_URL_ATTR_QUOTED = /\s(href|src|action|formaction)\s*=\s*("|')\s*(?:javascript|vbscript):[^"']*\2/gi;
+const JS_URL_ATTR_UNQUOTED = /\s(href|src|action|formaction)\s*=\s*(?:javascript|vbscript):[^\s>]*/gi;
+
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(DANGEROUS_ELEMENTS, "")
+    .replace(DANGEROUS_TAGS, "")
+    .replace(EVENT_HANDLER_ATTR, "")
+    .replace(JS_URL_ATTR_QUOTED, "")
+    .replace(JS_URL_ATTR_UNQUOTED, "");
+}
 
 // VitePress/Docusaurus-style container syntax: :::type Optional Title\n...\n:::
 const CONTAINER_RE = /^:::([a-zA-Z]+)(?:[ \t]+(.*))?\r?\n([\s\S]*?)\r?\n:::[ \t]*$/gm;
@@ -173,5 +166,5 @@ export function renderMarkdown(raw: string): string {
     renderer: new BlogRenderer(headings),
   }) as string;
 
-  return sanitizeHtml(html, SANITIZE_OPTIONS);
+  return sanitizeHtml(html);
 }
