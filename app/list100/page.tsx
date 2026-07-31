@@ -33,6 +33,15 @@ export default async function List100Page() {
         </div>
       )}
 
+      <div className="mx-auto mt-20 mb-4 h-px w-24 bg-gradient-to-r from-transparent via-[rgb(var(--border))] to-transparent" />
+      <p className="mx-auto max-w-xl px-6 text-center text-[11px] tracking-[0.2em] text-[rgb(var(--muted))] uppercase">
+        And, at the end
+      </p>
+      <p className="font-display mx-auto mt-4 max-w-xl px-6 text-center text-xl leading-relaxed font-medium italic text-[rgb(var(--fg))]">
+        Nhìn lại danh sách này vào cuối đời và mỉm cười mãn nguyện vì không hối tiếc điều gì!
+      </p>
+      <div className="mx-auto mt-10 h-px w-24 bg-gradient-to-r from-transparent via-[rgb(var(--border))] to-transparent" />
+
       <SuggestionForm />
     </main>
   );
