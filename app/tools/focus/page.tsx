@@ -10,9 +10,10 @@ import { FocusDock, type DockKey } from "@/components/focus/FocusDock";
 import { FocusModal } from "@/components/focus/FocusModal";
 import { ThemePickerModal } from "@/components/focus/ThemePickerModal";
 import { MusicModal } from "@/components/focus/MusicModal";
+import { NowPlayingWidget } from "@/components/focus/NowPlayingWidget";
 import { PomoModal } from "@/components/focus/PomoModal";
 import { TaskList } from "@/components/focus/TaskList";
-import type { Theme } from "@/lib/focus/types";
+import type { Theme, Playlist } from "@/lib/focus/types";
 
 const DOCK_TITLES: Record<DockKey, string> = {
   ambience: "Ambience",
@@ -24,6 +25,7 @@ const DOCK_TITLES: Record<DockKey, string> = {
 export default function FocusPage() {
   const { tasks, stats, addTask, toggleTaskDone, deleteTask, logSession } = useFocusData();
   const [activeTheme, setActiveTheme] = useState<Theme | null>(null);
+  const [activePlaylist, setActivePlaylist] = useState<Playlist | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [focusMode, setFocusMode] = useState(false);
   const [openPanel, setOpenPanel] = useState<DockKey | null>(null);
@@ -89,6 +91,11 @@ export default function FocusPage() {
         />
       )}
 
+      {/* Mounted unconditionally (never inside a modal) so closing/reopening
+          any dock panel or toggling Focus mode doesn't unmount the iframe
+          and kill playback — only the widget's own close button does. */}
+      <NowPlayingWidget playlist={activePlaylist} visible={!focusMode} onClose={() => setActivePlaylist(null)} />
+
       {openPanel && (
         <FocusModal title={DOCK_TITLES[openPanel]} onClose={() => setOpenPanel(null)}>
           {openPanel === "ambience" && (
@@ -100,7 +107,9 @@ export default function FocusPage() {
               }}
             />
           )}
-          {openPanel === "music" && <MusicModal />}
+          {openPanel === "music" && (
+            <MusicModal activePlaylist={activePlaylist} onSelect={setActivePlaylist} />
+          )}
           {openPanel === "pomo" && (
             <PomoModal
               workMinutes={durations.workMinutes}

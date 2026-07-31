@@ -47,6 +47,7 @@ export interface Playlist {
   category: string | null;
   isEnabled: boolean;
   sortOrder: number;
+  thumbnailUrl?: string | null;
 }
 
 export interface FocusPreset {
