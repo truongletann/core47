@@ -1,6 +1,6 @@
 "use client";
 
-import { CloudRain, Snowflake, Sparkles, Leaf } from "lucide-react";
+import { CloudRain, Snowflake, Sparkles, Leaf, CloudFog, Star, Sparkle } from "lucide-react";
 import type { Effects } from "@/components/focus/EffectsOverlay";
 
 const ITEMS: { key: keyof Effects; label: string; icon: React.ComponentType<{ size?: number }> }[] = [
@@ -8,6 +8,9 @@ const ITEMS: { key: keyof Effects; label: string; icon: React.ComponentType<{ si
   { key: "snow", label: "Snow", icon: Snowflake },
   { key: "fireflies", label: "Fireflies", icon: Sparkles },
   { key: "leaves", label: "Falling Leaves", icon: Leaf },
+  { key: "fog", label: "Fog", icon: CloudFog },
+  { key: "shootingStars", label: "Shooting Stars", icon: Star },
+  { key: "dust", label: "Light Dust", icon: Sparkle },
 ];
 
 function Switch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
@@ -15,11 +18,11 @@ function Switch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
     <button
       onClick={onToggle}
       aria-pressed={on}
-      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${on ? "bg-violet-600" : "bg-white/15"}`}
+      className={`relative h-6 w-11 shrink-0 overflow-hidden rounded-full transition-colors ${on ? "bg-violet-600" : "bg-white/15"}`}
     >
       <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-          on ? "translate-x-[22px]" : "translate-x-0.5"
+        className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.4)] transition-transform ${
+          on ? "translate-x-5" : "translate-x-0"
         }`}
       />
     </button>

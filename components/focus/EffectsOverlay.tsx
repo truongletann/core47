@@ -7,9 +7,20 @@ export interface Effects {
   snow: boolean;
   fireflies: boolean;
   leaves: boolean;
+  fog: boolean;
+  shootingStars: boolean;
+  dust: boolean;
 }
 
-export const NO_EFFECTS: Effects = { rain: false, snow: false, fireflies: false, leaves: false };
+export const NO_EFFECTS: Effects = {
+  rain: false,
+  snow: false,
+  fireflies: false,
+  leaves: false,
+  fog: false,
+  shootingStars: false,
+  dust: false,
+};
 
 interface Drop {
   x: number;
@@ -38,7 +49,7 @@ export function EffectsOverlay({ effects }: { effects: Effects }) {
   const effectsRef = useRef(effects);
   effectsRef.current = effects;
 
-  const anyOn = effects.rain || effects.snow || effects.fireflies || effects.leaves;
+  const anyOn = Object.values(effects).some(Boolean);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -88,6 +99,24 @@ export function EffectsOverlay({ effects }: { effects: Effects }) {
       drift: (Math.random() - 0.5) * 1.2,
       angle: Math.random() * Math.PI * 2,
     }));
+    const fogBanks: Drop[] = Array.from({ length: 5 }, (_, i) => ({
+      x: Math.random() * w,
+      y: h * (0.55 + i * 0.09),
+      speed: 0.15 + Math.random() * 0.2,
+      size: w * (0.35 + Math.random() * 0.25),
+      drift: 0,
+      angle: 0,
+    }));
+    const dust: Drop[] = Array.from({ length: 45 }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      speed: 0.15 + Math.random() * 0.3,
+      size: 0.8 + Math.random() * 1.6,
+      drift: Math.random() * Math.PI * 2,
+      angle: 0,
+    }));
+    let nextShootingStar = 3 + Math.random() * 6;
+    let shootingStar: { x: number; y: number; life: number } | null = null;
 
     let t = 0;
 
@@ -157,6 +186,53 @@ export function EffectsOverlay({ effects }: { effects: Effects }) {
             p.x = Math.random() * w;
             p.y = -10;
           }
+        }
+      }
+
+      if (e.fog) {
+        for (const p of fogBanks) {
+          const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+          grad.addColorStop(0, "rgba(226,232,240,0.16)");
+          grad.addColorStop(1, "rgba(226,232,240,0)");
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.ellipse(p.x, p.y, p.size, p.size * 0.35, 0, 0, Math.PI * 2);
+          ctx.fill();
+          p.x += p.speed;
+          if (p.x - p.size > w) p.x = -p.size;
+        }
+      }
+
+      if (e.dust) {
+        for (const p of dust) {
+          const glow = 0.25 + 0.4 * Math.abs(Math.sin(t * 1.3 + p.drift));
+          glowDot(ctx, p.x + Math.sin(t * 0.5 + p.drift) * 12, p.y, p.size * 3, "255,244,214", glow);
+          p.y -= p.speed;
+          if (p.y < -10) {
+            p.x = Math.random() * w;
+            p.y = h + 10;
+          }
+        }
+      }
+
+      if (e.shootingStars) {
+        nextShootingStar -= 0.02;
+        if (!shootingStar && nextShootingStar <= 0) {
+          shootingStar = { x: Math.random() * w * 0.6, y: Math.random() * h * 0.3, life: 1 };
+          nextShootingStar = 3 + Math.random() * 6;
+        }
+        if (shootingStar) {
+          const s = shootingStar;
+          ctx.strokeStyle = `rgba(255,255,255,${s.life})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y);
+          ctx.lineTo(s.x - 70 * s.life, s.y - 35 * s.life);
+          ctx.stroke();
+          s.x += 7;
+          s.y += 3.5;
+          s.life -= 0.025;
+          if (s.life <= 0) shootingStar = null;
         }
       }
 
