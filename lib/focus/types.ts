@@ -58,16 +58,15 @@ export interface FocusPreset {
   breakMinutes: number;
 }
 
-export const SCENES = [
-  { key: "rainy-window", name: "Cửa sổ mưa" },
-  { key: "thunderstorm", name: "Giông bão" },
-  { key: "forest", name: "Rừng đom đóm" },
-  { key: "campfire", name: "Lửa trại" },
-  { key: "ocean", name: "Sóng biển" },
-  { key: "snowfall", name: "Tuyết rơi" },
-  { key: "coffee-shop", name: "Quán cà phê" },
-  { key: "starry-night", name: "Bầu trời sao" },
-  { key: "library", name: "Thư viện" },
-] as const;
-
-export type SceneKey = (typeof SCENES)[number]["key"];
+// Scenes are admin-managed (see admin.core47.xyz/focus/scenes) — fetch the
+// live list from /api/focus/scenes rather than a hardcoded array. `key` is
+// a free-form slug now; SCENE_GRADIENTS/particle styles in SceneBackground
+// only have bespoke looks for the original 9 keys and fall back to a
+// generic default for anything else.
+export interface Scene {
+  id: string;
+  key: string;
+  name: string;
+  isEnabled: boolean;
+  sortOrder: number;
+}

@@ -9,6 +9,7 @@ import {
   focusSettings,
   focusSoundTracks,
   focusPlaylists,
+  focusScenes,
   focusSceneBackgrounds,
 } from "@/db/schema";
 import {
@@ -21,6 +22,7 @@ import {
   FocusSettingsSchema,
   SoundTrackSchema,
   PlaylistSchema,
+  SceneSchema,
   SceneBackgroundSchema,
   ImportPayloadSchema,
   type TaskInput,
@@ -32,6 +34,7 @@ import {
   type FocusSettingsInput,
   type SoundTrackInput,
   type PlaylistInput,
+  type SceneInput,
   type SceneBackgroundInput,
   type ImportPayload,
 } from "./schema";
@@ -425,6 +428,55 @@ export async function updatePlaylist(id: string, raw: Partial<PlaylistInput>) {
 export async function deletePlaylist(id: string) {
   const db = await getDb();
   await db.delete(focusPlaylists).where(eq(focusPlaylists.id, id));
+}
+
+// ---------- Scenes (public read + admin CRUD) ----------
+
+export async function listEnabledScenes() {
+  const db = await getDb();
+  return db
+    .select()
+    .from(focusScenes)
+    .where(eq(focusScenes.isEnabled, 1))
+    .orderBy(asc(focusScenes.sortOrder));
+}
+
+export async function listAllScenesAdmin() {
+  const db = await getDb();
+  return db.select().from(focusScenes).orderBy(asc(focusScenes.sortOrder));
+}
+
+export async function createScene(raw: SceneInput) {
+  const input = SceneSchema.parse(raw);
+  const db = await getDb();
+  const record = {
+    id: crypto.randomUUID(),
+    key: input.key,
+    name: input.name,
+    isEnabled: input.isEnabled ? 1 : 0,
+    sortOrder: input.sortOrder,
+    createdAt: new Date().toISOString(),
+  };
+  await db.insert(focusScenes).values(record);
+  return record;
+}
+
+export async function updateScene(id: string, raw: Partial<SceneInput>) {
+  const db = await getDb();
+  const patch: Partial<typeof focusScenes.$inferInsert> = {};
+  if (raw.name !== undefined) patch.name = raw.name;
+  if (raw.isEnabled !== undefined) patch.isEnabled = raw.isEnabled ? 1 : 0;
+  if (raw.sortOrder !== undefined) patch.sortOrder = raw.sortOrder;
+  await db.update(focusScenes).set(patch).where(eq(focusScenes.id, id));
+}
+
+export async function deleteScene(id: string) {
+  const db = await getDb();
+  const existing = await db.select().from(focusScenes).where(eq(focusScenes.id, id)).get();
+  if (existing) {
+    await db.delete(focusSceneBackgrounds).where(eq(focusSceneBackgrounds.sceneKey, existing.key));
+  }
+  await db.delete(focusScenes).where(eq(focusScenes.id, id));
 }
 
 // ---------- Scene backgrounds (public read + admin upsert/delete) ----------

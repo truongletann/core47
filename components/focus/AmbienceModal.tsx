@@ -1,9 +1,10 @@
 "use client";
 
-import { SCENES, type SceneKey } from "@/lib/focus/types";
+import { useEffect, useState } from "react";
+import type { Scene } from "@/lib/focus/types";
 import { SoundMixer } from "@/components/focus/SoundMixer";
 
-const SCENE_SWATCHES: Record<SceneKey, string> = {
+const SCENE_SWATCHES: Record<string, string> = {
   "rainy-window": "linear-gradient(135deg, #1e293b, #334155)",
   thunderstorm: "linear-gradient(135deg, #0f172a, #1e293b)",
   forest: "linear-gradient(135deg, #052e16, #14532d)",
@@ -14,14 +15,23 @@ const SCENE_SWATCHES: Record<SceneKey, string> = {
   "starry-night": "linear-gradient(135deg, #020617, #0f172a)",
   library: "linear-gradient(135deg, #1c1917, #292524)",
 };
+const DEFAULT_SWATCH = "linear-gradient(135deg, #1e1b2e, #2d2440)";
 
-export function AmbienceModal({ scene, onSceneChange }: { scene: SceneKey; onSceneChange: (s: SceneKey) => void }) {
+export function AmbienceModal({ scene, onSceneChange }: { scene: string; onSceneChange: (s: string) => void }) {
+  const [scenes, setScenes] = useState<Scene[]>([]);
+
+  useEffect(() => {
+    fetch("/api/focus/scenes")
+      .then((r) => r.json() as Promise<{ data?: { scenes?: Scene[] } }>)
+      .then((json) => setScenes(json?.data?.scenes ?? []));
+  }, []);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
         <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/40">Cảnh nền</p>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {SCENES.map((s) => (
+          {scenes.map((s) => (
             <button
               key={s.key}
               onClick={() => onSceneChange(s.key)}
@@ -29,10 +39,11 @@ export function AmbienceModal({ scene, onSceneChange }: { scene: SceneKey; onSce
                 scene === s.key ? "border-white" : "border-transparent hover:border-white/30"
               }`}
             >
-              <div className="h-14 w-full" style={{ background: SCENE_SWATCHES[s.key] }} />
+              <div className="h-14 w-full" style={{ background: SCENE_SWATCHES[s.key] ?? DEFAULT_SWATCH }} />
               <p className="bg-black/40 px-2 py-1.5 text-xs text-white">{s.name}</p>
             </button>
           ))}
+          {scenes.length === 0 && <p className="col-span-full text-xs text-white/50">Đang tải...</p>}
         </div>
       </div>
 

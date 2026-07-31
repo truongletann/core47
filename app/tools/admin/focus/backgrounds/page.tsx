@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Modal } from "@/components/ui/Modal";
-import { SCENES } from "@/lib/focus/types";
+import type { Scene } from "@/lib/focus/types";
 
 interface SceneBackground {
   sceneKey: string;
@@ -12,6 +13,7 @@ interface SceneBackground {
 }
 
 export default function AdminFocusBackgroundsPage() {
+  const [scenes, setScenes] = useState<Scene[]>([]);
   const [backgrounds, setBackgrounds] = useState<SceneBackground[]>([]);
   const [loading, setLoading] = useState(true);
   const [urlModal, setUrlModal] = useState<string | null>(null);
@@ -22,9 +24,18 @@ export default function AdminFocusBackgroundsPage() {
 
   function load() {
     setLoading(true);
-    fetch("/api/admin/focus/backgrounds", { credentials: "include" })
-      .then((r) => r.json() as Promise<{ data?: { backgrounds?: SceneBackground[] } }>)
-      .then((json) => setBackgrounds(json?.data?.backgrounds ?? []))
+    Promise.all([
+      fetch("/api/admin/focus/scenes", { credentials: "include" }).then(
+        (r) => r.json() as Promise<{ data?: { scenes?: Scene[] } }>,
+      ),
+      fetch("/api/admin/focus/backgrounds", { credentials: "include" }).then(
+        (r) => r.json() as Promise<{ data?: { backgrounds?: SceneBackground[] } }>,
+      ),
+    ])
+      .then(([scenesJson, bgJson]) => {
+        setScenes(scenesJson?.data?.scenes ?? []);
+        setBackgrounds(bgJson?.data?.backgrounds ?? []);
+      })
       .finally(() => setLoading(false));
   }
 
@@ -77,7 +88,12 @@ export default function AdminFocusBackgroundsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-semibold">Focus: Live Backgrounds</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-display text-2xl font-semibold">Focus: Live Backgrounds</h1>
+        <Link href="/focus/scenes" className="text-xs text-[rgb(var(--accent))] hover:underline">
+          Quản lý danh sách cảnh →
+        </Link>
+      </div>
       <p className="mt-1 text-sm text-[rgb(var(--muted))]">
         Ảnh hoặc video nền cho từng cảnh, thay cho hoạt ảnh canvas mặc định. Video/ảnh nên quay/chụp
         loop được (không giật khi lặp lại).
@@ -87,7 +103,7 @@ export default function AdminFocusBackgroundsPage() {
         <p className="mt-6 text-center text-sm text-[rgb(var(--muted))]">Loading...</p>
       ) : (
         <div className="mt-6 flex flex-col gap-2">
-          {SCENES.map((s) => {
+          {scenes.map((s) => {
             const bg = backgroundFor(s.key);
             return (
               <div
@@ -132,7 +148,7 @@ export default function AdminFocusBackgroundsPage() {
       )}
 
       {urlModal && (
-        <Modal title={`Đặt ảnh/video từ URL — ${SCENES.find((s) => s.key === urlModal)?.name}`} onClose={() => setUrlModal(null)}>
+        <Modal title={`Đặt ảnh/video từ URL — ${scenes.find((s) => s.key === urlModal)?.name}`} onClose={() => setUrlModal(null)}>
           <div className="flex flex-col gap-3">
             <label className="text-sm">
               <span className="mb-1 block text-[rgb(var(--muted))]">Loại</span>
@@ -166,7 +182,7 @@ export default function AdminFocusBackgroundsPage() {
       )}
 
       {uploadModal && (
-        <Modal title={`Upload ảnh/video — ${SCENES.find((s) => s.key === uploadModal)?.name}`} onClose={() => setUploadModal(null)}>
+        <Modal title={`Upload ảnh/video — ${scenes.find((s) => s.key === uploadModal)?.name}`} onClose={() => setUploadModal(null)}>
           <label className="text-sm">
             <span className="mb-1 block text-[rgb(var(--muted))]">File (jpg/png/webp/mp4/webm, tối đa 20MB)</span>
             <input

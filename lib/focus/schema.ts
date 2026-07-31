@@ -56,6 +56,18 @@ export const SoundTrackSchema = z.object({
   sortOrder: z.coerce.number().int().default(0),
 });
 
+export const SceneSchema = z.object({
+  key: z
+    .string()
+    .trim()
+    .min(1)
+    .max(60)
+    .regex(/^[a-z0-9-]+$/, "Chỉ chữ thường/số/gạch ngang"),
+  name: z.string().trim().min(1).max(80),
+  isEnabled: z.boolean().default(true),
+  sortOrder: z.coerce.number().int().default(0),
+});
+
 export const SceneBackgroundSchema = z.object({
   sceneKey: z.string().trim().min(1).max(60),
   mediaType: z.enum(["image", "video"]),
@@ -116,6 +128,7 @@ export type HabitLogInput = z.infer<typeof HabitLogSchema>;
 export type PresetInput = z.infer<typeof PresetSchema>;
 export type FocusSettingsInput = z.infer<typeof FocusSettingsSchema>;
 export type SoundTrackInput = z.infer<typeof SoundTrackSchema>;
+export type SceneInput = z.infer<typeof SceneSchema>;
 export type SceneBackgroundInput = z.infer<typeof SceneBackgroundSchema>;
 export type PlaylistInput = z.infer<typeof PlaylistSchema>;
 export type ImportPayload = z.infer<typeof ImportPayloadSchema>;

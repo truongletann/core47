@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { SceneKey } from "@/lib/focus/types";
 
 interface SceneOverride {
   sceneKey: string;
@@ -34,7 +33,9 @@ function useSceneOverrides() {
   return overrides;
 }
 
-const SCENE_GRADIENTS: Record<SceneKey, string> = {
+// Bespoke gradients for the original 9 scene keys — any custom scene an
+// admin adds later falls back to DEFAULT_GRADIENT.
+const SCENE_GRADIENTS: Record<string, string> = {
   "rainy-window": "linear-gradient(180deg, #1e293b, #334155)",
   thunderstorm: "linear-gradient(180deg, #0f172a, #1e293b)",
   forest: "linear-gradient(180deg, #052e16, #14532d)",
@@ -45,6 +46,7 @@ const SCENE_GRADIENTS: Record<SceneKey, string> = {
   "starry-night": "linear-gradient(180deg, #020617, #0f172a)",
   library: "linear-gradient(180deg, #1c1917, #292524)",
 };
+const DEFAULT_GRADIENT = "linear-gradient(180deg, #1e1b2e, #2d2440)";
 
 interface Particle {
   x: number;
@@ -58,7 +60,7 @@ interface Particle {
 // keeps this file small instead of one bespoke renderer per scene.
 function useParticles(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
-  scene: SceneKey,
+  scene: string,
   active: boolean,
 ) {
   useEffect(() => {
@@ -104,10 +106,19 @@ function useParticles(
         p.speed = 0;
         p.size = 0.5 + Math.random() * 1.5;
         p.drift = Math.random() * Math.PI * 2;
-      } else {
+      } else if (scene === "rainy-window" || scene === "thunderstorm") {
         p.speed = 6 + Math.random() * 8;
         p.size = 1 + Math.random();
         p.drift = 0;
+      } else {
+        // Custom/unknown scenes and the remaining known scenes that draw
+        // their own shapes in frame() below (campfire/coffee-shop/ocean/
+        // library) don't consume these particles directly except as the
+        // generic fallback's drift source.
+        p.y = Math.random() * h;
+        p.speed = 0;
+        p.size = 1 + Math.random() * 1.5;
+        p.drift = Math.random() * Math.PI * 2;
       }
     }
     particles.forEach(reset);
@@ -197,6 +208,16 @@ function useParticles(
         ctx.beginPath();
         ctx.ellipse(w * 0.5, h * 0.3, w * 0.4, h * 0.3, 0, 0, Math.PI * 2);
         ctx.fill();
+      } else {
+        // Generic fallback for admin-added custom scenes with no bespoke
+        // animation yet — soft drifting motes.
+        for (const p of particles) {
+          const glow = 0.2 + 0.5 * Math.abs(Math.sin(t * 1.2 + p.drift));
+          ctx.fillStyle = `rgba(255,255,255,${glow * 0.5})`;
+          ctx.beginPath();
+          ctx.arc(p.x + Math.sin(t + p.drift) * 10, p.y + Math.cos(t * 0.6 + p.drift) * 8, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
 
       raf = requestAnimationFrame(frame);
@@ -210,7 +231,7 @@ function useParticles(
   }, [canvasRef, scene, active]);
 }
 
-export function SceneBackground({ scene, active }: { scene: SceneKey; active: boolean }) {
+export function SceneBackground({ scene, active }: { scene: string; active: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overrides = useSceneOverrides();
   const override = overrides[scene];
@@ -219,7 +240,7 @@ export function SceneBackground({ scene, active }: { scene: SceneKey; active: bo
   return (
     <div
       className="fixed inset-0 -z-10 overflow-hidden transition-[background] duration-700"
-      style={{ background: SCENE_GRADIENTS[scene] }}
+      style={{ background: SCENE_GRADIENTS[scene] ?? DEFAULT_GRADIENT }}
     >
       {override ? (
         override.mediaType === "video" ? (

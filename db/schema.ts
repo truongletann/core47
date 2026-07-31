@@ -309,6 +309,18 @@ export const focusPlaylists = sqliteTable("focus_playlists", {
   thumbnailUrl: text("thumbnail_url"),
 });
 
+// NEW — Focus: admin-managed list of ambience scenes (replaces a hardcoded
+// array so new scenes don't require a code deploy). `key` is the stable
+// slug referenced by focus_scene_backgrounds, focus_presets, etc.
+export const focusScenes = sqliteTable("focus_scenes", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  name: text("name").notNull(),
+  isEnabled: integer("is_enabled").notNull().default(1),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: text("created_at").notNull(),
+});
+
 // NEW — Focus: admin-uploaded "live background" image/video per scene,
 // overriding the procedural canvas animation when set. Shares the
 // FOCUS_SOUNDS R2 bucket under a backgrounds/ prefix (same sharing

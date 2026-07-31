@@ -12,7 +12,6 @@ import { AmbienceModal } from "@/components/focus/AmbienceModal";
 import { MusicModal } from "@/components/focus/MusicModal";
 import { PomoModal } from "@/components/focus/PomoModal";
 import { TaskList } from "@/components/focus/TaskList";
-import type { SceneKey } from "@/lib/focus/types";
 
 const DOCK_TITLES: Record<DockKey, string> = {
   ambience: "Ambience",
@@ -23,7 +22,7 @@ const DOCK_TITLES: Record<DockKey, string> = {
 
 export default function FocusPage() {
   const { tasks, stats, addTask, toggleTaskDone, deleteTask, logSession } = useFocusData();
-  const [scene, setScene] = useState<SceneKey>("rainy-window");
+  const [scene, setScene] = useState<string>("rainy-window");
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [focusMode, setFocusMode] = useState(false);
   const [openPanel, setOpenPanel] = useState<DockKey | null>(null);
