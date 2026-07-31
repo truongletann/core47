@@ -13,16 +13,15 @@ export function List100ItemRow({ item, position }: { item: List100Item; position
         {position}
       </span>
 
-      {item.isPinnedEnd ? (
-        <span className="mt-0.5 w-4 shrink-0" aria-hidden />
-      ) : item.isDone ? (
-        <CheckSquare
-          size={16}
-          className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
-        />
-      ) : (
-        <Square size={16} className="mt-0.5 shrink-0 text-[rgb(var(--border))]" />
-      )}
+      {!item.isPinnedEnd &&
+        (item.isDone ? (
+          <CheckSquare
+            size={16}
+            className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+          />
+        ) : (
+          <Square size={16} className="mt-0.5 shrink-0 text-[rgb(var(--border))]" />
+        ))}
 
       <div className="min-w-0 flex-1">
         <p className="text-sm leading-relaxed">
