@@ -15,10 +15,16 @@ import { PersistentEmbed } from "@/components/focus/PersistentEmbed";
 import { NotesPanel } from "@/components/focus/NotesPanel";
 import { SettingsPanel } from "@/components/focus/SettingsPanel";
 import { TaskList } from "@/components/focus/TaskList";
+import { EffectsOverlay, NO_EFFECTS, type Effects } from "@/components/focus/EffectsOverlay";
+import { AnimationsPanel } from "@/components/focus/AnimationsPanel";
 import type { Theme, Playlist } from "@/lib/focus/types";
 
 type PanelKey = LeftPanelKey | RightPanelKey;
 const LEFT_KEYS: LeftPanelKey[] = ["todo", "sounds", "notes"];
+const AMBIENCE_TABS = [
+  { key: "themes", label: "Themes" },
+  { key: "animations", label: "Animations" },
+];
 
 export default function FocusPage() {
   const { tasks, addTask, toggleTaskDone, deleteTask, logSession } = useFocusData();
@@ -29,6 +35,8 @@ export default function FocusPage() {
   const [focusMode, setFocusMode] = useState(false);
   const [openPanel, setOpenPanel] = useState<PanelKey | null>(null);
   const [soundsTab, setSoundsTab] = useState<"sounds" | "mymusic" | "library">("sounds");
+  const [ambienceTab, setAmbienceTab] = useState<"themes" | "animations">("themes");
+  const [effects, setEffects] = useState<Effects>(NO_EFFECTS);
   const [durations, setDurations] = useState<Durations>({
     workMinutes: 25,
     shortBreakMinutes: 5,
@@ -80,6 +88,10 @@ export default function FocusPage() {
     }
   }, [focusMode]);
 
+  const toggleEffect = useCallback((key: keyof Effects) => {
+    setEffects((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
   const notDone = tasks.filter((t) => !t.isDone).length;
   const activeTask = tasks.find((t) => t.id === activeTaskId) ?? null;
   const displayTask = activeTask ?? tasks.find((t) => !t.isDone) ?? null;
@@ -89,6 +101,7 @@ export default function FocusPage() {
   return (
     <div className="relative h-screen w-screen overflow-hidden">
       <SceneBackground theme={activeTheme} active />
+      <EffectsOverlay effects={effects} />
 
       {!focusMode && (
         <a href="https://core47.xyz" className="fixed left-6 top-6 z-10 flex flex-col text-white">
@@ -122,10 +135,12 @@ export default function FocusPage() {
         <FloatingPanel
           align={isLeft(openPanel) ? "left" : "right"}
           onClose={() => setOpenPanel(null)}
-          title={openPanel === "todo" ? "Tasks" : openPanel === "notes" ? "Notes" : openPanel === "ambience" ? "Ambience" : openPanel === "settings" ? "Settings" : undefined}
-          tabs={openPanel === "sounds" ? SOUNDS_PANEL_TABS : undefined}
-          activeTab={openPanel === "sounds" ? soundsTab : undefined}
-          onTabChange={(k) => setSoundsTab(k as typeof soundsTab)}
+          title={openPanel === "todo" ? "Tasks" : openPanel === "notes" ? "Notes" : openPanel === "settings" ? "Settings" : undefined}
+          tabs={openPanel === "sounds" ? SOUNDS_PANEL_TABS : openPanel === "ambience" ? AMBIENCE_TABS : undefined}
+          activeTab={openPanel === "sounds" ? soundsTab : openPanel === "ambience" ? ambienceTab : undefined}
+          onTabChange={(k) =>
+            openPanel === "sounds" ? setSoundsTab(k as typeof soundsTab) : setAmbienceTab(k as typeof ambienceTab)
+          }
         >
           {openPanel === "todo" && (
             <TaskList
@@ -158,7 +173,7 @@ export default function FocusPage() {
             />
           )}
           {openPanel === "notes" && <NotesPanel />}
-          {openPanel === "ambience" && (
+          {openPanel === "ambience" && ambienceTab === "themes" && (
             <ThemePickerModal
               activeTheme={activeTheme}
               onSelect={(t) => {
@@ -166,6 +181,9 @@ export default function FocusPage() {
                 setOpenPanel(null);
               }}
             />
+          )}
+          {openPanel === "ambience" && ambienceTab === "animations" && (
+            <AnimationsPanel effects={effects} onToggle={toggleEffect} onResetAll={() => setEffects(NO_EFFECTS)} />
           )}
           {openPanel === "settings" && <SettingsPanel durations={durations} onChange={setDurations} />}
         </FloatingPanel>

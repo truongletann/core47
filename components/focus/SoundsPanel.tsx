@@ -262,8 +262,10 @@ function MyMusicTab({
       {current && (
         // Empty placeholder — the real iframe lives in page.tsx, positioned
         // exactly over this box (see MyMusicTab's comment in page.tsx),
-        // so it keeps playing across panel open/close.
-        <div ref={attachSlot} className="h-[200px] w-full overflow-hidden rounded-lg" />
+        // so it keeps playing across panel open/close. Spotify embeds use
+        // the same 352px "large" height as Playlist Library so both tabs
+        // read as one consistent player instead of two different sizes.
+        <div ref={attachSlot} className={`w-full overflow-hidden rounded-lg ${current.kind === "spotify" ? "h-[352px]" : "h-[220px]"}`} />
       )}
 
       {favorites.length > 0 && (
