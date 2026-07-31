@@ -11,6 +11,8 @@ interface List100Item {
   note: string | null;
   link: string | null;
   isDone: boolean;
+  progressCurrent: number | null;
+  progressTarget: number | null;
   isPublic: boolean;
   suggestedBy: string | null;
 }
@@ -28,6 +30,8 @@ const emptyForm = {
   note: "",
   link: "",
   isDone: false,
+  progressCurrent: "",
+  progressTarget: "",
   isPublic: true,
   suggestedBy: "",
 };
@@ -86,6 +90,33 @@ function List100Form({ form, setForm }: { form: FormState; setForm: (f: FormStat
           className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
         />
       </label>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="text-sm">
+          <span className="mb-1 block text-[rgb(var(--muted))]">Progress (optional)</span>
+          <input
+            type="number"
+            min={0}
+            value={form.progressCurrent}
+            onChange={(e) => setForm({ ...form, progressCurrent: e.target.value })}
+            placeholder="e.g. 320"
+            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+          />
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-[rgb(var(--muted))]">Target (optional)</span>
+          <input
+            type="number"
+            min={0}
+            value={form.progressTarget}
+            onChange={(e) => setForm({ ...form, progressTarget: e.target.value })}
+            placeholder="e.g. 1000"
+            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+          />
+        </label>
+      </div>
+      <p className="-mt-1 text-xs text-[rgb(var(--muted))]">
+        For countable goals (e.g. "Read 1000 books") — leave both blank to just use the Done checkbox.
+      </p>
       <div className="flex flex-col gap-2">
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -175,6 +206,8 @@ export default function AdminList100Page() {
       note: i.note ?? "",
       link: i.link ?? "",
       isDone: i.isDone,
+      progressCurrent: i.progressCurrent === null ? "" : String(i.progressCurrent),
+      progressTarget: i.progressTarget === null ? "" : String(i.progressTarget),
       isPublic: i.isPublic,
       suggestedBy: i.suggestedBy ?? "",
     });
@@ -199,6 +232,8 @@ export default function AdminList100Page() {
     title: "Thing to do",
     note: "Note",
     link: "Reference link",
+    progressCurrent: "Progress",
+    progressTarget: "Target",
   };
 
   function errorMessage(json: {
@@ -401,7 +436,9 @@ export default function AdminList100Page() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-xs">{i.isDone ? "✓" : "✗"}</td>
+                  <td className="px-4 py-2 text-xs">
+                    {i.progressTarget ? `${i.progressCurrent ?? 0}/${i.progressTarget}` : i.isDone ? "✓" : "✗"}
+                  </td>
                   <td className="px-4 py-2 text-xs">{i.isPublic ? "Yes" : "Hidden"}</td>
                   <td className="px-4 py-2">
                     <div className="flex gap-2">

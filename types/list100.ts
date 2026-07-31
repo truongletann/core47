@@ -6,6 +6,8 @@ export interface List100Item {
   link: string | null;
   isDone: boolean;
   completedAt: string | null;
+  progressCurrent: number | null;
+  progressTarget: number | null;
   isPublic: boolean;
   createdAt: string;
   updatedAt: string;

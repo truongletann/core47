@@ -38,6 +38,12 @@ export const ToolSchema = z.object({
 // only allows undefined, not null.
 const emptyToNull = (v: unknown) => (typeof v === "string" && v.length > 0 ? v : null);
 const nullableString = (max: number) => z.string().trim().max(max).nullable().optional().transform(emptyToNull);
+const nullableNonNegativeInt = () =>
+  z.preprocess((v) => {
+    if (v === "" || v === undefined || v === null) return null;
+    const n = Number(v);
+    return Number.isNaN(n) ? v : n;
+  }, z.number().int().nonnegative().nullable());
 
 export const List100ItemSchema = z.object({
   rank: z.coerce.number().int().positive().max(100),
@@ -48,9 +54,14 @@ export const List100ItemSchema = z.object({
     "Link must start with http(s)://",
   ),
   isDone: z.coerce.boolean().default(false),
+  progressCurrent: nullableNonNegativeInt(),
+  progressTarget: nullableNonNegativeInt(),
   isPublic: z.coerce.boolean().default(true),
   suggestedBy: nullableString(60),
-});
+}).refine(
+  (v) => v.progressCurrent === null || v.progressTarget === null || v.progressCurrent <= v.progressTarget,
+  { message: "Current progress can't exceed the target", path: ["progressCurrent"] },
+);
 
 export const BlogPostSchema = z.object({
   slug: z

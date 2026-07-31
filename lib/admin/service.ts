@@ -139,6 +139,8 @@ export async function createList100Item(input: List100ItemInput) {
     link: input.link,
     isDone: input.isDone ? 1 : 0,
     completedAt: input.isDone ? now.slice(0, 10) : null,
+    progressCurrent: input.progressCurrent,
+    progressTarget: input.progressTarget,
     isPublic: input.isPublic ? 1 : 0,
     suggestedBy: input.suggestedBy,
     createdAt: now,
@@ -168,6 +170,8 @@ export async function updateList100Item(id: string, input: List100ItemInput) {
       completedAt: input.isDone
         ? (existing?.completedAt ?? new Date().toISOString().slice(0, 10))
         : null,
+      progressCurrent: input.progressCurrent,
+      progressTarget: input.progressTarget,
       isPublic: input.isPublic ? 1 : 0,
       suggestedBy: input.suggestedBy,
       updatedAt: new Date().toISOString(),

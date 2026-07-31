@@ -13,6 +13,8 @@ function toList100Item(r: typeof list100Table.$inferSelect): List100Item {
     link: r.link,
     isDone: Boolean(r.isDone),
     completedAt: r.completedAt,
+    progressCurrent: r.progressCurrent,
+    progressTarget: r.progressTarget,
     isPublic: Boolean(r.isPublic),
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
