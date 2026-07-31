@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { RotateCcw, PictureInPicture2, Pencil } from "lucide-react";
 import { ResetDialog } from "@/components/focus/ResetDialog";
+import { EyeDigits } from "@/components/focus/EyeDigit";
 import { SceneBackground } from "@/components/focus/SceneBackground";
 import { EffectsOverlay, type Effects } from "@/components/focus/EffectsOverlay";
 import type { FocusTask, Theme } from "@/lib/focus/types";
@@ -267,8 +268,8 @@ export function Timer({ durations, onSessionComplete, displayTask, onEditTask, a
           </div>
         )}
 
-        <span className="font-data text-7xl font-extrabold tabular-nums sm:text-8xl lg:text-9xl">
-          {mm}:{ss.toString().padStart(2, "0")}
+        <span className="font-data inline-flex items-center text-7xl font-extrabold tabular-nums sm:text-8xl lg:text-9xl">
+          <EyeDigits text={`${mm}:${ss.toString().padStart(2, "0")}`} />
         </span>
 
         {!chromeHidden && (
