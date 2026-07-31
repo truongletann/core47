@@ -76,7 +76,7 @@ export function ThemePickerModal({
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3">
         {visible.map((t) => {
           const isActive = activeTheme?.id === t.id;
           const preview =

@@ -1,36 +1,37 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useTheme } from "next-themes";
-import Link from "next/link";
 import { useFocusData } from "@/lib/focus/useFocusData";
-import { Timer } from "@/components/focus/Timer";
+import { Timer, type Durations } from "@/components/focus/Timer";
 import { SceneBackground } from "@/components/focus/SceneBackground";
-import { FocusDock, type DockKey } from "@/components/focus/FocusDock";
-import { FocusModal } from "@/components/focus/FocusModal";
+import { DockLeft, type LeftPanelKey } from "@/components/focus/DockLeft";
+import { DockRight, type RightPanelKey } from "@/components/focus/DockRight";
+import { FloatingPanel } from "@/components/focus/FloatingPanel";
 import { ThemePickerModal } from "@/components/focus/ThemePickerModal";
-import { MusicModal } from "@/components/focus/MusicModal";
+import { SoundsPanel, SOUNDS_PANEL_TABS } from "@/components/focus/SoundsPanel";
+import { NotesPanel } from "@/components/focus/NotesPanel";
+import { SettingsPanel } from "@/components/focus/SettingsPanel";
 import { NowPlayingWidget } from "@/components/focus/NowPlayingWidget";
-import { PomoModal } from "@/components/focus/PomoModal";
 import { TaskList } from "@/components/focus/TaskList";
 import type { Theme, Playlist } from "@/lib/focus/types";
 
-const DOCK_TITLES: Record<DockKey, string> = {
-  ambience: "Ambience",
-  music: "Music",
-  pomo: "Pomodoro",
-  todo: "Todo",
-};
+type PanelKey = LeftPanelKey | RightPanelKey;
+const LEFT_KEYS: LeftPanelKey[] = ["todo", "sounds", "notes"];
 
 export default function FocusPage() {
-  const { tasks, stats, addTask, toggleTaskDone, deleteTask, logSession } = useFocusData();
+  const { tasks, addTask, toggleTaskDone, deleteTask, logSession } = useFocusData();
   const [activeTheme, setActiveTheme] = useState<Theme | null>(null);
   const [activePlaylist, setActivePlaylist] = useState<Playlist | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [focusMode, setFocusMode] = useState(false);
-  const [openPanel, setOpenPanel] = useState<DockKey | null>(null);
-  const [durations, setDurations] = useState({ workMinutes: 25, breakMinutes: 5 });
-  const { setTheme, resolvedTheme } = useTheme();
+  const [openPanel, setOpenPanel] = useState<PanelKey | null>(null);
+  const [soundsTab, setSoundsTab] = useState<"sounds" | "mymusic" | "library">("sounds");
+  const [durations, setDurations] = useState<Durations>({
+    workMinutes: 25,
+    shortBreakMinutes: 5,
+    longBreakMinutes: 15,
+    longBreakInterval: 4,
+  });
 
   const handleSessionComplete = useCallback(
     (type: "work" | "break", durationMinutes: number) => {
@@ -39,7 +40,7 @@ export default function FocusPage() {
     [logSession, activeTaskId],
   );
 
-  const handleDockFocusMode = useCallback(() => {
+  const handleFocusModeToggle = useCallback(() => {
     if (!focusMode) {
       document.documentElement.requestFullscreen?.().catch(() => {});
       setFocusMode(true);
@@ -50,73 +51,49 @@ export default function FocusPage() {
   }, [focusMode]);
 
   const notDone = tasks.filter((t) => !t.isDone).length;
+  const activeTask = tasks.find((t) => t.id === activeTaskId) ?? null;
+
+  const isLeft = (k: PanelKey) => (LEFT_KEYS as string[]).includes(k);
 
   return (
     <div className="relative h-screen w-screen overflow-hidden">
       <SceneBackground theme={activeTheme} active />
 
       {!focusMode && (
-        <div className="fixed left-4 top-4 z-10 flex items-center gap-3 rounded-full bg-black/40 px-4 py-2 text-white backdrop-blur-md">
-          <a href="https://core47.xyz" className="font-display text-sm font-semibold hover:opacity-80">
-            Focus
-          </a>
-          <span className="h-3 w-px bg-white/20" />
-          <span className="text-xs text-white/70">
-            {stats.todayMinutes}p hôm nay · streak {stats.streakDays}
-          </span>
-          <span className="h-3 w-px bg-white/20" />
-          <Link href="/habits" className="text-xs text-white/70 hover:text-white">
-            Thói quen
-          </Link>
-        </div>
+        <a href="https://core47.xyz" className="fixed left-6 top-6 z-10 flex flex-col text-white">
+          <span className="font-display text-2xl font-semibold leading-none">flocus</span>
+          <span className="text-[10px] uppercase tracking-widest text-white/50">by core47</span>
+        </a>
       )}
 
-      <div className="flex h-full w-full items-center justify-center">
-        <Timer
-          workMinutes={durations.workMinutes}
-          breakMinutes={durations.breakMinutes}
-          onSessionComplete={handleSessionComplete}
-          focusMode={focusMode}
-          onFocusModeToggle={setFocusMode}
-        />
-      </div>
+      <Timer durations={durations} onSessionComplete={handleSessionComplete} activeTask={activeTask} onEditTask={() => setOpenPanel("todo")} />
 
       {!focusMode && (
-        <FocusDock
-          active={openPanel}
-          onSelect={(key) => setOpenPanel((prev) => (prev === key ? null : key))}
-          onFocusMode={handleDockFocusMode}
-          onThemeToggle={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-          taskCount={notDone}
-        />
+        <>
+          <DockLeft active={openPanel && isLeft(openPanel) ? (openPanel as LeftPanelKey) : null} onSelect={(key) => setOpenPanel((prev) => (prev === key ? null : key))} taskCount={notDone} />
+          <DockRight
+            active={openPanel && !isLeft(openPanel) ? (openPanel as RightPanelKey) : null}
+            onSelect={(key) => setOpenPanel((prev) => (prev === key ? null : key))}
+            focusMode={focusMode}
+            onFocusModeToggle={handleFocusModeToggle}
+          />
+        </>
       )}
 
-      {/* Mounted unconditionally (never inside a modal) so closing/reopening
+      {/* Mounted unconditionally (never inside a panel) so closing/reopening
           any dock panel or toggling Focus mode doesn't unmount the iframe
           and kill playback — only the widget's own close button does. */}
       <NowPlayingWidget playlist={activePlaylist} visible={!focusMode} onClose={() => setActivePlaylist(null)} />
 
-      {openPanel && (
-        <FocusModal title={DOCK_TITLES[openPanel]} onClose={() => setOpenPanel(null)}>
-          {openPanel === "ambience" && (
-            <ThemePickerModal
-              activeTheme={activeTheme}
-              onSelect={(t) => {
-                setActiveTheme(t);
-                setOpenPanel(null);
-              }}
-            />
-          )}
-          {openPanel === "music" && (
-            <MusicModal activePlaylist={activePlaylist} onSelect={setActivePlaylist} />
-          )}
-          {openPanel === "pomo" && (
-            <PomoModal
-              workMinutes={durations.workMinutes}
-              breakMinutes={durations.breakMinutes}
-              onChange={setDurations}
-            />
-          )}
+      {openPanel && !focusMode && (
+        <FloatingPanel
+          align={isLeft(openPanel) ? "left" : "right"}
+          onClose={() => setOpenPanel(null)}
+          title={openPanel === "todo" ? "Tasks" : openPanel === "notes" ? "Notes" : openPanel === "ambience" ? "Ambience" : openPanel === "settings" ? "Settings" : undefined}
+          tabs={openPanel === "sounds" ? SOUNDS_PANEL_TABS : undefined}
+          activeTab={openPanel === "sounds" ? soundsTab : undefined}
+          onTabChange={(k) => setSoundsTab(k as typeof soundsTab)}
+        >
           {openPanel === "todo" && (
             <TaskList
               tasks={tasks}
@@ -127,7 +104,21 @@ export default function FocusPage() {
               onDeleteTask={deleteTask}
             />
           )}
-        </FocusModal>
+          {openPanel === "sounds" && (
+            <SoundsPanel tab={soundsTab} activePlaylist={activePlaylist} onSelectPlaylist={setActivePlaylist} />
+          )}
+          {openPanel === "notes" && <NotesPanel />}
+          {openPanel === "ambience" && (
+            <ThemePickerModal
+              activeTheme={activeTheme}
+              onSelect={(t) => {
+                setActiveTheme(t);
+                setOpenPanel(null);
+              }}
+            />
+          )}
+          {openPanel === "settings" && <SettingsPanel durations={durations} onChange={setDurations} />}
+        </FloatingPanel>
       )}
     </div>
   );
