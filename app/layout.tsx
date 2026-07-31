@@ -6,7 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "Core47 Toolkits",
+  title: "Core47 Labs",
   description: "Core47's vibe-coding toolkit — fast, lean, edge-native.",
 };
 
