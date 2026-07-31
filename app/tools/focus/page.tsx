@@ -106,7 +106,7 @@ export default function FocusPage() {
 
       {!focusMode && !chromeHidden && (
         <div className="pointer-events-none fixed left-6 top-6 z-10 flex flex-col text-white/50">
-          <span className="font-hand text-3xl leading-none">flocus</span>
+          <span className="font-hand text-3xl leading-none">focus</span>
           <span className="text-[10px] uppercase tracking-widest text-white/30">by core47</span>
         </div>
       )}
