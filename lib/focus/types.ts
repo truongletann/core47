@@ -58,15 +58,20 @@ export interface FocusPreset {
   breakMinutes: number;
 }
 
-// Scenes are admin-managed (see admin.core47.xyz/focus/scenes) — fetch the
-// live list from /api/focus/scenes rather than a hardcoded array. `key` is
-// a free-form slug now; SCENE_GRADIENTS/particle styles in SceneBackground
-// only have bespoke looks for the original 9 keys and fall back to a
-// generic default for anything else.
-export interface Scene {
+// Ambience theme catalog — admin-managed (see admin.core47.xyz/focus/themes),
+// fetched from /api/focus/themes. "canvas" kinds render one of the built-in
+// lightweight animations (urlOrKey is the scene key SceneBackground knows
+// bespoke looks for); "image"/"youtube" are fully admin content.
+export interface Theme {
   id: string;
-  key: string;
   name: string;
+  category: string;
+  kind: "canvas" | "image" | "youtube";
+  source: "canvas" | "r2" | "external" | "youtube";
+  urlOrKey: string;
+  thumbnailUrl: string | null;
+  startSeconds: number | null;
+  endSeconds: number | null;
   isEnabled: boolean;
   sortOrder: number;
 }

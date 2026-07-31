@@ -1,44 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { YoutubeBackground } from "@/components/focus/YoutubeBackground";
+import type { Theme } from "@/lib/focus/types";
 
-interface SceneOverride {
-  sceneKey: string;
-  mediaType: "image" | "video";
-  source: "r2" | "external" | "youtube";
-  urlOrKey: string;
-  startSeconds?: number | null;
-  endSeconds?: number | null;
+function themeImageSrc(theme: Theme) {
+  return theme.source === "r2" ? `/api/focus/themes/asset/${theme.urlOrKey}` : theme.urlOrKey;
 }
 
-function overrideSrc(bg: SceneOverride) {
-  return bg.source === "r2" ? `/api/focus/backgrounds/${bg.urlOrKey}` : bg.urlOrKey;
-}
-
-// Admin-uploaded "live background" media, keyed by scene — set via
-// admin.core47.xyz/focus/backgrounds. Falls back to the procedural canvas
-// scene below when nothing's been uploaded for a given scene.
-function useSceneOverrides() {
-  const [overrides, setOverrides] = useState<Record<string, SceneOverride>>({});
-
-  useEffect(() => {
-    fetch("/api/focus/backgrounds")
-      .then((r) => r.json() as Promise<{ data?: { backgrounds?: SceneOverride[] } }>)
-      .then((json) => {
-        const map: Record<string, SceneOverride> = {};
-        for (const b of json?.data?.backgrounds ?? []) map[b.sceneKey] = b;
-        setOverrides(map);
-      })
-      .catch(() => {});
-  }, []);
-
-  return overrides;
-}
-
-// Bespoke gradients for the original 9 scene keys — any custom scene an
+// Bespoke gradients for the original 9 canvas scene keys — any custom scene an
 // admin adds later falls back to DEFAULT_GRADIENT.
-const SCENE_GRADIENTS: Record<string, string> = {
+export const SCENE_GRADIENTS: Record<string, string> = {
   "rainy-window": "linear-gradient(180deg, #1e293b, #334155)",
   thunderstorm: "linear-gradient(180deg, #0f172a, #1e293b)",
   forest: "linear-gradient(180deg, #052e16, #14532d)",
@@ -49,7 +21,7 @@ const SCENE_GRADIENTS: Record<string, string> = {
   "starry-night": "linear-gradient(180deg, #020617, #0f172a)",
   library: "linear-gradient(180deg, #1c1917, #292524)",
 };
-const DEFAULT_GRADIENT = "linear-gradient(180deg, #1e1b2e, #2d2440)";
+export const DEFAULT_GRADIENT = "linear-gradient(180deg, #1e1b2e, #2d2440)";
 
 interface Particle {
   x: number;
@@ -234,39 +206,26 @@ function useParticles(
   }, [canvasRef, scene, active]);
 }
 
-export function SceneBackground({ scene, active }: { scene: string; active: boolean }) {
+export function SceneBackground({ theme, active }: { theme: Theme | null; active: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const overrides = useSceneOverrides();
-  const override = overrides[scene];
-  useParticles(canvasRef, scene, active && !override);
+  const canvasKey = !theme || theme.kind === "canvas" ? (theme?.urlOrKey ?? "rainy-window") : null;
+  useParticles(canvasRef, canvasKey ?? "rainy-window", active && canvasKey !== null);
 
   return (
     <div
       className="fixed inset-0 -z-10 overflow-hidden transition-[background] duration-700"
-      style={{ background: SCENE_GRADIENTS[scene] ?? DEFAULT_GRADIENT }}
+      style={{ background: SCENE_GRADIENTS[canvasKey ?? "rainy-window"] ?? DEFAULT_GRADIENT }}
     >
-      {override ? (
-        override.source === "youtube" ? (
-          <YoutubeBackground
-            key={override.urlOrKey}
-            videoId={override.urlOrKey}
-            startSeconds={override.startSeconds}
-            endSeconds={override.endSeconds}
-          />
-        ) : override.mediaType === "video" ? (
-          <video
-            key={override.urlOrKey}
-            src={overrideSrc(override)}
-            className="h-full w-full object-cover"
-            autoPlay
-            loop
-            muted
-            playsInline
-          />
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img key={override.urlOrKey} src={overrideSrc(override)} alt="" className="h-full w-full object-cover" />
-        )
+      {theme?.kind === "youtube" ? (
+        <YoutubeBackground
+          key={theme.urlOrKey}
+          videoId={theme.urlOrKey}
+          startSeconds={theme.startSeconds}
+          endSeconds={theme.endSeconds}
+        />
+      ) : theme?.kind === "image" ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img key={theme.urlOrKey} src={themeImageSrc(theme)} alt="" className="h-full w-full object-cover" />
       ) : (
         <canvas ref={canvasRef} className="h-full w-full" />
       )}

@@ -309,31 +309,27 @@ export const focusPlaylists = sqliteTable("focus_playlists", {
   thumbnailUrl: text("thumbnail_url"),
 });
 
-// NEW — Focus: admin-managed list of ambience scenes (replaces a hardcoded
-// array so new scenes don't require a code deploy). `key` is the stable
-// slug referenced by focus_scene_backgrounds, focus_presets, etc.
-export const focusScenes = sqliteTable("focus_scenes", {
+// NEW — Focus: unified Ambience theme catalog (replaces the old separate
+// focus_scenes + focus_scene_backgrounds pair). Each row is one pickable
+// background: "canvas" kinds render one of the built-in lightweight
+// procedural animations (near-zero server cost), "image" kinds are a
+// static photo (R2 or external URL), "youtube" kinds embed a video —
+// deliberately no raw R2-hosted video anymore, since serving large video
+// files through the Worker was pushing requests over the CPU-time limit
+// on the Workers Free plan.
+export const focusThemes = sqliteTable("focus_themes", {
   id: text("id").primaryKey(),
-  key: text("key").notNull().unique(),
   name: text("name").notNull(),
+  category: text("category").notNull(), // free text, e.g. "Lofi", "City", "Nature", "Study"
+  kind: text("kind", { enum: ["canvas", "image", "youtube"] }).notNull(),
+  source: text("source", { enum: ["canvas", "r2", "external", "youtube"] }).notNull(),
+  urlOrKey: text("url_or_key").notNull(), // canvas scene key / R2 key / external URL / YouTube video ID
+  thumbnailUrl: text("thumbnail_url"), // grid preview — auto-derived for youtube, same as urlOrKey for images
+  startSeconds: integer("start_seconds"), // youtube only — loop window start
+  endSeconds: integer("end_seconds"), // youtube only — loop window end
   isEnabled: integer("is_enabled").notNull().default(1),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: text("created_at").notNull(),
-});
-
-// NEW — Focus: admin-uploaded "live background" image/video per scene,
-// overriding the procedural canvas animation when set. Shares the
-// FOCUS_SOUNDS R2 bucket under a backgrounds/ prefix (same sharing
-// convention blog covers use with the AVATARS bucket).
-export const focusSceneBackgrounds = sqliteTable("focus_scene_backgrounds", {
-  id: text("id").primaryKey(),
-  sceneKey: text("scene_key").notNull().unique(),
-  mediaType: text("media_type", { enum: ["image", "video"] }).notNull(),
-  source: text("source", { enum: ["r2", "external", "youtube"] }).notNull(),
-  urlOrKey: text("url_or_key").notNull(), // for "youtube", the 11-char video ID (parsed from the pasted URL)
-  startSeconds: integer("start_seconds"), // youtube only — loop window start
-  endSeconds: integer("end_seconds"), // youtube only — loop window end
-  updatedAt: text("updated_at").notNull(),
 });
 
 // NEW — Market: World prices (OANDA + Binance instruments) shown on

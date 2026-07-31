@@ -8,10 +8,11 @@ import { Timer } from "@/components/focus/Timer";
 import { SceneBackground } from "@/components/focus/SceneBackground";
 import { FocusDock, type DockKey } from "@/components/focus/FocusDock";
 import { FocusModal } from "@/components/focus/FocusModal";
-import { AmbienceModal } from "@/components/focus/AmbienceModal";
+import { ThemePickerModal } from "@/components/focus/ThemePickerModal";
 import { MusicModal } from "@/components/focus/MusicModal";
 import { PomoModal } from "@/components/focus/PomoModal";
 import { TaskList } from "@/components/focus/TaskList";
+import type { Theme } from "@/lib/focus/types";
 
 const DOCK_TITLES: Record<DockKey, string> = {
   ambience: "Ambience",
@@ -22,7 +23,7 @@ const DOCK_TITLES: Record<DockKey, string> = {
 
 export default function FocusPage() {
   const { tasks, stats, addTask, toggleTaskDone, deleteTask, logSession } = useFocusData();
-  const [scene, setScene] = useState<string>("rainy-window");
+  const [activeTheme, setActiveTheme] = useState<Theme | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [focusMode, setFocusMode] = useState(false);
   const [openPanel, setOpenPanel] = useState<DockKey | null>(null);
@@ -50,7 +51,7 @@ export default function FocusPage() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden">
-      <SceneBackground scene={scene} active />
+      <SceneBackground theme={activeTheme} active />
 
       {!focusMode && (
         <div className="fixed left-4 top-4 z-10 flex items-center gap-3 rounded-full bg-black/40 px-4 py-2 text-white backdrop-blur-md">
@@ -90,7 +91,15 @@ export default function FocusPage() {
 
       {openPanel && (
         <FocusModal title={DOCK_TITLES[openPanel]} onClose={() => setOpenPanel(null)}>
-          {openPanel === "ambience" && <AmbienceModal scene={scene} onSceneChange={setScene} />}
+          {openPanel === "ambience" && (
+            <ThemePickerModal
+              activeTheme={activeTheme}
+              onSelect={(t) => {
+                setActiveTheme(t);
+                setOpenPanel(null);
+              }}
+            />
+          )}
           {openPanel === "music" && <MusicModal />}
           {openPanel === "pomo" && (
             <PomoModal

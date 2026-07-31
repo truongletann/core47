@@ -18,10 +18,9 @@ const NAV = [
   { href: "/market/price-symbols", label: "Market: Price Symbols" },
   { href: "/market/portfolios", label: "Market: Portfolios" },
   { href: "/focus/settings", label: "Focus: Settings" },
-  { href: "/focus/scenes", label: "Focus: Scenes" },
+  { href: "/focus/themes", label: "Focus: Themes" },
   { href: "/focus/sounds", label: "Focus: Sounds" },
   { href: "/focus/playlists", label: "Focus: Playlists" },
-  { href: "/focus/backgrounds", label: "Focus: Backgrounds" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

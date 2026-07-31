@@ -9,8 +9,7 @@ import {
   focusSettings,
   focusSoundTracks,
   focusPlaylists,
-  focusScenes,
-  focusSceneBackgrounds,
+  focusThemes,
 } from "@/db/schema";
 import {
   TaskSchema,
@@ -22,8 +21,7 @@ import {
   FocusSettingsSchema,
   SoundTrackSchema,
   PlaylistSchema,
-  SceneSchema,
-  SceneBackgroundSchema,
+  ThemeSchema,
   ImportPayloadSchema,
   type TaskInput,
   type UpdateTaskInput,
@@ -34,8 +32,7 @@ import {
   type FocusSettingsInput,
   type SoundTrackInput,
   type PlaylistInput,
-  type SceneInput,
-  type SceneBackgroundInput,
+  type ThemeInput,
   type ImportPayload,
 } from "./schema";
 
@@ -430,66 +427,11 @@ export async function deletePlaylist(id: string) {
   await db.delete(focusPlaylists).where(eq(focusPlaylists.id, id));
 }
 
-// ---------- Scenes (public read + admin CRUD) ----------
-
-export async function listEnabledScenes() {
-  const db = await getDb();
-  return db
-    .select()
-    .from(focusScenes)
-    .where(eq(focusScenes.isEnabled, 1))
-    .orderBy(asc(focusScenes.sortOrder));
-}
-
-export async function listAllScenesAdmin() {
-  const db = await getDb();
-  return db.select().from(focusScenes).orderBy(asc(focusScenes.sortOrder));
-}
-
-export async function createScene(raw: SceneInput) {
-  const input = SceneSchema.parse(raw);
-  const db = await getDb();
-  const record = {
-    id: crypto.randomUUID(),
-    key: input.key,
-    name: input.name,
-    isEnabled: input.isEnabled ? 1 : 0,
-    sortOrder: input.sortOrder,
-    createdAt: new Date().toISOString(),
-  };
-  await db.insert(focusScenes).values(record);
-  return record;
-}
-
-export async function updateScene(id: string, raw: Partial<SceneInput>) {
-  const db = await getDb();
-  const patch: Partial<typeof focusScenes.$inferInsert> = {};
-  if (raw.name !== undefined) patch.name = raw.name;
-  if (raw.isEnabled !== undefined) patch.isEnabled = raw.isEnabled ? 1 : 0;
-  if (raw.sortOrder !== undefined) patch.sortOrder = raw.sortOrder;
-  await db.update(focusScenes).set(patch).where(eq(focusScenes.id, id));
-}
-
-export async function deleteScene(id: string) {
-  const db = await getDb();
-  const existing = await db.select().from(focusScenes).where(eq(focusScenes.id, id)).get();
-  if (existing) {
-    await db.delete(focusSceneBackgrounds).where(eq(focusSceneBackgrounds.sceneKey, existing.key));
-  }
-  await db.delete(focusScenes).where(eq(focusScenes.id, id));
-}
-
-// ---------- Scene backgrounds (public read + admin upsert/delete) ----------
-
-export async function listSceneBackgrounds() {
-  const db = await getDb();
-  return db.select().from(focusSceneBackgrounds);
-}
-
-export async function listSceneBackgroundsAdmin() {
-  const db = await getDb();
-  return db.select().from(focusSceneBackgrounds);
-}
+// ---------- Themes (public read + admin CRUD) ----------
+// Unified Ambience catalog: "canvas" kinds are the built-in lightweight
+// animations (seeded once, not admin-creatable — no code exists for
+// arbitrary new canvas looks), "image" and "youtube" kinds are fully
+// admin-managed content.
 
 // Accepts any common YouTube URL shape (watch?v=, youtu.be/, /embed/,
 // /shorts/) or a bare 11-char video ID, and returns just the ID.
@@ -510,52 +452,66 @@ export function parseYoutubeId(input: string): string | null {
   return null;
 }
 
-export async function upsertSceneBackground(raw: SceneBackgroundInput) {
-  const input = SceneBackgroundSchema.parse(raw);
+export async function listEnabledThemes() {
   const db = await getDb();
-  const now = new Date().toISOString();
+  return db
+    .select()
+    .from(focusThemes)
+    .where(eq(focusThemes.isEnabled, 1))
+    .orderBy(asc(focusThemes.category), asc(focusThemes.sortOrder));
+}
+
+export async function listAllThemesAdmin() {
+  const db = await getDb();
+  return db.select().from(focusThemes).orderBy(asc(focusThemes.category), asc(focusThemes.sortOrder));
+}
+
+export async function createTheme(raw: ThemeInput) {
+  const input = ThemeSchema.parse(raw);
+  const db = await getDb();
 
   let urlOrKey = input.urlOrKey;
-  if (input.source === "youtube") {
+  let thumbnailUrl: string | null = null;
+  if (input.kind === "youtube") {
     const videoId = parseYoutubeId(input.urlOrKey);
     if (!videoId) throw new Error("INVALID_YOUTUBE_URL");
     urlOrKey = videoId;
+    thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  } else if (input.source === "external") {
+    thumbnailUrl = input.urlOrKey;
   }
 
-  const existing = await db
-    .select()
-    .from(focusSceneBackgrounds)
-    .where(eq(focusSceneBackgrounds.sceneKey, input.sceneKey))
-    .get();
-
-  const patch = {
-    mediaType: input.mediaType,
+  const record = {
+    id: crypto.randomUUID(),
+    name: input.name,
+    category: input.category,
+    kind: input.kind,
     source: input.source,
     urlOrKey,
+    thumbnailUrl,
     startSeconds: input.startSeconds ?? null,
     endSeconds: input.endSeconds ?? null,
-    updatedAt: now,
+    isEnabled: input.isEnabled ? 1 : 0,
+    sortOrder: input.sortOrder,
+    createdAt: new Date().toISOString(),
   };
-
-  if (existing) {
-    await db.update(focusSceneBackgrounds).set(patch).where(eq(focusSceneBackgrounds.sceneKey, input.sceneKey));
-    return { ...existing, ...patch };
-  }
-
-  const record = { id: crypto.randomUUID(), sceneKey: input.sceneKey, ...patch };
-  await db.insert(focusSceneBackgrounds).values(record);
+  await db.insert(focusThemes).values(record);
   return record;
 }
 
-export async function deleteSceneBackground(sceneKey: string) {
+export async function updateTheme(id: string, raw: Partial<ThemeInput>) {
   const db = await getDb();
-  const existing = await db
-    .select()
-    .from(focusSceneBackgrounds)
-    .where(eq(focusSceneBackgrounds.sceneKey, sceneKey))
-    .get();
-  await db.delete(focusSceneBackgrounds).where(eq(focusSceneBackgrounds.sceneKey, sceneKey));
-  return existing ?? null;
+  const patch: Partial<typeof focusThemes.$inferInsert> = {};
+  if (raw.name !== undefined) patch.name = raw.name;
+  if (raw.category !== undefined) patch.category = raw.category;
+  if (raw.isEnabled !== undefined) patch.isEnabled = raw.isEnabled ? 1 : 0;
+  if (raw.sortOrder !== undefined) patch.sortOrder = raw.sortOrder;
+  await db.update(focusThemes).set(patch).where(eq(focusThemes.id, id));
+}
+
+export async function deleteTheme(id: string) {
+  const db = await getDb();
+  await db.delete(focusThemes).where(eq(focusThemes.id, id));
 }
 
 // ---------- One-time anonymous -> account import ----------
