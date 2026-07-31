@@ -1,5 +1,5 @@
 var R=require("../../../../../chunks/[turbopack]_runtime.js")("server/app/api/admin/market/price-symbols/route.js")
-R.c("server/chunks/[root-of-the-server]__1kz5iin._.js")
+R.c("server/chunks/[root-of-the-server]__0-hv9m6._.js")
 R.c("server/chunks/_052tmhv._.js")
 R.c("server/chunks/node_modules_zod_v4_classic_external_1-pw2v2.js")
 R.c("server/chunks/[root-of-the-server]__0xuaoik._.js")

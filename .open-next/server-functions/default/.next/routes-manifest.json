@@ -14,7 +14,34 @@
       "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
     }
   ],
-  "headers": [],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.core47.xyz wss://www.fxtin.com:39555 https://www.fxtin.com wss://stream.binance.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self';"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ],
+      "regex": "^(?:/(.*))(?:/)?$"
+    }
+  ],
   "onMatchHeaders": [],
   "rewrites": {
     "beforeFiles": [],
@@ -37,6 +64,30 @@
         "nxtPid": "nxtPid"
       },
       "namedRegex": "^/api/admin/categories/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/focus/playlists/[id]",
+      "regex": "^/api/admin/focus/playlists/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/focus/playlists/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/focus/sounds/[id]",
+      "regex": "^/api/admin/focus/sounds/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/focus/sounds/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/focus/themes/[id]",
+      "regex": "^/api/admin/focus/themes/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/focus/themes/(?<nxtPid>[^/]+?)(?:/)?$"
     },
     {
       "page": "/api/admin/list100/suggestions/[id]",
@@ -101,6 +152,54 @@
         "nxtPkey": "nxtPkey"
       },
       "namedRegex": "^/api/blog/cover/(?<nxtPkey>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/focus/habits/[id]",
+      "regex": "^/api/focus/habits/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/focus/habits/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/focus/habits/[id]/logs",
+      "regex": "^/api/focus/habits/([^/]+?)/logs(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/focus/habits/(?<nxtPid>[^/]+?)/logs(?:/)?$"
+    },
+    {
+      "page": "/api/focus/presets/[id]",
+      "regex": "^/api/focus/presets/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/focus/presets/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/focus/sounds/[key]",
+      "regex": "^/api/focus/sounds/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPkey": "nxtPkey"
+      },
+      "namedRegex": "^/api/focus/sounds/(?<nxtPkey>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/focus/tasks/[id]",
+      "regex": "^/api/focus/tasks/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/focus/tasks/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/focus/themes/asset/[key]",
+      "regex": "^/api/focus/themes/asset/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPkey": "nxtPkey"
+      },
+      "namedRegex": "^/api/focus/themes/asset/(?<nxtPkey>[^/]+?)(?:/)?$"
     },
     {
       "page": "/api/market/portfolio/assets/[id]",
@@ -247,6 +346,42 @@
       "namedRegex": "^/api/admin/categories(?:/)?$"
     },
     {
+      "page": "/api/admin/focus/playlists",
+      "regex": "^/api/admin/focus/playlists(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/focus/playlists(?:/)?$"
+    },
+    {
+      "page": "/api/admin/focus/settings",
+      "regex": "^/api/admin/focus/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/focus/settings(?:/)?$"
+    },
+    {
+      "page": "/api/admin/focus/sounds",
+      "regex": "^/api/admin/focus/sounds(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/focus/sounds(?:/)?$"
+    },
+    {
+      "page": "/api/admin/focus/sounds/upload",
+      "regex": "^/api/admin/focus/sounds/upload(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/focus/sounds/upload(?:/)?$"
+    },
+    {
+      "page": "/api/admin/focus/themes",
+      "regex": "^/api/admin/focus/themes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/focus/themes(?:/)?$"
+    },
+    {
+      "page": "/api/admin/focus/themes/upload",
+      "regex": "^/api/admin/focus/themes/upload(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/focus/themes/upload(?:/)?$"
+    },
+    {
       "page": "/api/admin/list100",
       "regex": "^/api/admin/list100(?:/)?$",
       "routeKeys": {},
@@ -349,6 +484,66 @@
       "namedRegex": "^/api/auth/register(?:/)?$"
     },
     {
+      "page": "/api/focus/habits",
+      "regex": "^/api/focus/habits(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/focus/habits(?:/)?$"
+    },
+    {
+      "page": "/api/focus/import",
+      "regex": "^/api/focus/import(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/focus/import(?:/)?$"
+    },
+    {
+      "page": "/api/focus/playlists",
+      "regex": "^/api/focus/playlists(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/focus/playlists(?:/)?$"
+    },
+    {
+      "page": "/api/focus/presets",
+      "regex": "^/api/focus/presets(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/focus/presets(?:/)?$"
+    },
+    {
+      "page": "/api/focus/sessions",
+      "regex": "^/api/focus/sessions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/focus/sessions(?:/)?$"
+    },
+    {
+      "page": "/api/focus/settings",
+      "regex": "^/api/focus/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/focus/settings(?:/)?$"
+    },
+    {
+      "page": "/api/focus/sounds",
+      "regex": "^/api/focus/sounds(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/focus/sounds(?:/)?$"
+    },
+    {
+      "page": "/api/focus/stats",
+      "regex": "^/api/focus/stats(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/focus/stats(?:/)?$"
+    },
+    {
+      "page": "/api/focus/tasks",
+      "regex": "^/api/focus/tasks(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/focus/tasks(?:/)?$"
+    },
+    {
+      "page": "/api/focus/themes",
+      "regex": "^/api/focus/themes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/focus/themes(?:/)?$"
+    },
+    {
       "page": "/api/list100/suggestions",
       "regex": "^/api/list100/suggestions(?:/)?$",
       "routeKeys": {},
@@ -403,16 +598,22 @@
       "namedRegex": "^/blog(?:/)?$"
     },
     {
+      "page": "/bucket-list",
+      "regex": "^/bucket\\-list(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/bucket\\-list(?:/)?$"
+    },
+    {
       "page": "/favicon.ico",
       "regex": "^/favicon\\.ico(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/favicon\\.ico(?:/)?$"
     },
     {
-      "page": "/list100",
-      "regex": "^/list100(?:/)?$",
+      "page": "/icon.svg",
+      "regex": "^/icon\\.svg(?:/)?$",
       "routeKeys": {},
-      "namedRegex": "^/list100(?:/)?$"
+      "namedRegex": "^/icon\\.svg(?:/)?$"
     },
     {
       "page": "/login",
@@ -469,12 +670,6 @@
       "namedRegex": "^/rss\\.xml(?:/)?$"
     },
     {
-      "page": "/toolkits",
-      "regex": "^/toolkits(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/toolkits(?:/)?$"
-    },
-    {
       "page": "/tools/admin",
       "regex": "^/tools/admin(?:/)?$",
       "routeKeys": {},
@@ -493,16 +688,40 @@
       "namedRegex": "^/tools/admin/blog/new(?:/)?$"
     },
     {
+      "page": "/tools/admin/bucket-list",
+      "regex": "^/tools/admin/bucket\\-list(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/bucket\\-list(?:/)?$"
+    },
+    {
       "page": "/tools/admin/categories",
       "regex": "^/tools/admin/categories(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/tools/admin/categories(?:/)?$"
     },
     {
-      "page": "/tools/admin/list100",
-      "regex": "^/tools/admin/list100(?:/)?$",
+      "page": "/tools/admin/focus/playlists",
+      "regex": "^/tools/admin/focus/playlists(?:/)?$",
       "routeKeys": {},
-      "namedRegex": "^/tools/admin/list100(?:/)?$"
+      "namedRegex": "^/tools/admin/focus/playlists(?:/)?$"
+    },
+    {
+      "page": "/tools/admin/focus/settings",
+      "regex": "^/tools/admin/focus/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/focus/settings(?:/)?$"
+    },
+    {
+      "page": "/tools/admin/focus/sounds",
+      "regex": "^/tools/admin/focus/sounds(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/focus/sounds(?:/)?$"
+    },
+    {
+      "page": "/tools/admin/focus/themes",
+      "regex": "^/tools/admin/focus/themes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/admin/focus/themes(?:/)?$"
     },
     {
       "page": "/tools/admin/market/calendar-settings",
@@ -545,6 +764,24 @@
       "regex": "^/tools/admin/users(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/tools/admin/users(?:/)?$"
+    },
+    {
+      "page": "/tools/focus",
+      "regex": "^/tools/focus(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/focus(?:/)?$"
+    },
+    {
+      "page": "/tools/focus/habits",
+      "regex": "^/tools/focus/habits(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/focus/habits(?:/)?$"
+    },
+    {
+      "page": "/tools/focus/stats",
+      "regex": "^/tools/focus/stats(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools/focus/stats(?:/)?$"
     },
     {
       "page": "/tools/shortlink",

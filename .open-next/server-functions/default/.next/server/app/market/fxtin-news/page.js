@@ -1,8 +1,8 @@
 var R=require("../../../chunks/ssr/[turbopack]_runtime.js")("server/app/market/fxtin-news/page.js")
-R.c("server/chunks/ssr/[root-of-the-server]__0vapqfi._.js")
-R.c("server/chunks/ssr/node_modules_next_dist_esm_build_templates_app-page_0os70qo.js")
-R.c("server/chunks/ssr/_1ca3pq5._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__1s45j6l._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_esm_build_templates_app-page_1kcbaw7.js")
 R.c("server/chunks/ssr/node_modules_next_dist_0gqiype._.js")
+R.c("server/chunks/ssr/_1ca3pq5._.js")
 R.c("server/chunks/ssr/[root-of-the-server]__0iltm2z._.js")
 R.c("server/chunks/ssr/[root-of-the-server]__1vfpvus._.js")
 R.c("server/chunks/ssr/_10ihyw2._.js")
@@ -15,5 +15,5 @@ R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_unauthor
 R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_global-error_0-o-goa.js")
 R.c("server/chunks/ssr/app_market_layout_tsx_0nn-7f4._.js")
 R.c("server/chunks/ssr/_next-internal_server_app_market_fxtin-news_page_actions_16d0x5l.js")
-R.m(754322)
-module.exports=R.m(754322).exports
+R.m(603803)
+module.exports=R.m(603803).exports

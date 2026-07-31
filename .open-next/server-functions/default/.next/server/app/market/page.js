@@ -1,7 +1,7 @@
 var R=require("../../chunks/ssr/[turbopack]_runtime.js")("server/app/market/page.js")
-R.c("server/chunks/ssr/[root-of-the-server]__0k1dlqq._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0eudh3h._.js")
 R.c("server/chunks/ssr/node_modules_next_dist_0gqiype._.js")
-R.c("server/chunks/ssr/node_modules_next_dist_esm_build_templates_app-page_1q128sl.js")
+R.c("server/chunks/ssr/node_modules_next_dist_esm_build_templates_app-page_02_telk.js")
 R.c("server/chunks/ssr/[root-of-the-server]__0iltm2z._.js")
 R.c("server/chunks/ssr/[root-of-the-server]__1vfpvus._.js")
 R.c("server/chunks/ssr/_10ihyw2._.js")
@@ -14,5 +14,5 @@ R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_unauthor
 R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_global-error_0-o-goa.js")
 R.c("server/chunks/ssr/app_market_layout_tsx_0nn-7f4._.js")
 R.c("server/chunks/ssr/_next-internal_server_app_market_page_actions_0m7e3aq.js")
-R.m(447158)
-module.exports=R.m(447158).exports
+R.m(932502)
+module.exports=R.m(932502).exports

@@ -1,8 +1,9 @@
 var R=require("../../../chunks/ssr/[turbopack]_runtime.js")("server/app/market/portfolio/page.js")
-R.c("server/chunks/ssr/[root-of-the-server]__12b-nlp._.js")
-R.c("server/chunks/ssr/node_modules_next_dist_esm_build_templates_app-page_06gbbyt.js")
-R.c("server/chunks/ssr/node_modules_next_dist_0gqiype._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0enzg0w._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_esm_build_templates_app-page_0yxlo--.js")
+R.c("server/chunks/ssr/_014wio2._.js")
 R.c("server/chunks/ssr/node_modules_zod_v4_classic_external_071rx-x.js")
+R.c("server/chunks/ssr/node_modules_next_dist_0gqiype._.js")
 R.c("server/chunks/ssr/_1wqemyq._.js")
 R.c("server/chunks/ssr/[root-of-the-server]__0iltm2z._.js")
 R.c("server/chunks/ssr/[root-of-the-server]__1vfpvus._.js")
@@ -16,5 +17,5 @@ R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_unauthor
 R.c("server/chunks/ssr/node_modules_next_dist_client_components_builtin_global-error_0-o-goa.js")
 R.c("server/chunks/ssr/app_market_layout_tsx_0nn-7f4._.js")
 R.c("server/chunks/ssr/_next-internal_server_app_market_portfolio_page_actions_0ce745h.js")
-R.m(737610)
-module.exports=R.m(737610).exports
+R.m(995898)
+module.exports=R.m(995898).exports
