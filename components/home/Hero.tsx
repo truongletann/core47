@@ -162,7 +162,7 @@ export function Hero({ tools }: { tools: Tool[] }) {
   return (
     <section
       ref={heroRef}
-      className="relative flex h-[460px] items-center justify-center overflow-hidden text-center"
+      className="relative flex h-[320px] items-center justify-center overflow-hidden text-center sm:h-[460px]"
     >
       <div className="radar-sweep -z-10" />
       <svg ref={connectSvgRef} className="pointer-events-none absolute inset-0 -z-10 h-full w-full" />
@@ -178,7 +178,7 @@ export function Hero({ tools }: { tools: Tool[] }) {
             onMouseEnter={() => handleTagEnter(i)}
             onMouseLeave={handleTagLeave}
             onClick={() => handleTagClick(tool)}
-            className="font-data absolute cursor-pointer whitespace-nowrap rounded-full border bg-[rgb(var(--card))] px-3 py-1.5 text-[11px] text-[rgb(var(--muted))]"
+            className="font-data absolute hidden cursor-pointer whitespace-nowrap rounded-full border bg-[rgb(var(--card))] px-3 py-1.5 text-[11px] text-[rgb(var(--muted))] sm:block"
             style={{
               borderColor: `rgb(var(${catVar}) / 0.4)`,
               // @ts-expect-error custom property used for radar-lit

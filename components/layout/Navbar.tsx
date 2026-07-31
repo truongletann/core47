@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Menu, X } from "lucide-react";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UserMenu } from "@/components/ui/UserMenu";
@@ -11,6 +12,7 @@ const ROOT_DOMAIN = "core47.xyz";
 export function Navbar({ isAdminArea = false }: { isAdminArea?: boolean }) {
   const [homeUrl, setHomeUrl] = useState("/");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const { hostname, protocol, port } = window.location;
@@ -42,8 +44,8 @@ export function Navbar({ isAdminArea = false }: { isAdminArea?: boolean }) {
           <LogoMark />
         </a>
 
-        <div className="flex items-center gap-6">
-          <nav className="font-data flex items-center gap-6 text-sm text-[rgb(var(--muted))]">
+        <div className="flex items-center gap-3 sm:gap-6">
+          <nav className="font-data hidden items-center gap-6 text-sm text-[rgb(var(--muted))] sm:flex">
             <a href={homeUrl.replace(/\/$/, "") + "/blog"} className="hover:text-[rgb(var(--fg))] transition-colors">
               Blog
             </a>
@@ -64,8 +66,47 @@ export function Navbar({ isAdminArea = false }: { isAdminArea?: boolean }) {
           </nav>
           <UserMenu homeUrl={homeUrl} />
           <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label="Toggle menu"
+            className="flex items-center justify-center rounded-md p-1.5 text-[rgb(var(--muted))] hover:bg-[rgb(var(--border)/0.5)] sm:hidden"
+          >
+            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
         </div>
       </div>
+
+      {mobileOpen && (
+        <nav className="font-data flex flex-col gap-1 border-t border-[rgb(var(--border))] px-6 py-3 text-sm text-[rgb(var(--muted))] sm:hidden">
+          <a
+            href={homeUrl.replace(/\/$/, "") + "/blog"}
+            className="rounded-md px-2 py-2 hover:bg-[rgb(var(--border)/0.5)] hover:text-[rgb(var(--fg))]"
+          >
+            Blog
+          </a>
+          <a
+            href={homeUrl.replace(/\/$/, "") + "/bucket-list"}
+            className="rounded-md px-2 py-2 hover:bg-[rgb(var(--border)/0.5)] hover:text-[rgb(var(--fg))]"
+          >
+            Bucket List
+          </a>
+          <a
+            href={homeUrl.replace(/\/$/, "") + "/market"}
+            className="rounded-md px-2 py-2 hover:bg-[rgb(var(--border)/0.5)] hover:text-[rgb(var(--fg))]"
+          >
+            Market
+          </a>
+          {isAdmin && (
+            <a
+              href="https://admin.core47.xyz/"
+              className="rounded-md px-2 py-2 text-[rgb(var(--accent))] hover:opacity-80"
+            >
+              Admin
+            </a>
+          )}
+        </nav>
+      )}
     </header>
   );
 }

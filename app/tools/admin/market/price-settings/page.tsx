@@ -7,6 +7,9 @@ type FormState = typeof emptyForm;
 
 export default function AdminMarketPriceSettingsPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [hasKey, setHasKey] = useState(false);
+  const [keyPreview, setKeyPreview] = useState<string | null>(null);
+  const [clearKey, setClearKey] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +23,8 @@ export default function AdminMarketPriceSettingsPage() {
           r.json() as Promise<{
             data?: {
               settings?: {
-                oandaApiKey: string | null;
+                hasOandaApiKey: boolean;
+                oandaApiKeyPreview: string | null;
                 oandaAccountId: string | null;
                 oandaEnvironment: "practice" | "live";
               };
@@ -31,10 +35,12 @@ export default function AdminMarketPriceSettingsPage() {
         const s = json?.data?.settings;
         if (s) {
           setForm({
-            oandaApiKey: s.oandaApiKey ?? "",
+            oandaApiKey: "",
             oandaAccountId: s.oandaAccountId ?? "",
             oandaEnvironment: s.oandaEnvironment ?? "practice",
           });
+          setHasKey(s.hasOandaApiKey);
+          setKeyPreview(s.oandaApiKeyPreview);
         }
       })
       .finally(() => setLoading(false));
@@ -60,7 +66,7 @@ export default function AdminMarketPriceSettingsPage() {
       const res = await fetch("/api/admin/market/price-settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, clearOandaApiKey: clearKey }),
         credentials: "include",
       });
       const json = (await res.json()) as {
@@ -74,6 +80,15 @@ export default function AdminMarketPriceSettingsPage() {
         return;
       }
       setSaved(true);
+      if (clearKey) {
+        setHasKey(false);
+        setKeyPreview(null);
+      } else if (form.oandaApiKey) {
+        setHasKey(true);
+        setKeyPreview(`••••${form.oandaApiKey.slice(-4)}`);
+      }
+      setForm((f) => ({ ...f, oandaApiKey: "" }));
+      setClearKey(false);
     } finally {
       setSaving(false);
     }
@@ -93,13 +108,20 @@ export default function AdminMarketPriceSettingsPage() {
 
       <div className="mt-6 flex max-w-xl flex-col gap-3">
         <label className="text-sm">
-          <span className="mb-1 block text-[rgb(var(--muted))]">OANDA API key (token)</span>
+          <span className="mb-1 block text-[rgb(var(--muted))]">
+            OANDA API key (token)
+            {hasKey && !clearKey && (
+              <span className="ml-2 text-xs text-emerald-600">đã lưu {keyPreview}</span>
+            )}
+          </span>
           <div className="flex gap-2">
             <input
               type={reveal ? "text" : "password"}
               value={form.oandaApiKey}
               onChange={(e) => setForm({ ...form, oandaApiKey: e.target.value })}
-              className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+              disabled={clearKey}
+              placeholder={hasKey ? "Để trống nếu không muốn đổi key" : "Nhập API key"}
+              className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none disabled:opacity-50"
             />
             <button
               type="button"
@@ -109,6 +131,19 @@ export default function AdminMarketPriceSettingsPage() {
               {reveal ? "Ẩn" : "Hiện"}
             </button>
           </div>
+          {hasKey && (
+            <label className="mt-1 flex items-center gap-2 text-xs text-[rgb(var(--muted))]">
+              <input
+                type="checkbox"
+                checked={clearKey}
+                onChange={(e) => {
+                  setClearKey(e.target.checked);
+                  if (e.target.checked) setForm((f) => ({ ...f, oandaApiKey: "" }));
+                }}
+              />
+              Xoá key đã lưu
+            </label>
+          )}
         </label>
 
         <label className="text-sm">

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, ChevronUp, Home, Star } from "lucide-react";
+import { ChevronDown, ChevronUp, Home, Menu, Star, X } from "lucide-react";
 import { TOOLBOX_CATEGORIES, TOOLBOX_TOOLS } from "@/lib/toolbox/registry";
 import { DynamicIcon as Icon } from "@/components/toolbox/DynamicIcon";
 
@@ -12,6 +12,7 @@ export function ToolboxSidebar() {
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [favoriteSlugs, setFavoriteSlugs] = useState<string[]>([]);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     function load() {
@@ -23,6 +24,10 @@ export function ToolboxSidebar() {
     load();
     window.addEventListener("core47:favorites-updated", load);
     return () => window.removeEventListener("core47:favorites-updated", load);
+  }, [pathname]);
+
+  useEffect(() => {
+    setMobileOpen(false);
   }, [pathname]);
 
   function toggleCollapsed(slug: string) {
@@ -40,7 +45,20 @@ export function ToolboxSidebar() {
   const favoriteTools = filtered.filter((t) => favoriteSlugs.includes(t.slug));
 
   return (
-    <nav className="w-64 shrink-0">
+    <nav className="w-full shrink-0 md:w-64">
+      <button
+        type="button"
+        onClick={() => setMobileOpen((v) => !v)}
+        className="mb-3 flex w-full items-center justify-between rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] px-3 py-2 text-sm font-medium md:hidden"
+      >
+        <span className="flex items-center gap-2">
+          <Menu size={16} />
+          Danh mục công cụ
+        </span>
+        {mobileOpen ? <X size={16} /> : <ChevronDown size={16} />}
+      </button>
+
+      <div className={`${mobileOpen ? "block" : "hidden"} md:block`}>
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
@@ -136,6 +154,7 @@ export function ToolboxSidebar() {
           </div>
         );
       })}
+      </div>
     </nav>
   );
 }

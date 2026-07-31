@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import Link from "next/link";
 import { getUserBySessionId } from "@/lib/auth/service";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/config";
 import { listSuggestionsAdmin } from "@/lib/admin/service";
+import { AdminNav } from "@/components/admin/AdminNav";
 
 const NAV = [
   { href: "/", label: "Overview" },
@@ -34,29 +34,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const suggestionCount = (await listSuggestionsAdmin()).length;
 
   return (
-    <main className="flex w-full gap-8 px-6 py-8">
-      <nav className="w-40 shrink-0">
-        <p className="mb-2 px-2 text-xs font-medium uppercase tracking-wide text-[rgb(var(--muted))]">
-          Admin CMS
-        </p>
-        <ul className="flex flex-col gap-0.5">
-          {NAV.map((item) => (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm text-[rgb(var(--muted))] hover:bg-[rgb(var(--border)/0.5)] hover:text-[rgb(var(--fg))]"
-              >
-                <span>{item.label}</span>
-                {item.href === "/bucket-list" && suggestionCount > 0 && (
-                  <span className="font-data rounded-full bg-[rgb(var(--accent))] px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                    {suggestionCount}
-                  </span>
-                )}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+    <main className="flex w-full flex-col gap-6 px-4 py-6 md:flex-row md:gap-8 md:px-6 md:py-8">
+      <AdminNav items={NAV} suggestionCount={suggestionCount} />
       <div className="min-w-0 flex-1">{children}</div>
     </main>
   );

@@ -451,6 +451,7 @@ export function PortfolioClient() {
                     {(txByAsset[a.id] ?? []).length === 0 ? (
                       <p className="text-xs text-[rgb(var(--muted))]">Chưa có giao dịch nào.</p>
                     ) : (
+                      <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead>
                           <tr className="text-[rgb(var(--muted))]">
@@ -479,6 +480,7 @@ export function PortfolioClient() {
                           ))}
                         </tbody>
                       </table>
+                      </div>
                     )}
                   </div>
                 )}

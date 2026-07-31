@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# wrangler / cloudflare local dev state (contains local D1/R2 data, may include real secrets entered during local testing)
+.wrangler/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

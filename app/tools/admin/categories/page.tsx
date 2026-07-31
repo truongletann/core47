@@ -120,7 +120,7 @@ export default function AdminCategoriesPage() {
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-[rgb(var(--border))]">
+      <div className="overflow-x-auto rounded-xl border border-[rgb(var(--border))]">
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-[rgb(var(--border))] text-xs uppercase text-[rgb(var(--muted))]">

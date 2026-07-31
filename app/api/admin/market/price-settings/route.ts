@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/guard";
-import { getPriceSettings, updatePriceSettings } from "@/lib/market/priceSettingsService";
+import { getPriceSettingsSafe, updatePriceSettings } from "@/lib/market/priceSettingsService";
 import { PriceSettingsSchema } from "@/lib/market/priceSettingsSchema";
 
 export async function GET(req: NextRequest) {
   const admin = await requireAdmin(req);
   if (!admin) return NextResponse.json({ success: false, error: "FORBIDDEN" }, { status: 403 });
 
-  const settings = await getPriceSettings();
+  const settings = await getPriceSettingsSafe();
   return NextResponse.json({ success: true, data: { settings } });
 }
 
