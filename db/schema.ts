@@ -76,6 +76,7 @@ export const list100Items = sqliteTable("list100_items", {
   completedAt: text("completed_at"), // auto-set when isDone flips to true
   progressCurrent: integer("progress_current"), // e.g. books read so far, optional
   progressTarget: integer("progress_target"), // e.g. 1000 books goal, optional
+  isPinnedEnd: integer("is_pinned_end").notNull().default(0), // always sorts after non-pinned items, regardless of rank
   isPublic: integer("is_public").notNull().default(1), // hidden from the public page if = 0
   suggestedBy: text("suggested_by"), // suggester's name (if created from an approved suggestion), admin-only
   createdAt: text("created_at").notNull(),

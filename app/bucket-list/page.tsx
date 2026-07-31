@@ -28,8 +28,8 @@ export default async function BucketListPage() {
         <p className="mt-8 text-sm text-[rgb(var(--muted))]">Nothing here yet.</p>
       ) : (
         <div className="mt-8">
-          {items.map((item) => (
-            <List100ItemRow key={item.id} item={item} />
+          {items.map((item, index) => (
+            <List100ItemRow key={item.id} item={item} position={index + 1} />
           ))}
         </div>
       )}

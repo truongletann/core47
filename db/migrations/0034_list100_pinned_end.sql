@@ -1,0 +1,1 @@
+ALTER TABLE list100_items ADD COLUMN is_pinned_end INTEGER NOT NULL DEFAULT 0;

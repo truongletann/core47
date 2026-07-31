@@ -2,7 +2,7 @@ import { CheckSquare, Square } from "lucide-react";
 import type { List100Item } from "@/types/list100";
 import { cn } from "@/lib/utils/cn";
 
-export function List100ItemRow({ item }: { item: List100Item }) {
+export function List100ItemRow({ item, position }: { item: List100Item; position: number }) {
   const hasProgress = item.progressTarget !== null && item.progressTarget > 0;
   const current = Math.min(item.progressCurrent ?? 0, item.progressTarget ?? 0);
   const percent = hasProgress ? Math.round((current / item.progressTarget!) * 100) : 0;
@@ -10,7 +10,7 @@ export function List100ItemRow({ item }: { item: List100Item }) {
   return (
     <div className="flex items-start gap-3 border-b border-[rgb(var(--border)/0.6)] py-2.5 last:border-0">
       <span className="font-data w-6 shrink-0 pt-0.5 text-right text-xs text-[rgb(var(--muted))]">
-        {item.rank}
+        {position}
       </span>
 
       {item.isDone ? (
@@ -37,7 +37,13 @@ export function List100ItemRow({ item }: { item: List100Item }) {
               {item.title}
             </a>
           ) : (
-            <span className={item.isDone ? "text-[rgb(var(--muted))] line-through" : undefined}>
+            <span
+              className={cn(
+                item.isDone ? "text-[rgb(var(--muted))] line-through" : undefined,
+                item.isPinnedEnd && "italic",
+              )}
+            >
+              {item.isPinnedEnd && <span className="text-[rgb(var(--muted))]">~ </span>}
               {item.title}
             </span>
           )}

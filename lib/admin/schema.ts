@@ -56,6 +56,7 @@ export const List100ItemSchema = z.object({
   isDone: z.coerce.boolean().default(false),
   progressCurrent: nullableNonNegativeInt(),
   progressTarget: nullableNonNegativeInt(),
+  isPinnedEnd: z.coerce.boolean().default(false),
   isPublic: z.coerce.boolean().default(true),
   suggestedBy: nullableString(60),
 }).refine(

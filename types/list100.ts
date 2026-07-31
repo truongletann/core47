@@ -8,6 +8,7 @@ export interface List100Item {
   completedAt: string | null;
   progressCurrent: number | null;
   progressTarget: number | null;
+  isPinnedEnd: boolean;
   isPublic: boolean;
   createdAt: string;
   updatedAt: string;

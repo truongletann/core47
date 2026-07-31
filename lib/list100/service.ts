@@ -15,6 +15,7 @@ function toList100Item(r: typeof list100Table.$inferSelect): List100Item {
     completedAt: r.completedAt,
     progressCurrent: r.progressCurrent,
     progressTarget: r.progressTarget,
+    isPinnedEnd: Boolean(r.isPinnedEnd),
     isPublic: Boolean(r.isPublic),
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
@@ -27,7 +28,7 @@ export async function getPublicList100Items(): Promise<List100Item[]> {
     .select()
     .from(list100Table)
     .where(eq(list100Table.isPublic, 1))
-    .orderBy(asc(list100Table.rank));
+    .orderBy(asc(list100Table.isPinnedEnd), asc(list100Table.rank));
 
   return rows.map(toList100Item);
 }

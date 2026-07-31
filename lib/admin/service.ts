@@ -119,7 +119,10 @@ export async function setUserDisabled(id: string, disabled: boolean) {
 
 export async function listList100Admin() {
   const db = await getDb();
-  const rows = await db.select().from(list100Items).orderBy(asc(list100Items.rank));
+  const rows = await db
+    .select()
+    .from(list100Items)
+    .orderBy(asc(list100Items.isPinnedEnd), asc(list100Items.rank));
   return rows.map((r) => ({
     ...r,
     isDone: Boolean(r.isDone),
@@ -141,6 +144,7 @@ export async function createList100Item(input: List100ItemInput) {
     completedAt: input.isDone ? now.slice(0, 10) : null,
     progressCurrent: input.progressCurrent,
     progressTarget: input.progressTarget,
+    isPinnedEnd: input.isPinnedEnd ? 1 : 0,
     isPublic: input.isPublic ? 1 : 0,
     suggestedBy: input.suggestedBy,
     createdAt: now,
@@ -172,6 +176,7 @@ export async function updateList100Item(id: string, input: List100ItemInput) {
         : null,
       progressCurrent: input.progressCurrent,
       progressTarget: input.progressTarget,
+      isPinnedEnd: input.isPinnedEnd ? 1 : 0,
       isPublic: input.isPublic ? 1 : 0,
       suggestedBy: input.suggestedBy,
       updatedAt: new Date().toISOString(),

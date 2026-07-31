@@ -13,6 +13,7 @@ interface List100Item {
   isDone: boolean;
   progressCurrent: number | null;
   progressTarget: number | null;
+  isPinnedEnd: boolean;
   isPublic: boolean;
   suggestedBy: string | null;
 }
@@ -32,6 +33,7 @@ const emptyForm = {
   isDone: false,
   progressCurrent: "",
   progressTarget: "",
+  isPinnedEnd: false,
   isPublic: true,
   suggestedBy: "",
 };
@@ -133,6 +135,14 @@ function List100Form({ form, setForm }: { form: FormState; setForm: (f: FormStat
           />
           <span>Show publicly on the Bucket List page</span>
         </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.isPinnedEnd}
+            onChange={(e) => setForm({ ...form, isPinnedEnd: e.target.checked })}
+          />
+          <span>Pin to the end of the list (e.g. closing lines)</span>
+        </label>
       </div>
     </div>
   );
@@ -207,6 +217,7 @@ export default function AdminBucketListPage() {
       isDone: i.isDone,
       progressCurrent: i.progressCurrent === null ? "" : String(i.progressCurrent),
       progressTarget: i.progressTarget === null ? "" : String(i.progressTarget),
+      isPinnedEnd: i.isPinnedEnd,
       isPublic: i.isPublic,
       suggestedBy: i.suggestedBy ?? "",
     });
@@ -423,10 +434,15 @@ export default function AdminBucketListPage() {
                           <ArrowDown size={12} />
                         </button>
                       </div>
-                      <span className="font-data text-xs">{i.rank}</span>
+                      <span className="font-data text-xs">{index + 1}</span>
                     </div>
                   </td>
                   <td className="px-4 py-2">
+                    {i.isPinnedEnd && (
+                      <span className="mr-1.5 rounded-md border border-[rgb(var(--border))] px-1 py-0.5 text-[10px] text-[rgb(var(--muted))]">
+                        Pinned
+                      </span>
+                    )}
                     {i.title}
                     {i.note && <span className="text-[rgb(var(--muted))]"> ({i.note})</span>}
                     {i.suggestedBy && (
