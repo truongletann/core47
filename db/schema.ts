@@ -329,8 +329,10 @@ export const focusSceneBackgrounds = sqliteTable("focus_scene_backgrounds", {
   id: text("id").primaryKey(),
   sceneKey: text("scene_key").notNull().unique(),
   mediaType: text("media_type", { enum: ["image", "video"] }).notNull(),
-  source: text("source", { enum: ["r2", "external"] }).notNull(),
-  urlOrKey: text("url_or_key").notNull(),
+  source: text("source", { enum: ["r2", "external", "youtube"] }).notNull(),
+  urlOrKey: text("url_or_key").notNull(), // for "youtube", the 11-char video ID (parsed from the pasted URL)
+  startSeconds: integer("start_seconds"), // youtube only — loop window start
+  endSeconds: integer("end_seconds"), // youtube only — loop window end
   updatedAt: text("updated_at").notNull(),
 });
 

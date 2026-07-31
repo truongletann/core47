@@ -5,12 +5,32 @@ import { useEffect, useRef, useState } from "react";
 interface SceneOverride {
   sceneKey: string;
   mediaType: "image" | "video";
-  source: "r2" | "external";
+  source: "r2" | "external" | "youtube";
   urlOrKey: string;
+  startSeconds?: number | null;
+  endSeconds?: number | null;
 }
 
 function overrideSrc(bg: SceneOverride) {
   return bg.source === "r2" ? `/api/focus/backgrounds/${bg.urlOrKey}` : bg.urlOrKey;
+}
+
+function youtubeEmbedSrc(bg: SceneOverride) {
+  const params = new URLSearchParams({
+    autoplay: "1",
+    mute: "1",
+    loop: "1",
+    playlist: bg.urlOrKey, // required by YouTube for a single video to loop
+    controls: "0",
+    showinfo: "0",
+    modestbranding: "1",
+    playsinline: "1",
+    iv_load_policy: "3",
+    rel: "0",
+  });
+  if (bg.startSeconds != null) params.set("start", String(bg.startSeconds));
+  if (bg.endSeconds != null) params.set("end", String(bg.endSeconds));
+  return `https://www.youtube.com/embed/${bg.urlOrKey}?${params.toString()}`;
 }
 
 // Admin-uploaded "live background" media, keyed by scene — set via
@@ -243,7 +263,17 @@ export function SceneBackground({ scene, active }: { scene: string; active: bool
       style={{ background: SCENE_GRADIENTS[scene] ?? DEFAULT_GRADIENT }}
     >
       {override ? (
-        override.mediaType === "video" ? (
+        override.source === "youtube" ? (
+          <div className="absolute inset-0 overflow-hidden">
+            <iframe
+              key={`${override.urlOrKey}-${override.startSeconds}-${override.endSeconds}`}
+              src={youtubeEmbedSrc(override)}
+              className="pointer-events-none absolute left-1/2 top-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2"
+              allow="autoplay; encrypted-media"
+              title="Background video"
+            />
+          </div>
+        ) : override.mediaType === "video" ? (
           <video
             key={override.urlOrKey}
             src={overrideSrc(override)}

@@ -491,10 +491,36 @@ export async function listSceneBackgroundsAdmin() {
   return db.select().from(focusSceneBackgrounds);
 }
 
+// Accepts any common YouTube URL shape (watch?v=, youtu.be/, /embed/,
+// /shorts/) or a bare 11-char video ID, and returns just the ID.
+export function parseYoutubeId(input: string): string | null {
+  const trimmed = input.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  try {
+    const url = new URL(trimmed);
+    if (url.hostname === "youtu.be") return url.pathname.slice(1).split("/")[0] || null;
+    if (url.hostname.includes("youtube.com")) {
+      if (url.searchParams.get("v")) return url.searchParams.get("v");
+      const match = url.pathname.match(/\/(embed|shorts)\/([a-zA-Z0-9_-]{11})/);
+      if (match) return match[2];
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 export async function upsertSceneBackground(raw: SceneBackgroundInput) {
   const input = SceneBackgroundSchema.parse(raw);
   const db = await getDb();
   const now = new Date().toISOString();
+
+  let urlOrKey = input.urlOrKey;
+  if (input.source === "youtube") {
+    const videoId = parseYoutubeId(input.urlOrKey);
+    if (!videoId) throw new Error("INVALID_YOUTUBE_URL");
+    urlOrKey = videoId;
+  }
 
   const existing = await db
     .select()
@@ -502,15 +528,21 @@ export async function upsertSceneBackground(raw: SceneBackgroundInput) {
     .where(eq(focusSceneBackgrounds.sceneKey, input.sceneKey))
     .get();
 
+  const patch = {
+    mediaType: input.mediaType,
+    source: input.source,
+    urlOrKey,
+    startSeconds: input.startSeconds ?? null,
+    endSeconds: input.endSeconds ?? null,
+    updatedAt: now,
+  };
+
   if (existing) {
-    await db
-      .update(focusSceneBackgrounds)
-      .set({ mediaType: input.mediaType, source: input.source, urlOrKey: input.urlOrKey, updatedAt: now })
-      .where(eq(focusSceneBackgrounds.sceneKey, input.sceneKey));
-    return { ...existing, ...input, updatedAt: now };
+    await db.update(focusSceneBackgrounds).set(patch).where(eq(focusSceneBackgrounds.sceneKey, input.sceneKey));
+    return { ...existing, ...patch };
   }
 
-  const record = { id: crypto.randomUUID(), ...input, updatedAt: now };
+  const record = { id: crypto.randomUUID(), sceneKey: input.sceneKey, ...patch };
   await db.insert(focusSceneBackgrounds).values(record);
   return record;
 }

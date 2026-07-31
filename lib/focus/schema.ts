@@ -68,12 +68,19 @@ export const SceneSchema = z.object({
   sortOrder: z.coerce.number().int().default(0),
 });
 
-export const SceneBackgroundSchema = z.object({
-  sceneKey: z.string().trim().min(1).max(60),
-  mediaType: z.enum(["image", "video"]),
-  source: z.enum(["r2", "external"]),
-  urlOrKey: z.string().trim().min(1).max(500),
-});
+export const SceneBackgroundSchema = z
+  .object({
+    sceneKey: z.string().trim().min(1).max(60),
+    mediaType: z.enum(["image", "video"]),
+    source: z.enum(["r2", "external", "youtube"]),
+    urlOrKey: z.string().trim().min(1).max(500),
+    startSeconds: z.coerce.number().int().min(0).nullable().optional(),
+    endSeconds: z.coerce.number().int().min(0).nullable().optional(),
+  })
+  .refine((v) => v.endSeconds == null || v.startSeconds == null || v.endSeconds > v.startSeconds, {
+    message: "Thời điểm kết thúc phải sau thời điểm bắt đầu",
+    path: ["endSeconds"],
+  });
 
 export const PlaylistSchema = z.object({
   name: z.string().trim().min(1).max(120),

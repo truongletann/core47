@@ -32,6 +32,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const background = await upsertSceneBackground(parsed.data);
-  return NextResponse.json({ success: true, data: { background } }, { status: 201 });
+  try {
+    const background = await upsertSceneBackground(parsed.data);
+    return NextResponse.json({ success: true, data: { background } }, { status: 201 });
+  } catch (err) {
+    if (err instanceof Error && err.message === "INVALID_YOUTUBE_URL") {
+      return NextResponse.json({ success: false, error: "INVALID_YOUTUBE_URL" }, { status: 400 });
+    }
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ success: false, error: "SERVER_ERROR", message }, { status: 500 });
+  }
 }

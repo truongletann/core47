@@ -8,9 +8,19 @@ import type { Scene } from "@/lib/focus/types";
 interface SceneBackground {
   sceneKey: string;
   mediaType: "image" | "video";
-  source: "r2" | "external";
+  source: "r2" | "external" | "youtube";
   urlOrKey: string;
+  startSeconds: number | null;
+  endSeconds: number | null;
 }
+
+const emptyUrlForm = {
+  source: "external" as "external" | "youtube",
+  mediaType: "image" as "image" | "video",
+  urlOrKey: "",
+  startSeconds: "",
+  endSeconds: "",
+};
 
 export default function AdminFocusBackgroundsPage() {
   const [scenes, setScenes] = useState<Scene[]>([]);
@@ -18,7 +28,8 @@ export default function AdminFocusBackgroundsPage() {
   const [loading, setLoading] = useState(true);
   const [urlModal, setUrlModal] = useState<string | null>(null);
   const [uploadModal, setUploadModal] = useState<string | null>(null);
-  const [urlForm, setUrlForm] = useState({ mediaType: "image" as "image" | "video", urlOrKey: "" });
+  const [urlForm, setUrlForm] = useState(emptyUrlForm);
+  const [urlError, setUrlError] = useState<string | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -50,15 +61,30 @@ export default function AdminFocusBackgroundsPage() {
   async function handleSetUrl() {
     if (!urlModal) return;
     setSaving(true);
+    setUrlError(null);
     try {
-      await fetch("/api/admin/focus/backgrounds", {
+      const res = await fetch("/api/admin/focus/backgrounds", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sceneKey: urlModal, source: "external", ...urlForm }),
+        body: JSON.stringify({
+          sceneKey: urlModal,
+          source: urlForm.source,
+          mediaType: urlForm.source === "youtube" ? "video" : urlForm.mediaType,
+          urlOrKey: urlForm.urlOrKey,
+          startSeconds: urlForm.source === "youtube" && urlForm.startSeconds ? Number(urlForm.startSeconds) : null,
+          endSeconds: urlForm.source === "youtube" && urlForm.endSeconds ? Number(urlForm.endSeconds) : null,
+        }),
         credentials: "include",
       });
+      const json = (await res.json()) as { success: boolean; error?: string };
+      if (!json.success) {
+        setUrlError(
+          json.error === "INVALID_YOUTUBE_URL" ? "Link YouTube không hợp lệ." : "Có lỗi xảy ra, thử lại.",
+        );
+        return;
+      }
       setUrlModal(null);
-      setUrlForm({ mediaType: "image", urlOrKey: "" });
+      setUrlForm(emptyUrlForm);
       load();
     } finally {
       setSaving(false);
@@ -113,13 +139,18 @@ export default function AdminFocusBackgroundsPage() {
                 <div>
                   <p className="text-sm font-medium">{s.name}</p>
                   <p className="text-xs text-[rgb(var(--muted))]">
-                    {bg ? `${bg.mediaType} · ${bg.source}` : "Mặc định (canvas)"}
+                    {bg
+                      ? bg.source === "youtube"
+                        ? `YouTube${bg.startSeconds != null ? ` · ${bg.startSeconds}s–${bg.endSeconds}s` : ""}`
+                        : `${bg.mediaType} · ${bg.source}`
+                      : "Mặc định (canvas)"}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => {
-                      setUrlForm({ mediaType: "image", urlOrKey: "" });
+                      setUrlForm(emptyUrlForm);
+                      setUrlError(null);
                       setUrlModal(s.key);
                     }}
                     className="rounded-md border border-[rgb(var(--border))] px-2 py-1 text-xs hover:bg-[rgb(var(--border)/0.5)]"
@@ -148,29 +179,80 @@ export default function AdminFocusBackgroundsPage() {
       )}
 
       {urlModal && (
-        <Modal title={`Đặt ảnh/video từ URL — ${scenes.find((s) => s.key === urlModal)?.name}`} onClose={() => setUrlModal(null)}>
+        <Modal title={`Đặt ảnh/video — ${scenes.find((s) => s.key === urlModal)?.name}`} onClose={() => setUrlModal(null)}>
           <div className="flex flex-col gap-3">
             <label className="text-sm">
-              <span className="mb-1 block text-[rgb(var(--muted))]">Loại</span>
+              <span className="mb-1 block text-[rgb(var(--muted))]">Nguồn</span>
               <select
-                value={urlForm.mediaType}
-                onChange={(e) => setUrlForm({ ...urlForm, mediaType: e.target.value as "image" | "video" })}
+                value={urlForm.source}
+                onChange={(e) => setUrlForm({ ...urlForm, source: e.target.value as "external" | "youtube" })}
                 className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
               >
-                <option value="image">Ảnh</option>
-                <option value="video">Video</option>
+                <option value="external">Link ảnh/video trực tiếp</option>
+                <option value="youtube">YouTube</option>
               </select>
             </label>
+
+            {urlForm.source === "external" && (
+              <label className="text-sm">
+                <span className="mb-1 block text-[rgb(var(--muted))]">Loại</span>
+                <select
+                  value={urlForm.mediaType}
+                  onChange={(e) => setUrlForm({ ...urlForm, mediaType: e.target.value as "image" | "video" })}
+                  className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+                >
+                  <option value="image">Ảnh</option>
+                  <option value="video">Video</option>
+                </select>
+              </label>
+            )}
+
             <label className="text-sm">
-              <span className="mb-1 block text-[rgb(var(--muted))]">URL</span>
+              <span className="mb-1 block text-[rgb(var(--muted))]">
+                {urlForm.source === "youtube" ? "Link YouTube" : "URL"}
+              </span>
               <input
                 value={urlForm.urlOrKey}
                 onChange={(e) => setUrlForm({ ...urlForm, urlOrKey: e.target.value })}
-                placeholder="https://..."
+                placeholder={urlForm.source === "youtube" ? "https://youtube.com/watch?v=..." : "https://..."}
                 className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
               />
             </label>
+
+            {urlForm.source === "youtube" && (
+              <div className="flex gap-3">
+                <label className="flex-1 text-sm">
+                  <span className="mb-1 block text-[rgb(var(--muted))]">Bắt đầu (giây)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={urlForm.startSeconds}
+                    onChange={(e) => setUrlForm({ ...urlForm, startSeconds: e.target.value })}
+                    placeholder="0"
+                    className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+                  />
+                </label>
+                <label className="flex-1 text-sm">
+                  <span className="mb-1 block text-[rgb(var(--muted))]">Kết thúc (giây)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={urlForm.endSeconds}
+                    onChange={(e) => setUrlForm({ ...urlForm, endSeconds: e.target.value })}
+                    placeholder="90"
+                    className="font-data w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+                  />
+                </label>
+              </div>
+            )}
+            {urlForm.source === "youtube" && (
+              <p className="text-xs text-[rgb(var(--muted))]">
+                Vd: bắt đầu 90 giây = phút 1:30. Để trống = chạy từ đầu / tới hết video. Video sẽ tự tắt
+                tiếng và lặp lại đoạn này.
+              </p>
+            )}
           </div>
+          {urlError && <p className="mt-2 text-xs text-red-600">{urlError}</p>}
           <button
             onClick={handleSetUrl}
             disabled={saving || !urlForm.urlOrKey}
