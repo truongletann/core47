@@ -52,6 +52,7 @@ export default function FocusPage() {
 
   const notDone = tasks.filter((t) => !t.isDone).length;
   const activeTask = tasks.find((t) => t.id === activeTaskId) ?? null;
+  const displayTask = activeTask ?? tasks.find((t) => !t.isDone) ?? null;
 
   const isLeft = (k: PanelKey) => (LEFT_KEYS as string[]).includes(k);
 
@@ -66,7 +67,7 @@ export default function FocusPage() {
         </a>
       )}
 
-      <Timer durations={durations} onSessionComplete={handleSessionComplete} activeTask={activeTask} onEditTask={() => setOpenPanel("todo")} />
+      <Timer durations={durations} onSessionComplete={handleSessionComplete} displayTask={displayTask} onEditTask={() => setOpenPanel("todo")} />
 
       {!focusMode && (
         <>
