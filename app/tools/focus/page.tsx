@@ -83,8 +83,15 @@ export default function FocusPage() {
 
       {/* Mounted unconditionally (never inside a panel) so closing/reopening
           any dock panel or toggling Focus mode doesn't unmount the iframe
-          and kill playback — only the widget's own close button does. */}
-      <NowPlayingWidget playlist={activePlaylist} visible={!focusMode} onClose={() => setActivePlaylist(null)} />
+          and kill playback — only the widget's own close button does.
+          Hidden while the Sounds panel itself is open since that panel
+          already renders its own (bigger) inline player for the same
+          playlist — showing both was a confusing duplicate. */}
+      <NowPlayingWidget
+        playlist={activePlaylist}
+        visible={!focusMode && openPanel !== "sounds"}
+        onClose={() => setActivePlaylist(null)}
+      />
 
       {openPanel && !focusMode && (
         <FloatingPanel
