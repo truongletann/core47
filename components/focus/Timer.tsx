@@ -1,9 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { RotateCcw, PictureInPicture2, Pencil } from "lucide-react";
 import { ResetDialog } from "@/components/focus/ResetDialog";
-import type { FocusTask } from "@/lib/focus/types";
+import { SceneBackground } from "@/components/focus/SceneBackground";
+import { EffectsOverlay, type Effects } from "@/components/focus/EffectsOverlay";
+import type { FocusTask, Theme } from "@/lib/focus/types";
 
 export type Phase = "work" | "short" | "long";
 
@@ -19,6 +22,8 @@ interface TimerProps {
   onSessionComplete: (type: "work" | "break", durationMinutes: number) => void;
   displayTask: FocusTask | null;
   onEditTask: () => void;
+  activeTheme: Theme | null;
+  effects: Effects;
 }
 
 const QUOTES = [
@@ -44,7 +49,7 @@ function phaseMinutes(phase: Phase, d: Durations) {
   return d.longBreakMinutes;
 }
 
-export function Timer({ durations, onSessionComplete, displayTask, onEditTask }: TimerProps) {
+export function Timer({ durations, onSessionComplete, displayTask, onEditTask, activeTheme, effects }: TimerProps) {
   const [phase, setPhase] = useState<Phase>("work");
   const [secondsLeft, setSecondsLeft] = useState(durations.workMinutes * 60);
   const [running, setRunning] = useState(false);
@@ -57,6 +62,7 @@ export function Timer({ durations, onSessionComplete, displayTask, onEditTask }:
   const pipParentRef = useRef<HTMLElement | null>(null);
   const pipWindowRef = useRef<Window | null>(null);
   const [inPip, setInPip] = useState(false);
+  const [pipBgHost, setPipBgHost] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!running) setSecondsLeft(phaseMinutes(phase, durations) * 60);
@@ -171,25 +177,7 @@ export function Timer({ durations, onSessionComplete, displayTask, onEditTask }:
     pipWindow.document.body.style.position = "relative";
     pipWindow.document.body.style.overflow = "hidden";
 
-    // Mirror the live Ambience background (gradient/canvas scene or photo)
-    // into the PiP window instead of a flat fallback color, so it still
-    // looks like Focus rather than a plain dark box.
-    const sceneEl = document.querySelector<HTMLElement>("[data-scene-bg]");
-    const sceneImg = sceneEl?.querySelector("img");
-    if (sceneImg) {
-      pipWindow.document.body.style.backgroundImage = `url("${sceneImg.src}")`;
-      pipWindow.document.body.style.backgroundSize = "cover";
-      pipWindow.document.body.style.backgroundPosition = "center";
-    } else if (sceneEl) {
-      const computed = getComputedStyle(sceneEl);
-      pipWindow.document.body.style.backgroundImage = computed.backgroundImage;
-      pipWindow.document.body.style.backgroundColor = computed.backgroundColor;
-    } else {
-      pipWindow.document.body.style.background = "#141019";
-    }
-    const overlay = pipWindow.document.createElement("div");
-    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.25);";
-    pipWindow.document.body.appendChild(overlay);
+    pipWindow.document.body.style.background = "#141019";
 
     [...document.styleSheets].forEach((styleSheet) => {
       try {
@@ -207,15 +195,30 @@ export function Timer({ durations, onSessionComplete, displayTask, onEditTask }:
       }
     });
 
+    // A real live copy of the current Ambience scene + weather effects,
+    // rendered via a React portal (not a moved/cloned node) so it's an
+    // independent instance that stays in sync with theme/effects state
+    // automatically, instead of a one-off snapshot. z-index:0 pins its own
+    // -z-10 layers inside this box instead of escaping behind the pip body.
+    const bgHost = pipWindow.document.createElement("div");
+    bgHost.style.cssText = "position:fixed;inset:0;z-index:0;overflow:hidden;";
+    pipWindow.document.body.appendChild(bgHost);
+    setPipBgHost(bgHost);
+
     pipParentRef.current = contentRef.current.parentElement;
     pipWindow.document.body.appendChild(contentRef.current);
+    contentRef.current.style.position = "relative";
+    contentRef.current.style.zIndex = "1";
     setInPip(true);
 
     pipWindow.addEventListener("pagehide", () => {
       if (contentRef.current && pipParentRef.current) {
+        contentRef.current.style.position = "";
+        contentRef.current.style.zIndex = "";
         pipParentRef.current.appendChild(contentRef.current);
       }
       pipWindowRef.current = null;
+      setPipBgHost(null);
       setInPip(false);
     });
   }, [inPip]);
@@ -293,6 +296,15 @@ export function Timer({ durations, onSessionComplete, displayTask, onEditTask }:
       {showResetDialog && (
         <ResetDialog onClose={() => setShowResetDialog(false)} onResetSegment={resetSegment} onResetSession={resetSession} />
       )}
+
+      {pipBgHost &&
+        createPortal(
+          <>
+            <SceneBackground theme={activeTheme} active />
+            <EffectsOverlay effects={effects} />
+          </>,
+          pipBgHost,
+        )}
     </>
   );
 }

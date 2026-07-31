@@ -110,7 +110,14 @@ export default function FocusPage() {
         </a>
       )}
 
-      <Timer durations={durations} onSessionComplete={handleSessionComplete} displayTask={displayTask} onEditTask={() => setOpenPanel("todo")} />
+      <Timer
+        durations={durations}
+        onSessionComplete={handleSessionComplete}
+        displayTask={displayTask}
+        onEditTask={() => setOpenPanel("todo")}
+        activeTheme={activeTheme}
+        effects={effects}
+      />
 
       {!focusMode && (
         <>
