@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CloudRain,
   Waves,
@@ -15,6 +15,8 @@ import {
   CloudLightning,
   Music2,
   Play,
+  Pause,
+  RotateCcw,
   Trash2,
 } from "lucide-react";
 import type { SoundTrack, Playlist } from "@/lib/focus/types";
@@ -43,54 +45,53 @@ function iconFor(name: string) {
   return key ? ICONS[key] : Music2;
 }
 
-function trackSrc(t: SoundTrack) {
-  return t.source === "r2" ? `/api/focus/sounds/${t.urlOrKey}` : t.urlOrKey;
+interface SoundsTabProps {
+  tracks: SoundTrack[];
+  volumes: Record<string, number>;
+  onToggle: (track: SoundTrack) => void;
+  onSetVolume: (track: SoundTrack, volume: number) => void;
+  onPauseAll: () => void;
+  onResumeAll: () => void;
+  onResetAll: () => void;
 }
 
-function SoundsTab() {
-  const [tracks, setTracks] = useState<SoundTrack[]>([]);
+// Several tracks can be active at once — each tile toggles independently
+// and, once active, exposes its own volume slider. Playback itself lives in
+// useAmbientSounds (owned by page.tsx) so it survives the panel closing.
+function SoundsTab({ tracks, volumes, onToggle, onSetVolume, onPauseAll, onResumeAll, onResetAll }: SoundsTabProps) {
   const [category, setCategory] = useState("All");
-  const [volumes, setVolumes] = useState<Record<string, number>>({});
-  const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
-
-  useEffect(() => {
-    fetch("/api/focus/sounds")
-      .then((r) => r.json() as Promise<{ data?: { tracks?: SoundTrack[] } }>)
-      .then((json) => setTracks(json?.data?.tracks ?? []));
-  }, []);
-
-  useEffect(() => {
-    const refs = audioRefs.current;
-    return () => {
-      Object.values(refs).forEach((a) => {
-        a.pause();
-        a.src = "";
-      });
-    };
-  }, []);
-
-  function toggle(track: SoundTrack) {
-    const v = volumes[track.id] ?? 0;
-    const next = v > 0 ? 0 : 0.5;
-    setVolumes((prev) => ({ ...prev, [track.id]: next }));
-
-    let audio = audioRefs.current[track.id];
-    if (!audio) {
-      audio = new Audio(trackSrc(track));
-      audio.loop = true;
-      audioRefs.current[track.id] = audio;
-    }
-    audio.volume = next;
-    if (next > 0) audio.play().catch(() => {});
-    else audio.pause();
-  }
+  const [allPaused, setAllPaused] = useState(false);
 
   const categories = useMemo(() => ["All", ...Array.from(new Set(tracks.map((t) => t.category)))], [tracks]);
   const visible = category === "All" ? tracks : tracks.filter((t) => t.category === category);
+  const anyActive = Object.values(volumes).some((v) => v > 0);
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-2">
+        <button
+          onClick={() => {
+            if (allPaused) onResumeAll();
+            else onPauseAll();
+            setAllPaused((p) => !p);
+          }}
+          disabled={!anyActive}
+          className="text-white/60 hover:text-white disabled:opacity-30"
+          aria-label={allPaused ? "Phát lại tất cả" : "Tạm dừng tất cả"}
+        >
+          {allPaused ? <Play size={15} /> : <Pause size={15} />}
+        </button>
+        <button
+          onClick={() => {
+            onResetAll();
+            setAllPaused(false);
+          }}
+          disabled={!anyActive}
+          className="text-white/60 hover:text-white disabled:opacity-30"
+          aria-label="Tắt hết"
+        >
+          <RotateCcw size={14} />
+        </button>
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
@@ -107,18 +108,31 @@ function SoundsTab() {
       <div className="grid grid-cols-4 gap-3">
         {visible.map((t) => {
           const Icon = iconFor(t.name);
-          const active = (volumes[t.id] ?? 0) > 0;
+          const volume = volumes[t.id] ?? 0;
+          const active = volume > 0;
           return (
-            <button
+            <div
               key={t.id}
-              onClick={() => toggle(t)}
               className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-center transition-colors ${
                 active ? "border-violet-500 bg-violet-500/15 text-white" : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
               }`}
             >
-              <Icon size={20} />
-              <span className="text-[11px] leading-tight">{t.name}</span>
-            </button>
+              <button onClick={() => onToggle(t)} className="flex flex-col items-center gap-1.5">
+                <Icon size={20} />
+                <span className="text-[11px] leading-tight">{t.name}</span>
+              </button>
+              {active && (
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={volume}
+                  onChange={(e) => onSetVolume(t, Number(e.target.value))}
+                  className="mt-0.5 w-full accent-violet-500"
+                />
+              )}
+            </div>
           );
         })}
       </div>
@@ -360,6 +374,7 @@ export function SoundsPanel({
   customPlaylist,
   onSelectCustomPlaylist,
   attachMyMusicSlot,
+  sounds,
 }: {
   tab: "sounds" | "mymusic" | "library";
   activePlaylist: Playlist | null;
@@ -368,10 +383,11 @@ export function SoundsPanel({
   customPlaylist: CustomPlaylist | null;
   onSelectCustomPlaylist: (playlist: CustomPlaylist | null) => void;
   attachMyMusicSlot: (slot: HTMLDivElement | null) => void;
+  sounds: SoundsTabProps;
 }) {
   return (
     <>
-      {tab === "sounds" && <SoundsTab />}
+      {tab === "sounds" && <SoundsTab {...sounds} />}
       {tab === "mymusic" && (
         <MyMusicTab current={customPlaylist} onSelectCurrent={onSelectCustomPlaylist} attachSlot={attachMyMusicSlot} />
       )}

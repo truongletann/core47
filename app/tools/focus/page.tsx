@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useFocusData } from "@/lib/focus/useFocusData";
 import { usePlayerSlot } from "@/lib/focus/usePlayerSlot";
+import { useAmbientSounds } from "@/lib/focus/useAmbientSounds";
 import { Timer, type Durations } from "@/components/focus/Timer";
 import { SceneBackground } from "@/components/focus/SceneBackground";
 import { DockLeft, type LeftPanelKey } from "@/components/focus/DockLeft";
@@ -41,6 +42,7 @@ export default function FocusPage() {
   // rAF = wait for the browser to actually paint before reading the rect).
   const libraryPlayer = usePlayerSlot();
   const myMusicPlayer = usePlayerSlot();
+  const ambientSounds = useAmbientSounds();
 
   useEffect(() => {
     window.addEventListener("resize", libraryPlayer.measure);
@@ -144,6 +146,15 @@ export default function FocusPage() {
               customPlaylist={customPlaylist}
               onSelectCustomPlaylist={setCustomPlaylist}
               attachMyMusicSlot={myMusicPlayer.attach}
+              sounds={{
+                tracks: ambientSounds.tracks,
+                volumes: ambientSounds.volumes,
+                onToggle: ambientSounds.toggle,
+                onSetVolume: ambientSounds.setVolume,
+                onPauseAll: ambientSounds.pauseAll,
+                onResumeAll: ambientSounds.resumeAll,
+                onResetAll: ambientSounds.resetAll,
+              }}
             />
           )}
           {openPanel === "notes" && <NotesPanel />}
