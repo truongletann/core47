@@ -83,13 +83,13 @@ export default function FocusPage() {
 
       {/* Mounted unconditionally (never inside a panel) so closing/reopening
           any dock panel or toggling Focus mode doesn't unmount the iframe
-          and kill playback — only the widget's own close button does.
-          Hidden while the Sounds panel itself is open since that panel
-          already renders its own (bigger) inline player for the same
-          playlist — showing both was a confusing duplicate. */}
+          and kill playback. Always visually hidden — the Sounds panel is
+          the only place playback is shown (its own inline player); this
+          just keeps the Spotify iframe alive in the background so the
+          music keeps going after the panel closes, with no floating popup. */}
       <NowPlayingWidget
         playlist={activePlaylist}
-        visible={!focusMode && openPanel !== "sounds"}
+        visible={false}
         onClose={() => setActivePlaylist(null)}
       />
 
