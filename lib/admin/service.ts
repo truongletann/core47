@@ -1,6 +1,7 @@
 import { eq, asc, desc } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { getBlogBucket } from "@/lib/storage/r2";
+import { deleteAllSessionsForUser } from "@/lib/auth/service";
 import { categories, tools, users, list100Items, list100Suggestions, blogPosts } from "@/db/schema";
 import {
   CategorySchema,
@@ -115,6 +116,9 @@ export async function listUsersAdmin() {
 export async function setUserDisabled(id: string, disabled: boolean) {
   const db = await getDb();
   await db.update(users).set({ isDisabled: disabled ? 1 : 0 }).where(eq(users.id, id));
+  if (disabled) {
+    await deleteAllSessionsForUser(id);
+  }
 }
 
 export async function listList100Admin() {

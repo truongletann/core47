@@ -57,6 +57,14 @@ export const sessions = sqliteTable("sessions", {
   createdAt: text("created_at").notNull(),
 });
 
+// Fixed-window request counters, e.g. "login:203.0.113.4" — used to throttle
+// abuse-prone public endpoints (login, register, shortlink creation, ...).
+export const rateLimits = sqliteTable("rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull().default(0),
+  windowStart: text("window_start").notNull(),
+});
+
 // NEW — user's favorite tools in the toolbox
 export const toolFavorites = sqliteTable("tool_favorites", {
   id: text("id").primaryKey(),

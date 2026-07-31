@@ -1,7 +1,37 @@
 import { marked, type Tokens } from "marked";
 import matter from "gray-matter";
 import { emojify } from "node-emoji";
+import sanitizeHtml from "sanitize-html";
 import { highlightCode } from "./highlight";
+
+// Allow the tags/attributes actually produced by this renderer (headings
+// with ids, highlighted code blocks, callout containers, table of contents)
+// plus common rich-content tags editors paste raw HTML for, while still
+// blocking script/style/iframe/on*-handlers/javascript: URLs.
+const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
+  allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+    "img",
+    "h1",
+    "h2",
+    "span",
+    "div",
+    "video",
+    "audio",
+    "source",
+    "nav",
+    "center",
+  ]),
+  allowedAttributes: {
+    ...sanitizeHtml.defaults.allowedAttributes,
+    "*": ["id", "class", "style", "title"],
+    a: ["href", "name", "target", "rel"],
+    img: ["src", "alt", "width", "height", "loading"],
+    video: ["src", "controls", "width", "height", "poster"],
+    source: ["src", "type"],
+  },
+  allowedSchemes: ["http", "https", "mailto", "data"],
+  allowedSchemesByTag: { img: ["http", "https", "data"] },
+};
 
 // VitePress/Docusaurus-style container syntax: :::type Optional Title\n...\n:::
 const CONTAINER_RE = /^:::([a-zA-Z]+)(?:[ \t]+(.*))?\r?\n([\s\S]*?)\r?\n:::[ \t]*$/gm;
@@ -138,8 +168,10 @@ export function renderMarkdown(raw: string): string {
   const withToc = withEmoji.replace(TOC_MARKER_RE, () => buildTocHtml(headings));
   const withContainers = renderContainers(withToc);
 
-  return marked.parse(withContainers, {
+  const html = marked.parse(withContainers, {
     async: false,
     renderer: new BlogRenderer(headings),
   }) as string;
+
+  return sanitizeHtml(html, SANITIZE_OPTIONS);
 }

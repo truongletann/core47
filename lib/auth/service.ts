@@ -142,6 +142,11 @@ export async function getUserBySessionId(sessionId: string | undefined): Promise
   const record = await db.select().from(users).where(eq(users.id, session.userId)).get();
   if (!record) return null;
 
+  if (record.isDisabled) {
+    await db.delete(sessions).where(eq(sessions.id, sessionId));
+    return null;
+  }
+
   return toUser(record);
 }
 
@@ -171,7 +176,11 @@ export async function updateProfile(userId: string, raw: UpdateProfileInput): Pr
   return toUser(record);
 }
 
-export async function changePassword(userId: string, raw: ChangePasswordInput): Promise<void> {
+export async function changePassword(
+  userId: string,
+  raw: ChangePasswordInput,
+  currentSessionId?: string,
+): Promise<void> {
   const input = ChangePasswordSchema.parse(raw);
   const db = await getDb();
 
@@ -188,9 +197,28 @@ export async function changePassword(userId: string, raw: ChangePasswordInput): 
     .update(users)
     .set({ passwordHash: newHash, passwordSalt: newSalt })
     .where(eq(users.id, userId));
+
+  // Invalidate any other active sessions in case the password was changed
+  // because a session/credential was compromised.
+  await deleteOtherSessions(userId, currentSessionId);
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
   const db = await getDb();
   await db.delete(sessions).where(eq(sessions.id, sessionId));
+}
+
+export async function deleteAllSessionsForUser(userId: string): Promise<void> {
+  const db = await getDb();
+  await db.delete(sessions).where(eq(sessions.userId, userId));
+}
+
+export async function deleteOtherSessions(userId: string, keepSessionId?: string): Promise<void> {
+  const db = await getDb();
+  const all = await db.select({ id: sessions.id }).from(sessions).where(eq(sessions.userId, userId)).all();
+  const toDelete = all.map((s) => s.id).filter((id) => id !== keepSessionId);
+  if (toDelete.length === 0) return;
+  for (const id of toDelete) {
+    await db.delete(sessions).where(eq(sessions.id, id));
+  }
 }

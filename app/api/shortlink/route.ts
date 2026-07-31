@@ -4,8 +4,14 @@ import { CreateShortLinkSchema } from "@/lib/shortlink/schema";
 import { SHORT_DOMAIN } from "@/lib/shortlink/config";
 import { getUserBySessionId } from "@/lib/auth/service";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/config";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
+  const allowed = await checkRateLimit(`shortlink:${clientIp(req)}`, 20, 60 * 60 * 1000);
+  if (!allowed) {
+    return NextResponse.json({ success: false, error: "TOO_MANY_ATTEMPTS" }, { status: 429 });
+  }
+
   let body: unknown;
   try {
     body = await req.json();

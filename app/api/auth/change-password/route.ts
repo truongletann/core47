@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await changePassword(user.id, parseResult.data);
+    await changePassword(user.id, parseResult.data, sessionId);
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof Error && err.message === "WRONG_CURRENT_PASSWORD") {

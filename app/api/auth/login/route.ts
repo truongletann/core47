@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { loginUser } from "@/lib/auth/service";
 import { LoginSchema } from "@/lib/auth/schema";
 import { SESSION_COOKIE_NAME, SESSION_DURATION_DAYS } from "@/lib/auth/config";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
+  const allowed = await checkRateLimit(`login:${clientIp(req)}`, 10, 10 * 60 * 1000);
+  if (!allowed) {
+    return NextResponse.json({ success: false, error: "TOO_MANY_ATTEMPTS" }, { status: 429 });
+  }
+
   let body: unknown;
   try {
     body = await req.json();
