@@ -300,8 +300,9 @@ function PlaylistLibraryTab({
   return (
     <div className="flex flex-col gap-4">
       {isPlaying ? (
-        // Plays right here, full-width — picking another tile below swaps
-        // this embed in place instead of only surfacing playback elsewhere.
+        // Empty placeholder — the real iframe lives in page.tsx and is
+        // positioned exactly over this box via getBoundingClientRect, so
+        // it plays right here without ever being reparented (see page.tsx).
         <div ref={attachPlayerSlot} className="h-[352px] w-full overflow-hidden rounded-lg" />
       ) : (
         <button onClick={() => onSelect(featured)} className="flex flex-col gap-1.5 text-left">

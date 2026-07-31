@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusData } from "@/lib/focus/useFocusData";
 import { Timer, type Durations } from "@/components/focus/Timer";
 import { SceneBackground } from "@/components/focus/SceneBackground";
@@ -32,21 +32,49 @@ export default function FocusPage() {
     longBreakInterval: 4,
   });
 
-  // Single persistent Spotify iframe for the Playlist Library — reparented
-  // (not remounted) between an off-screen "home" div and a placeholder slot
-  // inside the panel, so closing/reopening the Sounds panel never restarts
-  // or stops playback. Recreating the iframe would require a fresh manual
-  // play click every time (autoplay is blocked without a user gesture on
-  // that exact frame).
-  const playerHomeRef = useRef<HTMLDivElement>(null);
-  const playerWrapperRef = useRef<HTMLDivElement>(null);
-  const attachPlayerSlot = useCallback((slot: HTMLDivElement | null) => {
-    const wrapper = playerWrapperRef.current;
-    const target = slot ?? playerHomeRef.current;
-    if (wrapper && target && wrapper.parentElement !== target) {
-      target.appendChild(wrapper);
+  // Single persistent Spotify iframe for the Playlist Library, rendered
+  // once at the page root and NEVER reparented — moving an iframe to a
+  // different DOM parent (even via appendChild, keeping the same node)
+  // makes Chrome tear down and reload its browsing context, which is what
+  // silently killed playback before. Instead the iframe's box is tracked
+  // with CSS: when the panel's placeholder slot is mounted we measure its
+  // on-screen rect and position the iframe exactly on top of it; when the
+  // slot unmounts we move the box off-screen. The <iframe> itself always
+  // stays put, so playback is untouched either way.
+  const playerSlotElRef = useRef<HTMLDivElement | null>(null);
+  const [playerBox, setPlayerBox] = useState<{ top: number; left: number; width: number; height: number } | null>(
+    null,
+  );
+
+  const measurePlayerSlot = useCallback(() => {
+    const el = playerSlotElRef.current;
+    if (!el) {
+      setPlayerBox(null);
+      return;
     }
+    const r = el.getBoundingClientRect();
+    setPlayerBox({ top: r.top, left: r.left, width: r.width, height: r.height });
   }, []);
+
+  const attachPlayerSlot = useCallback(
+    (slot: HTMLDivElement | null) => {
+      playerSlotElRef.current = slot;
+      measurePlayerSlot();
+    },
+    [measurePlayerSlot],
+  );
+
+  useEffect(() => {
+    window.addEventListener("resize", measurePlayerSlot);
+    return () => window.removeEventListener("resize", measurePlayerSlot);
+  }, [measurePlayerSlot]);
+
+  // Re-measure after layout settles whenever the panel/tab/selection
+  // changes shape (double rAF = wait for the browser to actually paint).
+  useEffect(() => {
+    const id = requestAnimationFrame(() => requestAnimationFrame(measurePlayerSlot));
+    return () => cancelAnimationFrame(id);
+  }, [openPanel, soundsTab, activePlaylist, measurePlayerSlot]);
 
   const handleSessionComplete = useCallback(
     (type: "work" | "break", durationMinutes: number) => {
@@ -96,22 +124,29 @@ export default function FocusPage() {
         </>
       )}
 
-      {/* Off-screen home for the persistent Spotify iframe (see
-          attachPlayerSlot above) — always mounted so playback survives the
-          Sounds panel closing, with no floating widget ever shown. */}
-      <div ref={playerHomeRef} aria-hidden className="fixed left-[-9999px] top-0 h-0 w-0 overflow-hidden">
-        <div ref={playerWrapperRef} className="h-full w-full">
-          {activePlaylist && (
-            <iframe
-              key={activePlaylist.id}
-              src={activePlaylist.spotifyEmbedUrl}
-              width="100%"
-              height="100%"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
-            />
-          )}
-        </div>
+      {/* Persistent Spotify iframe — parent never changes (see comment on
+          playerBox above), only this box's CSS position/size, so playback
+          survives the Sounds panel opening/closing/switching tabs with no
+          floating widget ever shown when the slot isn't mounted. */}
+      <div
+        aria-hidden={!playerBox}
+        className="fixed z-40 overflow-hidden rounded-lg transition-none"
+        style={
+          playerBox
+            ? { top: playerBox.top, left: playerBox.left, width: playerBox.width, height: playerBox.height }
+            : { top: 0, left: -9999, width: 1, height: 1, opacity: 0, pointerEvents: "none" }
+        }
+      >
+        {activePlaylist && (
+          <iframe
+            key={activePlaylist.id}
+            src={activePlaylist.spotifyEmbedUrl}
+            width="100%"
+            height="100%"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"
+          />
+        )}
       </div>
 
       {openPanel && !focusMode && (
