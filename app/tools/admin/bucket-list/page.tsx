@@ -47,7 +47,6 @@ function List100Form({ form, setForm }: { form: FormState; setForm: (f: FormStat
           <input
             type="number"
             min={1}
-            max={100}
             value={form.rank}
             onChange={(e) => setForm({ ...form, rank: e.target.value })}
             className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
@@ -132,14 +131,14 @@ function List100Form({ form, setForm }: { form: FormState; setForm: (f: FormStat
             checked={form.isPublic}
             onChange={(e) => setForm({ ...form, isPublic: e.target.checked })}
           />
-          <span>Show publicly on the List 100 page</span>
+          <span>Show publicly on the Bucket List page</span>
         </label>
       </div>
     </div>
   );
 }
 
-export default function AdminList100Page() {
+export default function AdminBucketListPage() {
   const [items, setItems] = useState<List100Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -172,7 +171,7 @@ export default function AdminList100Page() {
 
   function openCreate() {
     const nextRank = items.length > 0 ? Math.max(...items.map((i) => i.rank)) + 1 : 1;
-    setForm({ ...emptyForm, rank: String(Math.min(nextRank, 100)) });
+    setForm({ ...emptyForm, rank: String(nextRank) });
     setApprovingSuggestionId(null);
     setError(null);
     setCreating(true);
@@ -182,7 +181,7 @@ export default function AdminList100Page() {
     const nextRank = items.length > 0 ? Math.max(...items.map((i) => i.rank)) + 1 : 1;
     setForm({
       ...emptyForm,
-      rank: String(Math.min(nextRank, 100)),
+      rank: String(nextRank),
       title: s.content.slice(0, 280),
       suggestedBy: s.name ?? "",
     });
@@ -328,7 +327,7 @@ export default function AdminList100Page() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold">List 100</h1>
+        <h1 className="font-display text-2xl font-semibold">Bucket List</h1>
         <button
           onClick={openCreate}
           className="rounded-lg bg-[rgb(var(--accent))] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
@@ -465,7 +464,7 @@ export default function AdminList100Page() {
 
       {creating && (
         <Modal
-          title={approvingSuggestionId ? "Approve suggestion → Add to List 100" : "Add item to List 100"}
+          title={approvingSuggestionId ? "Approve suggestion → Add to Bucket List" : "Add item to Bucket List"}
           onClose={() => {
             setCreating(false);
             setApprovingSuggestionId(null);

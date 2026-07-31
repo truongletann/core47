@@ -46,7 +46,7 @@ const nullableNonNegativeInt = () =>
   }, z.number().int().nonnegative().nullable());
 
 export const List100ItemSchema = z.object({
-  rank: z.coerce.number().int().positive().max(100),
+  rank: z.coerce.number().int().positive(),
   title: z.string().trim().min(1).max(280),
   note: nullableString(300),
   link: nullableString(500).refine(

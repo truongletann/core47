@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function ToolkitsRedirect() {
-  redirect("/list100");
+  redirect("/bucket-list");
 }

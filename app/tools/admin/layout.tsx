@@ -10,7 +10,7 @@ const NAV = [
   { href: "/users", label: "Users" },
   { href: "/categories", label: "Categories" },
   { href: "/tools", label: "Tools" },
-  { href: "/list100", label: "List 100" },
+  { href: "/bucket-list", label: "Bucket List" },
   { href: "/blog", label: "Blog" },
   { href: "/market/news-sources", label: "Market: News Sources" },
   { href: "/market/calendar-settings", label: "Market: Calendar Settings" },
@@ -47,7 +47,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm text-[rgb(var(--muted))] hover:bg-[rgb(var(--border)/0.5)] hover:text-[rgb(var(--fg))]"
               >
                 <span>{item.label}</span>
-                {item.href === "/list100" && suggestionCount > 0 && (
+                {item.href === "/bucket-list" && suggestionCount > 0 && (
                   <span className="font-data rounded-full bg-[rgb(var(--accent))] px-1.5 py-0.5 text-[10px] font-semibold text-white">
                     {suggestionCount}
                   </span>

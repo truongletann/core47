@@ -65,7 +65,7 @@ export const toolFavorites = sqliteTable("tool_favorites", {
   createdAt: text("created_at").notNull(),
 });
 
-// NEW — List 100 item ("100 things to do before I die")
+// NEW — Bucket List item ("things to do before I die", no fixed count)
 export const list100Items = sqliteTable("list100_items", {
   id: text("id").primaryKey(),
   rank: integer("rank").notNull(),
@@ -82,7 +82,7 @@ export const list100Items = sqliteTable("list100_items", {
   updatedAt: text("updated_at").notNull(),
 });
 
-// NEW — List 100 item suggestions submitted from the public page, admin approves manually
+// NEW — Bucket List item suggestions submitted from the public page, admin approves manually
 export const list100Suggestions = sqliteTable("list100_suggestions", {
   id: text("id").primaryKey(),
   name: text("name"), // suggester's name, optional

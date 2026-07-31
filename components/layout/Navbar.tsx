@@ -47,8 +47,8 @@ export function Navbar({ isAdminArea = false }: { isAdminArea?: boolean }) {
             <a href={homeUrl.replace(/\/$/, "") + "/blog"} className="hover:text-[rgb(var(--fg))] transition-colors">
               Blog
             </a>
-            <a href={homeUrl.replace(/\/$/, "") + "/list100"} className="hover:text-[rgb(var(--fg))] transition-colors">
-              List 100
+            <a href={homeUrl.replace(/\/$/, "") + "/bucket-list"} className="hover:text-[rgb(var(--fg))] transition-colors">
+              Bucket List
             </a>
             <a href={homeUrl.replace(/\/$/, "") + "/market"} className="hover:text-[rgb(var(--fg))] transition-colors">
               Market
