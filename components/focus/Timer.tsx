@@ -164,11 +164,32 @@ export function Timer({ durations, onSessionComplete, displayTask, onEditTask }:
     const pipWindow = await w.documentPictureInPicture.requestWindow({ width: 420, height: 340 });
     pipWindowRef.current = pipWindow;
     pipWindow.document.body.style.margin = "0";
-    pipWindow.document.body.style.background = "#141019";
     pipWindow.document.body.style.display = "flex";
     pipWindow.document.body.style.alignItems = "center";
     pipWindow.document.body.style.justifyContent = "center";
     pipWindow.document.body.style.height = "100%";
+    pipWindow.document.body.style.position = "relative";
+    pipWindow.document.body.style.overflow = "hidden";
+
+    // Mirror the live Ambience background (gradient/canvas scene or photo)
+    // into the PiP window instead of a flat fallback color, so it still
+    // looks like Focus rather than a plain dark box.
+    const sceneEl = document.querySelector<HTMLElement>("[data-scene-bg]");
+    const sceneImg = sceneEl?.querySelector("img");
+    if (sceneImg) {
+      pipWindow.document.body.style.backgroundImage = `url("${sceneImg.src}")`;
+      pipWindow.document.body.style.backgroundSize = "cover";
+      pipWindow.document.body.style.backgroundPosition = "center";
+    } else if (sceneEl) {
+      const computed = getComputedStyle(sceneEl);
+      pipWindow.document.body.style.backgroundImage = computed.backgroundImage;
+      pipWindow.document.body.style.backgroundColor = computed.backgroundColor;
+    } else {
+      pipWindow.document.body.style.background = "#141019";
+    }
+    const overlay = pipWindow.document.createElement("div");
+    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.25);";
+    pipWindow.document.body.appendChild(overlay);
 
     [...document.styleSheets].forEach((styleSheet) => {
       try {

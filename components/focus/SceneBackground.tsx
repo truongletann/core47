@@ -318,6 +318,7 @@ export function SceneBackground({ theme, active }: { theme: Theme | null; active
 
   return (
     <div
+      data-scene-bg
       className="fixed inset-0 -z-10 overflow-hidden transition-[background] duration-700"
       style={{ background: SCENE_GRADIENTS[canvasKey ?? "rainy-window"] ?? DEFAULT_GRADIENT }}
     >
