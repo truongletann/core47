@@ -161,10 +161,14 @@ export function Timer({ durations, onSessionComplete, displayTask, onEditTask }:
       return;
     }
 
-    const pipWindow = await w.documentPictureInPicture.requestWindow({ width: 260, height: 170 });
+    const pipWindow = await w.documentPictureInPicture.requestWindow({ width: 420, height: 340 });
     pipWindowRef.current = pipWindow;
     pipWindow.document.body.style.margin = "0";
     pipWindow.document.body.style.background = "#141019";
+    pipWindow.document.body.style.display = "flex";
+    pipWindow.document.body.style.alignItems = "center";
+    pipWindow.document.body.style.justifyContent = "center";
+    pipWindow.document.body.style.height = "100%";
 
     [...document.styleSheets].forEach((styleSheet) => {
       try {
@@ -209,7 +213,11 @@ export function Timer({ durations, onSessionComplete, displayTask, onEditTask }:
 
       <div
         ref={contentRef}
-        className="fixed right-[6%] top-[16%] z-10 flex w-[420px] max-w-[92vw] flex-col items-center gap-4 text-center text-white"
+        className={
+          inPip
+            ? "flex w-[380px] max-w-[92vw] flex-col items-center gap-4 p-4 text-center text-white"
+            : "fixed left-1/2 top-1/2 z-10 flex w-[420px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-4 text-center text-white"
+        }
       >
         <button onClick={onEditTask} className="flex items-center gap-1.5 font-display text-lg font-semibold text-white/90 hover:text-white">
           <span>{displayTask ? displayTask.title : "What do you want to focus on?"}</span>
