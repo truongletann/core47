@@ -33,6 +33,7 @@ export default function FocusPage() {
   const [customPlaylist, setCustomPlaylist] = useState<CustomPlaylist | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [focusMode, setFocusMode] = useState(false);
+  const [chromeHidden, setChromeHidden] = useState(false);
   const [openPanel, setOpenPanel] = useState<PanelKey | null>(null);
   const [soundsTab, setSoundsTab] = useState<"sounds" | "mymusic" | "library">("sounds");
   const [ambienceTab, setAmbienceTab] = useState<"themes" | "animations">("themes");
@@ -103,11 +104,11 @@ export default function FocusPage() {
       <SceneBackground theme={activeTheme} active />
       <EffectsOverlay effects={effects} />
 
-      {!focusMode && (
-        <a href="https://core47.xyz" className="fixed left-6 top-6 z-10 flex flex-col text-white">
-          <span className="font-display text-2xl font-semibold leading-none">flocus</span>
-          <span className="text-[10px] uppercase tracking-widest text-white/50">by core47</span>
-        </a>
+      {!focusMode && !chromeHidden && (
+        <div className="pointer-events-none fixed left-6 top-6 z-10 flex flex-col text-white/50">
+          <span className="font-hand text-3xl leading-none">flocus</span>
+          <span className="text-[10px] uppercase tracking-widest text-white/30">by core47</span>
+        </div>
       )}
 
       <Timer
@@ -117,16 +118,21 @@ export default function FocusPage() {
         onEditTask={() => setOpenPanel("todo")}
         activeTheme={activeTheme}
         effects={effects}
+        chromeHidden={chromeHidden}
       />
 
       {!focusMode && (
         <>
-          <DockLeft active={openPanel && isLeft(openPanel) ? (openPanel as LeftPanelKey) : null} onSelect={(key) => setOpenPanel((prev) => (prev === key ? null : key))} taskCount={notDone} />
+          {!chromeHidden && (
+            <DockLeft active={openPanel && isLeft(openPanel) ? (openPanel as LeftPanelKey) : null} onSelect={(key) => setOpenPanel((prev) => (prev === key ? null : key))} taskCount={notDone} />
+          )}
           <DockRight
             active={openPanel && !isLeft(openPanel) ? (openPanel as RightPanelKey) : null}
             onSelect={(key) => setOpenPanel((prev) => (prev === key ? null : key))}
             focusMode={focusMode}
             onFocusModeToggle={handleFocusModeToggle}
+            chromeHidden={chromeHidden}
+            onChromeHiddenToggle={() => setChromeHidden((v) => !v)}
           />
         </>
       )}

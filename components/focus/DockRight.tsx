@@ -1,7 +1,6 @@
 "use client";
 
-import { Leaf, Home, Lightbulb, Gift, Settings, Maximize, Minimize } from "lucide-react";
-import Link from "next/link";
+import { Leaf, Home, Eye, EyeOff, Settings, Maximize, Minimize } from "lucide-react";
 
 export type RightPanelKey = "ambience" | "settings";
 
@@ -10,9 +9,11 @@ interface DockRightProps {
   onSelect: (key: RightPanelKey) => void;
   focusMode: boolean;
   onFocusModeToggle: () => void;
+  chromeHidden: boolean;
+  onChromeHiddenToggle: () => void;
 }
 
-export function DockRight({ active, onSelect, focusMode, onFocusModeToggle }: DockRightProps) {
+export function DockRight({ active, onSelect, focusMode, onFocusModeToggle, chromeHidden, onChromeHiddenToggle }: DockRightProps) {
   const btnClass = (isActive: boolean) =>
     `flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${
       isActive ? "bg-violet-600 text-white" : "text-white/70 hover:bg-white/10 hover:text-white"
@@ -26,12 +27,9 @@ export function DockRight({ active, onSelect, focusMode, onFocusModeToggle }: Do
       <a href="https://core47.xyz" aria-label="Home" className={btnClass(false)}>
         <Home size={18} />
       </a>
-      <Link href="/habits" aria-label="Thói quen" className={btnClass(false)}>
-        <Lightbulb size={18} />
-      </Link>
-      <Link href="/stats" aria-label="Thống kê" className={btnClass(false)}>
-        <Gift size={18} />
-      </Link>
+      <button onClick={onChromeHiddenToggle} aria-label="Ẩn giao diện" className={btnClass(false)}>
+        {chromeHidden ? <EyeOff size={18} /> : <Eye size={18} />}
+      </button>
       <button onClick={() => onSelect("settings")} aria-label="Cài đặt" className={btnClass(active === "settings")}>
         <Settings size={18} />
       </button>

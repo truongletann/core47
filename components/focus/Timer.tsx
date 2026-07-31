@@ -24,6 +24,7 @@ interface TimerProps {
   onEditTask: () => void;
   activeTheme: Theme | null;
   effects: Effects;
+  chromeHidden: boolean;
 }
 
 const QUOTES = [
@@ -49,7 +50,7 @@ function phaseMinutes(phase: Phase, d: Durations) {
   return d.longBreakMinutes;
 }
 
-export function Timer({ durations, onSessionComplete, displayTask, onEditTask, activeTheme, effects }: TimerProps) {
+export function Timer({ durations, onSessionComplete, displayTask, onEditTask, activeTheme, effects, chromeHidden }: TimerProps) {
   const [phase, setPhase] = useState<Phase>("work");
   const [secondsLeft, setSecondsLeft] = useState(durations.workMinutes * 60);
   const [running, setRunning] = useState(false);
@@ -229,7 +230,7 @@ export function Timer({ durations, onSessionComplete, displayTask, onEditTask, a
 
   return (
     <>
-      {started && !inPip && (
+      {started && !inPip && !chromeHidden && (
         <p className="fixed right-6 top-6 z-10 max-w-xs text-right font-display text-sm italic text-white/80">
           “{quote}”
         </p>
@@ -243,54 +244,59 @@ export function Timer({ durations, onSessionComplete, displayTask, onEditTask, a
             : "fixed left-1/2 top-1/2 z-10 flex w-[420px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-4 text-center text-white"
         }
       >
-        <button onClick={onEditTask} className="flex items-center gap-1.5 font-display text-lg font-semibold text-white/90 hover:text-white">
-          <span>{displayTask ? displayTask.title : "What do you want to focus on?"}</span>
-          {displayTask && <Pencil size={13} className="text-white/50" />}
-        </button>
+        {!chromeHidden && (
+          <button onClick={onEditTask} className="flex items-center gap-1.5 font-display text-lg font-semibold text-white/90 hover:text-white">
+            <span>{displayTask ? displayTask.title : "What do you want to focus on?"}</span>
+            {displayTask && <Pencil size={13} className="text-white/50" />}
+          </button>
+        )}
 
-        <div className="flex items-center gap-2">
-          {(["work", "short", "long"] as Phase[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => switchTab(p)}
-              className={`rounded-full px-4 py-1.5 text-sm font-bold transition-colors ${
-                phase === p ? "bg-violet-600 text-white" : "border-2 border-white/40 text-white hover:border-white/70"
-              }`}
-            >
-              {TAB_LABEL[p]}
-            </button>
-          ))}
-        </div>
+        {!chromeHidden && (
+          <div className="flex items-center gap-2">
+            {(["work", "short", "long"] as Phase[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => switchTab(p)}
+                className={`rounded-full px-4 py-1.5 text-sm font-bold transition-colors ${
+                  phase === p ? "bg-violet-600 text-white" : "border-2 border-white/40 text-white hover:border-white/70"
+                }`}
+              >
+                {TAB_LABEL[p]}
+              </button>
+            ))}
+          </div>
+        )}
 
         <span className="font-data text-7xl font-extrabold tabular-nums sm:text-8xl lg:text-9xl">
           {mm}:{ss.toString().padStart(2, "0")}
         </span>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={toggleStart}
-            className="rounded-full bg-violet-600 px-10 py-2.5 text-lg font-bold text-white shadow-lg shadow-violet-600/30 hover:bg-violet-500"
-          >
-            {running ? "Pause" : "Start"}
-          </button>
-          <button
-            onClick={() => setShowResetDialog(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
-            aria-label="Reset"
-          >
-            <RotateCcw size={17} />
-          </button>
-          {pipSupported && (
+        {!chromeHidden && (
+          <div className="flex items-center gap-3">
             <button
-              onClick={togglePip}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
-              aria-label="Picture in picture"
+              onClick={toggleStart}
+              className="rounded-full bg-violet-600 px-10 py-2.5 text-lg font-bold text-white shadow-lg shadow-violet-600/30 hover:bg-violet-500"
             >
-              <PictureInPicture2 size={17} />
+              {running ? "Pause" : "Start"}
             </button>
-          )}
-        </div>
-        <p className="text-[11px] text-white/40">Space = play/pause</p>
+            <button
+              onClick={() => setShowResetDialog(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+              aria-label="Reset"
+            >
+              <RotateCcw size={17} />
+            </button>
+            {pipSupported && (
+              <button
+                onClick={togglePip}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                aria-label="Picture in picture"
+              >
+                <PictureInPicture2 size={17} />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {showResetDialog && (
