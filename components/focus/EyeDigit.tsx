@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 // Shared across every eye on the page — one mousemove listener updates this,
 // each eye's own rAF loop just reads it (no per-eye event listeners, no
@@ -23,14 +23,17 @@ function usePointerTracking() {
   }, []);
 }
 
-// Replaces the font's dotted-zero glyph with a little googly eye — a filled
-// white "sclera" (proper oval, not just an outline) with a shaded pupil +
-// glint that tracks the mouse. One instance per "0" in the countdown, sized
-// in em so it scales with the surrounding digits.
-function Eye() {
+const EYE_SIZE = "0.74em";
+
+// A single round googly eye — white sclera + a big dark pupil that tracks
+// the mouse, plus an occasional blink. Sized in em so it scales with the
+// surrounding digits. blinkDelay lets a pair of eyes blink in sync.
+function Eye({ blinkDelay }: { blinkDelay?: number }) {
   const ringRef = useRef<HTMLSpanElement>(null);
   const pupilRef = useRef<HTMLSpanElement>(null);
   const offsetRef = useRef({ x: 0, y: 0 });
+  const ownBlinkDelay = useMemo(() => Math.random() * 3, []);
+  const delay = blinkDelay ?? ownBlinkDelay;
 
   usePointerTracking();
 
@@ -46,11 +49,10 @@ function Eye() {
         const dx = pointer.x - cx;
         const dy = pointer.y - cy;
         const dist = Math.hypot(dx, dy) || 1;
-        const maxX = rect.width * 0.2;
-        const maxY = rect.height * 0.16;
+        const maxOffset = rect.width * 0.22;
         const pull = Math.min(1, dist / 260);
-        const targetX = (dx / dist) * maxX * pull;
-        const targetY = (dy / dist) * maxY * pull;
+        const targetX = (dx / dist) * maxOffset * pull;
+        const targetY = (dy / dist) * maxOffset * pull;
 
         const o = offsetRef.current;
         o.x += (targetX - o.x) * 0.18;
@@ -66,44 +68,60 @@ function Eye() {
   return (
     <span
       ref={ringRef}
-      className="relative mx-[0.04em] inline-block shrink-0 align-baseline"
-      style={{ width: "0.58em", height: "0.86em" }}
+      className="relative inline-block shrink-0 align-baseline"
+      style={{ width: EYE_SIZE, height: EYE_SIZE }}
     >
-      {/* sclera */}
       <span
-        className="absolute inset-0 bg-white"
-        style={{
-          borderRadius: "50% / 58%",
-          boxShadow: "inset 0 -0.05em 0.09em rgba(0,0,0,0.18), 0 0.02em 0.06em rgba(0,0,0,0.35)",
-        }}
+        className="eye-blink absolute inset-0 rounded-full bg-white"
+        style={{ animationDelay: `${delay}s`, boxShadow: "0 0.02em 0.05em rgba(0,0,0,0.35)" }}
       />
-      {/* pupil, translated by JS to track the cursor */}
-      <span ref={pupilRef} className="absolute inset-0 flex items-center justify-center">
-        <span
-          className="relative rounded-full"
-          style={{
-            width: "0.36em",
-            height: "0.36em",
-            background: "radial-gradient(circle at 34% 28%, #6d64a8 0%, #2a2350 55%, #16132a 100%)",
-            boxShadow: "0 0 0 0.015em rgba(0,0,0,0.25)",
-          }}
-        >
+      <span className="absolute inset-0 flex items-center justify-center">
+        <span ref={pupilRef} className="relative rounded-full" style={{ width: "58%", height: "58%" }}>
           <span
-            className="absolute rounded-full bg-white"
-            style={{ width: "0.1em", height: "0.1em", top: "16%", left: "20%", opacity: 0.9 }}
+            className="absolute inset-0 rounded-full"
+            style={{ background: "radial-gradient(circle at 32% 26%, #4a4380, #16132a 70%)" }}
           />
+          <span className="absolute rounded-full bg-white" style={{ width: "26%", height: "26%", top: "14%", left: "18%", opacity: 0.9 }} />
         </span>
       </span>
     </span>
   );
 }
 
-// Renders a digit string, swapping every "0" for a tracking Eye so it reads
-// as a little face peeking out of the countdown instead of a static glyph.
-export function EyeDigits({ text }: { text: string }) {
+// Two adjacent zeros ("00") read as a little face — a pair of eyes sharing
+// one small mouth underneath, instead of two lone eyes with nothing to tie
+// them together.
+function FacePair() {
+  const blinkDelay = useMemo(() => Math.random() * 3, []);
   return (
-    <>
-      {[...text].map((ch, i) => (ch === "0" ? <Eye key={i} /> : <span key={i}>{ch}</span>))}
-    </>
+    <span className="relative mx-[0.05em] inline-block shrink-0 align-baseline" style={{ width: "1.5em", height: EYE_SIZE }}>
+      <span className="absolute left-0 top-0 flex">
+        <Eye blinkDelay={blinkDelay} />
+        <Eye blinkDelay={blinkDelay} />
+      </span>
+      <span
+        className="absolute rounded-full bg-current"
+        style={{ width: "0.2em", height: "0.1em", bottom: "-0.14em", left: "50%", transform: "translateX(-50%)" }}
+      />
+    </span>
   );
+}
+
+// Renders a digit string: a run of two "0"s becomes a FacePair (eyes +
+// shared mouth), a lone "0" becomes a single tracking Eye, everything else
+// is plain text.
+export function EyeDigits({ text }: { text: string }) {
+  const chars = [...text];
+  const nodes: React.ReactNode[] = [];
+  for (let i = 0; i < chars.length; i++) {
+    if (chars[i] === "0" && chars[i + 1] === "0") {
+      nodes.push(<FacePair key={i} />);
+      i++;
+    } else if (chars[i] === "0") {
+      nodes.push(<Eye key={i} />);
+    } else {
+      nodes.push(<span key={i}>{chars[i]}</span>);
+    }
+  }
+  return <>{nodes}</>;
 }
