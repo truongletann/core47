@@ -1,14 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useFocusData } from "@/lib/focus/useFocusData";
+import { usePlayerSlot } from "@/lib/focus/usePlayerSlot";
 import { Timer, type Durations } from "@/components/focus/Timer";
 import { SceneBackground } from "@/components/focus/SceneBackground";
 import { DockLeft, type LeftPanelKey } from "@/components/focus/DockLeft";
 import { DockRight, type RightPanelKey } from "@/components/focus/DockRight";
 import { FloatingPanel } from "@/components/focus/FloatingPanel";
 import { ThemePickerModal } from "@/components/focus/ThemePickerModal";
-import { SoundsPanel, SOUNDS_PANEL_TABS } from "@/components/focus/SoundsPanel";
+import { SoundsPanel, SOUNDS_PANEL_TABS, type CustomPlaylist } from "@/components/focus/SoundsPanel";
+import { PersistentEmbed } from "@/components/focus/PersistentEmbed";
 import { NotesPanel } from "@/components/focus/NotesPanel";
 import { SettingsPanel } from "@/components/focus/SettingsPanel";
 import { TaskList } from "@/components/focus/TaskList";
@@ -21,6 +23,7 @@ export default function FocusPage() {
   const { tasks, addTask, toggleTaskDone, deleteTask, logSession } = useFocusData();
   const [activeTheme, setActiveTheme] = useState<Theme | null>(null);
   const [activePlaylist, setActivePlaylist] = useState<Playlist | null>(null);
+  const [customPlaylist, setCustomPlaylist] = useState<CustomPlaylist | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [focusMode, setFocusMode] = useState(false);
   const [openPanel, setOpenPanel] = useState<PanelKey | null>(null);
@@ -32,49 +35,31 @@ export default function FocusPage() {
     longBreakInterval: 4,
   });
 
-  // Single persistent Spotify iframe for the Playlist Library, rendered
-  // once at the page root and NEVER reparented — moving an iframe to a
-  // different DOM parent (even via appendChild, keeping the same node)
-  // makes Chrome tear down and reload its browsing context, which is what
-  // silently killed playback before. Instead the iframe's box is tracked
-  // with CSS: when the panel's placeholder slot is mounted we measure its
-  // on-screen rect and position the iframe exactly on top of it; when the
-  // slot unmounts we move the box off-screen. The <iframe> itself always
-  // stays put, so playback is untouched either way.
-  const playerSlotElRef = useRef<HTMLDivElement | null>(null);
-  const [playerBox, setPlayerBox] = useState<{ top: number; left: number; width: number; height: number } | null>(
-    null,
-  );
-
-  const measurePlayerSlot = useCallback(() => {
-    const el = playerSlotElRef.current;
-    if (!el) {
-      setPlayerBox(null);
-      return;
-    }
-    const r = el.getBoundingClientRect();
-    setPlayerBox({ top: r.top, left: r.left, width: r.width, height: r.height });
-  }, []);
-
-  const attachPlayerSlot = useCallback(
-    (slot: HTMLDivElement | null) => {
-      playerSlotElRef.current = slot;
-      measurePlayerSlot();
-    },
-    [measurePlayerSlot],
-  );
+  // Persistent iframes for Playlist Library + My Music — each rendered once
+  // at the page root and NEVER reparented (see PersistentEmbed). Their boxes
+  // are re-measured whenever the panel/tab/selection changes shape (double
+  // rAF = wait for the browser to actually paint before reading the rect).
+  const libraryPlayer = usePlayerSlot();
+  const myMusicPlayer = usePlayerSlot();
 
   useEffect(() => {
-    window.addEventListener("resize", measurePlayerSlot);
-    return () => window.removeEventListener("resize", measurePlayerSlot);
-  }, [measurePlayerSlot]);
+    window.addEventListener("resize", libraryPlayer.measure);
+    window.addEventListener("resize", myMusicPlayer.measure);
+    return () => {
+      window.removeEventListener("resize", libraryPlayer.measure);
+      window.removeEventListener("resize", myMusicPlayer.measure);
+    };
+  }, [libraryPlayer.measure, myMusicPlayer.measure]);
 
-  // Re-measure after layout settles whenever the panel/tab/selection
-  // changes shape (double rAF = wait for the browser to actually paint).
   useEffect(() => {
-    const id = requestAnimationFrame(() => requestAnimationFrame(measurePlayerSlot));
+    const id = requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        libraryPlayer.measure();
+        myMusicPlayer.measure();
+      }),
+    );
     return () => cancelAnimationFrame(id);
-  }, [openPanel, soundsTab, activePlaylist, measurePlayerSlot]);
+  }, [openPanel, soundsTab, activePlaylist, customPlaylist, libraryPlayer.measure, myMusicPlayer.measure]);
 
   const handleSessionComplete = useCallback(
     (type: "work" | "break", durationMinutes: number) => {
@@ -124,30 +109,12 @@ export default function FocusPage() {
         </>
       )}
 
-      {/* Persistent Spotify iframe — parent never changes (see comment on
-          playerBox above), only this box's CSS position/size, so playback
-          survives the Sounds panel opening/closing/switching tabs with no
-          floating widget ever shown when the slot isn't mounted. */}
-      <div
-        aria-hidden={!playerBox}
-        className="fixed z-40 overflow-hidden rounded-lg transition-none"
-        style={
-          playerBox
-            ? { top: playerBox.top, left: playerBox.left, width: playerBox.width, height: playerBox.height }
-            : { top: 0, left: -9999, width: 1, height: 1, opacity: 0, pointerEvents: "none" }
-        }
-      >
-        {activePlaylist && (
-          <iframe
-            key={activePlaylist.id}
-            src={activePlaylist.spotifyEmbedUrl}
-            width="100%"
-            height="100%"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy"
-          />
-        )}
-      </div>
+      {/* Persistent iframes — see usePlayerSlot/PersistentEmbed. Parents
+          never change, only CSS position/size, so playback survives the
+          Sounds panel opening/closing/switching tabs with no floating
+          widget ever shown when neither slot is mounted. */}
+      <PersistentEmbed box={libraryPlayer.box} embedId={activePlaylist?.id ?? null} embedUrl={activePlaylist?.spotifyEmbedUrl ?? null} />
+      <PersistentEmbed box={myMusicPlayer.box} embedId={customPlaylist?.id ?? null} embedUrl={customPlaylist?.embedUrl ?? null} />
 
       {openPanel && !focusMode && (
         <FloatingPanel
@@ -173,7 +140,10 @@ export default function FocusPage() {
               tab={soundsTab}
               activePlaylist={activePlaylist}
               onSelectPlaylist={setActivePlaylist}
-              attachPlayerSlot={attachPlayerSlot}
+              attachPlayerSlot={libraryPlayer.attach}
+              customPlaylist={customPlaylist}
+              onSelectCustomPlaylist={setCustomPlaylist}
+              attachMyMusicSlot={myMusicPlayer.attach}
             />
           )}
           {openPanel === "notes" && <NotesPanel />}

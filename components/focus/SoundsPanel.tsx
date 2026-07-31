@@ -126,7 +126,7 @@ function SoundsTab() {
   );
 }
 
-interface CustomPlaylist {
+export interface CustomPlaylist {
   id: string;
   name: string;
   url: string;
@@ -167,11 +167,18 @@ function toEmbedUrl(raw: string): CustomPlaylist | null {
   }
 }
 
-function MyMusicTab() {
+function MyMusicTab({
+  current,
+  onSelectCurrent,
+  attachSlot,
+}: {
+  current: CustomPlaylist | null;
+  onSelectCurrent: (playlist: CustomPlaylist | null) => void;
+  attachSlot: (slot: HTMLDivElement | null) => void;
+}) {
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<CustomPlaylist[]>([]);
-  const [current, setCurrent] = useState<CustomPlaylist | null>(null);
 
   useEffect(() => {
     try {
@@ -194,7 +201,7 @@ function MyMusicTab() {
       return;
     }
     setError(null);
-    setCurrent(parsed);
+    onSelectCurrent(parsed);
   }
 
   function saveToFavorites() {
@@ -239,15 +246,10 @@ function MyMusicTab() {
       </div>
 
       {current && (
-        <iframe
-          key={current.id}
-          src={current.embedUrl}
-          width="100%"
-          height={current.kind === "spotify" ? 152 : 200}
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          loading="lazy"
-          className="rounded-lg"
-        />
+        // Empty placeholder — the real iframe lives in page.tsx, positioned
+        // exactly over this box (see MyMusicTab's comment in page.tsx),
+        // so it keeps playing across panel open/close.
+        <div ref={attachSlot} className="h-[200px] w-full overflow-hidden rounded-lg" />
       )}
 
       {favorites.length > 0 && (
@@ -256,7 +258,7 @@ function MyMusicTab() {
           <ul className="flex flex-col gap-1.5">
             {favorites.map((f) => (
               <li key={f.id} className="flex items-center justify-between rounded-md bg-white/5 px-3 py-1.5 text-xs">
-                <button onClick={() => setCurrent(f)} className="flex items-center gap-2 text-white/80 hover:text-white">
+                <button onClick={() => onSelectCurrent(f)} className="flex items-center gap-2 text-white/80 hover:text-white">
                   <Play size={12} />
                   {f.name}
                 </button>
@@ -355,16 +357,24 @@ export function SoundsPanel({
   activePlaylist,
   onSelectPlaylist,
   attachPlayerSlot,
+  customPlaylist,
+  onSelectCustomPlaylist,
+  attachMyMusicSlot,
 }: {
   tab: "sounds" | "mymusic" | "library";
   activePlaylist: Playlist | null;
   onSelectPlaylist: (playlist: Playlist) => void;
   attachPlayerSlot: (slot: HTMLDivElement | null) => void;
+  customPlaylist: CustomPlaylist | null;
+  onSelectCustomPlaylist: (playlist: CustomPlaylist | null) => void;
+  attachMyMusicSlot: (slot: HTMLDivElement | null) => void;
 }) {
   return (
     <>
       {tab === "sounds" && <SoundsTab />}
-      {tab === "mymusic" && <MyMusicTab />}
+      {tab === "mymusic" && (
+        <MyMusicTab current={customPlaylist} onSelectCurrent={onSelectCustomPlaylist} attachSlot={attachMyMusicSlot} />
+      )}
       {tab === "library" && (
         <PlaylistLibraryTab activePlaylist={activePlaylist} onSelect={onSelectPlaylist} attachPlayerSlot={attachPlayerSlot} />
       )}
