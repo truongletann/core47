@@ -23,9 +23,10 @@ function usePointerTracking() {
   }, []);
 }
 
-// Replaces the font's dotted-zero glyph with a little ring + pupil that
-// tracks the mouse, like a pair of googly eyes — one instance per "0" in
-// the countdown, sized in em so it scales with the surrounding digits.
+// Replaces the font's dotted-zero glyph with a little googly eye — a filled
+// white "sclera" (proper oval, not just an outline) with a shaded pupil +
+// glint that tracks the mouse. One instance per "0" in the countdown, sized
+// in em so it scales with the surrounding digits.
 function Eye() {
   const ringRef = useRef<HTMLSpanElement>(null);
   const pupilRef = useRef<HTMLSpanElement>(null);
@@ -45,10 +46,11 @@ function Eye() {
         const dx = pointer.x - cx;
         const dy = pointer.y - cy;
         const dist = Math.hypot(dx, dy) || 1;
-        const maxOffset = rect.width * 0.22;
-        const pull = Math.min(1, dist / 300);
-        const targetX = (dx / dist) * maxOffset * pull;
-        const targetY = (dy / dist) * maxOffset * pull;
+        const maxX = rect.width * 0.2;
+        const maxY = rect.height * 0.16;
+        const pull = Math.min(1, dist / 260);
+        const targetX = (dx / dist) * maxX * pull;
+        const targetY = (dy / dist) * maxY * pull;
 
         const o = offsetRef.current;
         o.x += (targetX - o.x) * 0.18;
@@ -64,10 +66,34 @@ function Eye() {
   return (
     <span
       ref={ringRef}
-      className="relative mx-[0.02em] inline-flex shrink-0 items-center justify-center rounded-[45%] border-[0.09em] border-current align-baseline"
-      style={{ width: "0.62em", height: "0.92em" }}
+      className="relative mx-[0.04em] inline-block shrink-0 align-baseline"
+      style={{ width: "0.58em", height: "0.86em" }}
     >
-      <span ref={pupilRef} className="block rounded-full bg-current" style={{ width: "0.24em", height: "0.24em" }} />
+      {/* sclera */}
+      <span
+        className="absolute inset-0 bg-white"
+        style={{
+          borderRadius: "50% / 58%",
+          boxShadow: "inset 0 -0.05em 0.09em rgba(0,0,0,0.18), 0 0.02em 0.06em rgba(0,0,0,0.35)",
+        }}
+      />
+      {/* pupil, translated by JS to track the cursor */}
+      <span ref={pupilRef} className="absolute inset-0 flex items-center justify-center">
+        <span
+          className="relative rounded-full"
+          style={{
+            width: "0.36em",
+            height: "0.36em",
+            background: "radial-gradient(circle at 34% 28%, #6d64a8 0%, #2a2350 55%, #16132a 100%)",
+            boxShadow: "0 0 0 0.015em rgba(0,0,0,0.25)",
+          }}
+        >
+          <span
+            className="absolute rounded-full bg-white"
+            style={{ width: "0.1em", height: "0.1em", top: "16%", left: "20%", opacity: 0.9 }}
+          />
+        </span>
+      </span>
     </span>
   );
 }
