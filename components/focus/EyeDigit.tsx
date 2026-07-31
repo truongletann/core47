@@ -23,10 +23,11 @@ function usePointerTracking() {
   }, []);
 }
 
-const EYE_SIZE = "0.74em";
+const EYE_SIZE = "0.6em";
 
-// A single round googly eye — white sclera + a big dark pupil that tracks
-// the mouse, plus an occasional blink. Sized in em so it scales with the
+// A single round eye — soft white sclera + a violet pupil (matching the
+// app's accent color, not a stark cartoon black) that tracks the mouse,
+// plus an occasional slow blink. Sized in em so it scales with the
 // surrounding digits. blinkDelay lets a pair of eyes blink in sync.
 function Eye({ blinkDelay }: { blinkDelay?: number }) {
   const ringRef = useRef<HTMLSpanElement>(null);
@@ -49,7 +50,7 @@ function Eye({ blinkDelay }: { blinkDelay?: number }) {
         const dx = pointer.x - cx;
         const dy = pointer.y - cy;
         const dist = Math.hypot(dx, dy) || 1;
-        const maxOffset = rect.width * 0.22;
+        const maxOffset = rect.width * 0.18;
         const pull = Math.min(1, dist / 260);
         const targetX = (dx / dist) * maxOffset * pull;
         const targetY = (dy / dist) * maxOffset * pull;
@@ -69,47 +70,41 @@ function Eye({ blinkDelay }: { blinkDelay?: number }) {
     <span
       ref={ringRef}
       className="relative inline-block shrink-0 align-baseline"
-      style={{ width: EYE_SIZE, height: EYE_SIZE }}
+      style={{ width: EYE_SIZE, height: EYE_SIZE, marginInline: "0.04em" }}
     >
       <span
-        className="eye-blink absolute inset-0 rounded-full bg-white"
-        style={{ animationDelay: `${delay}s`, boxShadow: "0 0.02em 0.05em rgba(0,0,0,0.35)" }}
+        className="eye-blink absolute inset-0 rounded-full bg-white/90"
+        style={{ animationDelay: `${delay}s`, boxShadow: "0 0.02em 0.04em rgba(0,0,0,0.25)" }}
       />
       <span className="absolute inset-0 flex items-center justify-center">
-        <span ref={pupilRef} className="relative rounded-full" style={{ width: "58%", height: "58%" }}>
+        <span ref={pupilRef} className="relative rounded-full" style={{ width: "52%", height: "52%" }}>
           <span
             className="absolute inset-0 rounded-full"
-            style={{ background: "radial-gradient(circle at 32% 26%, #4a4380, #16132a 70%)" }}
+            style={{ background: "radial-gradient(circle at 32% 26%, #a78bfa, #6d28d9 75%)" }}
           />
-          <span className="absolute rounded-full bg-white" style={{ width: "26%", height: "26%", top: "14%", left: "18%", opacity: 0.9 }} />
+          <span className="absolute rounded-full bg-white" style={{ width: "24%", height: "24%", top: "14%", left: "18%", opacity: 0.85 }} />
         </span>
       </span>
     </span>
   );
 }
 
-// Two adjacent zeros ("00") read as a little face — a pair of eyes sharing
-// one small mouth underneath, instead of two lone eyes with nothing to tie
-// them together.
+// Two adjacent zeros ("00", the common case in mm:ss) blink in sync so they
+// read as a pair rather than two unrelated dots — no separate mouth shape,
+// that read as a disconnected blob rather than part of the digit.
 function FacePair() {
   const blinkDelay = useMemo(() => Math.random() * 3, []);
   return (
-    <span className="relative mx-[0.05em] inline-block shrink-0 align-baseline" style={{ width: "1.5em", height: EYE_SIZE }}>
-      <span className="absolute left-0 top-0 flex">
-        <Eye blinkDelay={blinkDelay} />
-        <Eye blinkDelay={blinkDelay} />
-      </span>
-      <span
-        className="absolute rounded-full bg-current"
-        style={{ width: "0.2em", height: "0.1em", bottom: "-0.14em", left: "50%", transform: "translateX(-50%)" }}
-      />
+    <span className="inline-flex shrink-0 align-baseline">
+      <Eye blinkDelay={blinkDelay} />
+      <Eye blinkDelay={blinkDelay} />
     </span>
   );
 }
 
-// Renders a digit string: a run of two "0"s becomes a FacePair (eyes +
-// shared mouth), a lone "0" becomes a single tracking Eye, everything else
-// is plain text.
+// Renders a digit string: a run of two "0"s becomes a FacePair (eyes that
+// blink together), a lone "0" becomes a single tracking Eye, everything
+// else is plain text.
 export function EyeDigits({ text }: { text: string }) {
   const chars = [...text];
   const nodes: React.ReactNode[] = [];

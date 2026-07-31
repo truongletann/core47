@@ -46,7 +46,7 @@ body {
   96% { transform: scaleY(0.12); }
 }
 .eye-blink {
-  animation: eye-blink 4.5s ease-in-out infinite;
+  animation: eye-blink 6.5s ease-in-out infinite;
   transform-origin: center;
 }
 
