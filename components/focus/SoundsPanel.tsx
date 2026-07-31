@@ -293,23 +293,42 @@ function PlaylistLibraryTab({
   if (playlists.length === 0) return <p className="text-sm text-white/50">Chưa có playlist nào.</p>;
 
   const featured = activePlaylist ?? playlists[0];
+  const isPlaying = activePlaylist?.id === featured.id;
 
   return (
-    <div className="grid grid-cols-[128px_1fr] gap-4">
-      <button onClick={() => onSelect(featured)} className="flex flex-col gap-1.5 text-left">
-        <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white/10">
-          {featured.thumbnailUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={featured.thumbnailUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-white/30">
-              <Music2 size={24} />
+    <div className="grid grid-cols-[170px_1fr] gap-4">
+      <div className="flex flex-col gap-1.5">
+        {isPlaying ? (
+          // Plays right here — picking a tile on the right swaps this
+          // embed in place instead of only surfacing playback elsewhere.
+          <iframe
+            key={featured.id}
+            src={featured.spotifyEmbedUrl}
+            width="100%"
+            height={300}
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"
+            className="rounded-lg"
+          />
+        ) : (
+          <button onClick={() => onSelect(featured)} className="flex flex-col gap-1.5 text-left">
+            <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white/10">
+              {featured.thumbnailUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={featured.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-white/30">
+                  <Music2 size={24} />
+                </div>
+              )}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100">
+                <Play size={22} className="text-white" />
+              </div>
             </div>
-          )}
-        </div>
-        <p className="truncate text-xs font-semibold text-white">{featured.name}</p>
-        <p className="truncate text-[11px] text-white/50">Focus</p>
-      </button>
+            <p className="truncate text-xs font-semibold text-white">{featured.name}</p>
+          </button>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 gap-2.5 self-start">
         {playlists.map((p) => {
