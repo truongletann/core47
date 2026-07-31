@@ -275,9 +275,11 @@ function MyMusicTab() {
 function PlaylistLibraryTab({
   activePlaylist,
   onSelect,
+  attachPlayerSlot,
 }: {
   activePlaylist: Playlist | null;
   onSelect: (playlist: Playlist) => void;
+  attachPlayerSlot: (slot: HTMLDivElement | null) => void;
 }) {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
@@ -300,15 +302,7 @@ function PlaylistLibraryTab({
       {isPlaying ? (
         // Plays right here, full-width — picking another tile below swaps
         // this embed in place instead of only surfacing playback elsewhere.
-        <iframe
-          key={featured.id}
-          src={featured.spotifyEmbedUrl}
-          width="100%"
-          height={352}
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          loading="lazy"
-          className="rounded-lg"
-        />
+        <div ref={attachPlayerSlot} className="h-[352px] w-full overflow-hidden rounded-lg" />
       ) : (
         <button onClick={() => onSelect(featured)} className="flex flex-col gap-1.5 text-left">
           <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-white/10">
@@ -359,16 +353,20 @@ export function SoundsPanel({
   tab,
   activePlaylist,
   onSelectPlaylist,
+  attachPlayerSlot,
 }: {
   tab: "sounds" | "mymusic" | "library";
   activePlaylist: Playlist | null;
   onSelectPlaylist: (playlist: Playlist) => void;
+  attachPlayerSlot: (slot: HTMLDivElement | null) => void;
 }) {
   return (
     <>
       {tab === "sounds" && <SoundsTab />}
       {tab === "mymusic" && <MyMusicTab />}
-      {tab === "library" && <PlaylistLibraryTab activePlaylist={activePlaylist} onSelect={onSelectPlaylist} />}
+      {tab === "library" && (
+        <PlaylistLibraryTab activePlaylist={activePlaylist} onSelect={onSelectPlaylist} attachPlayerSlot={attachPlayerSlot} />
+      )}
     </>
   );
 }

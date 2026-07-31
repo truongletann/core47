@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useFocusData } from "@/lib/focus/useFocusData";
 import { Timer, type Durations } from "@/components/focus/Timer";
 import { SceneBackground } from "@/components/focus/SceneBackground";
@@ -11,7 +11,6 @@ import { ThemePickerModal } from "@/components/focus/ThemePickerModal";
 import { SoundsPanel, SOUNDS_PANEL_TABS } from "@/components/focus/SoundsPanel";
 import { NotesPanel } from "@/components/focus/NotesPanel";
 import { SettingsPanel } from "@/components/focus/SettingsPanel";
-import { NowPlayingWidget } from "@/components/focus/NowPlayingWidget";
 import { TaskList } from "@/components/focus/TaskList";
 import type { Theme, Playlist } from "@/lib/focus/types";
 
@@ -32,6 +31,22 @@ export default function FocusPage() {
     longBreakMinutes: 15,
     longBreakInterval: 4,
   });
+
+  // Single persistent Spotify iframe for the Playlist Library — reparented
+  // (not remounted) between an off-screen "home" div and a placeholder slot
+  // inside the panel, so closing/reopening the Sounds panel never restarts
+  // or stops playback. Recreating the iframe would require a fresh manual
+  // play click every time (autoplay is blocked without a user gesture on
+  // that exact frame).
+  const playerHomeRef = useRef<HTMLDivElement>(null);
+  const playerWrapperRef = useRef<HTMLDivElement>(null);
+  const attachPlayerSlot = useCallback((slot: HTMLDivElement | null) => {
+    const wrapper = playerWrapperRef.current;
+    const target = slot ?? playerHomeRef.current;
+    if (wrapper && target && wrapper.parentElement !== target) {
+      target.appendChild(wrapper);
+    }
+  }, []);
 
   const handleSessionComplete = useCallback(
     (type: "work" | "break", durationMinutes: number) => {
@@ -81,17 +96,23 @@ export default function FocusPage() {
         </>
       )}
 
-      {/* Mounted unconditionally (never inside a panel) so closing/reopening
-          any dock panel or toggling Focus mode doesn't unmount the iframe
-          and kill playback. Always visually hidden — the Sounds panel is
-          the only place playback is shown (its own inline player); this
-          just keeps the Spotify iframe alive in the background so the
-          music keeps going after the panel closes, with no floating popup. */}
-      <NowPlayingWidget
-        playlist={activePlaylist}
-        visible={false}
-        onClose={() => setActivePlaylist(null)}
-      />
+      {/* Off-screen home for the persistent Spotify iframe (see
+          attachPlayerSlot above) — always mounted so playback survives the
+          Sounds panel closing, with no floating widget ever shown. */}
+      <div ref={playerHomeRef} aria-hidden className="fixed left-[-9999px] top-0 h-0 w-0 overflow-hidden">
+        <div ref={playerWrapperRef} className="h-full w-full">
+          {activePlaylist && (
+            <iframe
+              key={activePlaylist.id}
+              src={activePlaylist.spotifyEmbedUrl}
+              width="100%"
+              height="100%"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+            />
+          )}
+        </div>
+      </div>
 
       {openPanel && !focusMode && (
         <FloatingPanel
@@ -113,7 +134,12 @@ export default function FocusPage() {
             />
           )}
           {openPanel === "sounds" && (
-            <SoundsPanel tab={soundsTab} activePlaylist={activePlaylist} onSelectPlaylist={setActivePlaylist} />
+            <SoundsPanel
+              tab={soundsTab}
+              activePlaylist={activePlaylist}
+              onSelectPlaylist={setActivePlaylist}
+              attachPlayerSlot={attachPlayerSlot}
+            />
           )}
           {openPanel === "notes" && <NotesPanel />}
           {openPanel === "ambience" && (
