@@ -19,7 +19,7 @@ interface YTPlayerOptions {
 }
 interface YTNamespace {
   Player: new (el: HTMLElement, opts: YTPlayerOptions) => YTPlayer;
-  PlayerState: { PLAYING: number };
+  PlayerState: { PLAYING: number; PAUSED: number; ENDED: number; CUED: number; UNSTARTED: number };
 }
 
 declare global {
@@ -97,8 +97,24 @@ export function YoutubeBackground({ videoId, startSeconds, endSeconds }: Youtube
             e.target.playVideo();
           },
           onStateChange: (e) => {
-            if (window.YT && e.data === window.YT.PlayerState.PLAYING) {
+            const YT = window.YT;
+            if (!YT) return;
+            if (e.data === YT.PlayerState.PLAYING) {
               e.target.setPlaybackQuality("highres");
+              return;
+            }
+            // Force playback to actually resume whenever it's not — a
+            // muted autoplay that got stuck cued/paused (rather than
+            // truly playing) leaves YouTube's own center play icon
+            // sitting on screen since controls:0 only hides the bottom
+            // bar, not that overlay. Skip BUFFERING, which is transient.
+            if (
+              e.data === YT.PlayerState.PAUSED ||
+              e.data === YT.PlayerState.CUED ||
+              e.data === YT.PlayerState.UNSTARTED ||
+              e.data === YT.PlayerState.ENDED
+            ) {
+              e.target.playVideo();
             }
           },
         },
