@@ -43,6 +43,11 @@ INSERT INTO downloader_settings (id, api_base_url, api_key, updated_at)
 VALUES ('default', NULL, NULL, datetime('now'))
 ON CONFLICT (id) DO NOTHING;
 
+-- Both subdomains already had a placeholder "coming soon" row on the remote
+-- DB (seeded ahead of time, id/slug don't match what a fresh INSERT would
+-- use) — ON CONFLICT(subdomain) flips those to active in place instead of
+-- colliding with the UNIQUE(subdomain) constraint; a fresh environment
+-- without the placeholder just inserts a new row.
 INSERT INTO tools (id, slug, name, description, subdomain, icon, category_id, status, sort_order, created_at, updated_at)
 VALUES (
   'tool-bio',
@@ -57,7 +62,12 @@ VALUES (
   datetime('now'),
   datetime('now')
 )
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT (subdomain) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon = excluded.icon,
+  status = 'active',
+  updated_at = datetime('now');
 
 INSERT INTO tools (id, slug, name, description, subdomain, icon, category_id, status, sort_order, created_at, updated_at)
 VALUES (
@@ -73,4 +83,9 @@ VALUES (
   datetime('now'),
   datetime('now')
 )
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT (subdomain) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  icon = excluded.icon,
+  status = 'active',
+  updated_at = datetime('now');
