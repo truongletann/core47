@@ -35,11 +35,11 @@ export function ToolFilterBar({
         </kbd>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         <button
           onClick={() => onCategoryChange(null)}
           className={cn(
-            "font-data rounded-full border px-3 py-1 text-xs transition-colors",
+            "font-data shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors",
             activeCategory === null
               ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent))] text-white"
               : "border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--muted))] hover:border-[rgb(var(--accent))]",
@@ -52,7 +52,7 @@ export function ToolFilterBar({
             key={c.id}
             onClick={() => onCategoryChange(c.id)}
             className={cn(
-              "font-data rounded-full border px-3 py-1 text-xs transition-colors",
+              "font-data shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors",
               activeCategory === c.id
                 ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent))] text-white"
                 : "border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[rgb(var(--muted))] hover:border-[rgb(var(--accent))]",
