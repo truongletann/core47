@@ -137,6 +137,27 @@ dependency to code that runs in the Worker** (i.e. imported by `app/` or
 weight — prefer zero-dep or edge-runtime-native approaches, especially for
 anything HTML/DOM-parsing-shaped.
 
+**A `"use client"` directive does NOT keep a library out of the Worker
+bundle.** Next.js still server-renders client components for the initial
+HTML/hydration payload by default, so anything they import — even browser-only
+libs like `pdfjs-dist`/`pdf-lib`/`mammoth`/`docx` (see pdf.core47.xyz,
+file.core47.xyz) — gets pulled into the server bundle too. Confirmed this
+pushed `handler.mjs` to 19.8MB uncompressed / over the 3MiB gzip cap. Fix:
+put the heavy UI in its own component (e.g. `components/pdf/PdfToolkitClient.tsx`)
+and load it from `page.tsx` via `next/dynamic(() => import(...), { ssr: false })`
+— this is the only way to keep a dependency truly browser-only in this stack.
+Always run a real `rm -rf .next .open-next && npm run deploy` (not just
+`tsc --noEmit`) before declaring a heavy-client-lib feature done, since this
+class of bug only shows up at deploy time.
+
+**pdf.js (`pdfjs-dist`) `page.render()` hangs forever if the tab is
+backgrounded while rendering.** Its default screen-rendering path schedules
+continuation via `requestAnimationFrame`, which browsers pause for
+hidden/inactive tabs — the promise then never resolves, with no error. Fix:
+pass `intent: "print"` to `page.render()` (see `lib/converters/pdfRender.ts`)
+to force microtask-based scheduling instead. Apply this to any future
+pdf.js render call in this repo.
+
 ## R2 image uploads — never leave orphaned objects behind
 
 When a feature lets a user replace or remove an uploaded image (avatar,
