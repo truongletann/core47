@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils/cn";
 
 function keycapClass(isPressed: boolean, isTested: boolean) {
   return cn(
-    "flex h-9 min-w-[1.75rem] items-center justify-center rounded-md border font-data text-[11px] transition-colors duration-75 sm:h-10 sm:text-xs",
+    "flex h-11 min-w-[2.25rem] items-center justify-center rounded-md border font-data text-xs transition-colors duration-75 sm:h-14 sm:text-sm",
     isPressed
       ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent))] text-white"
       : isTested
@@ -65,7 +65,7 @@ export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => 
 
   function renderKey(k: KeyDef) {
     if (isSpacer(k.code)) {
-      return <div key={k.code} style={{ flexGrow: k.flex }} className="h-9 sm:h-10" />;
+      return <div key={k.code} style={{ flexGrow: k.flex }} className="h-11 sm:h-14" />;
     }
     return (
       <div key={k.code} style={{ flexGrow: k.flex }} className={keycapClass(pressed.has(k.code), tested.has(k.code))}>
@@ -125,7 +125,7 @@ export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => 
           setPressed(new Set());
         }}
         className={cn(
-          "relative select-none overflow-x-auto rounded-2xl border-2 bg-[rgb(var(--card))] p-4 outline-none transition-colors sm:p-5",
+          "relative select-none overflow-x-auto rounded-2xl border-2 bg-[rgb(var(--card))] p-5 outline-none transition-colors sm:p-8",
           focused ? "border-[rgb(var(--accent))]" : "border-[rgb(var(--border))]",
         )}
       >
@@ -135,20 +135,20 @@ export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => 
           </div>
         )}
 
-        <div className="flex w-fit min-w-full gap-4">
+        <div className="flex w-fit min-w-full gap-6">
           {/* Main alphanumeric block */}
-          <div className="flex flex-1 flex-col gap-1.5">
+          <div className="flex flex-1 flex-col gap-2">
             {rows.map((row, ri) => (
-              <div key={ri} className="flex gap-1.5">
+              <div key={ri} className="flex gap-2">
                 {row.map(renderKey)}
               </div>
             ))}
           </div>
 
           {/* Nav / system cluster: PrtSc-ScrLk-Pause, Ins/Home/PgUp, Del/End/PgDn, arrows */}
-          <div className="flex w-[8.5rem] shrink-0 flex-col gap-1.5 border-l border-[rgb(var(--border))] pl-4 sm:w-32">
+          <div className="flex w-[11rem] shrink-0 flex-col gap-2 border-l border-[rgb(var(--border))] pl-6 sm:w-44">
             {navRows.map((row, ri) => (
-              <div key={ri} className="flex gap-1.5">
+              <div key={ri} className="flex gap-2">
                 {row.map(renderKey)}
               </div>
             ))}
@@ -156,7 +156,7 @@ export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => 
 
           {/* Numpad — CSS grid so + / Enter / 0 can span cells like a real keyboard */}
           <div
-            className="grid w-[9.5rem] shrink-0 gap-1.5 border-l border-[rgb(var(--border))] pl-4 sm:w-36"
+            className="grid w-[12rem] shrink-0 gap-2 border-l border-[rgb(var(--border))] pl-6 sm:w-48"
             style={{
               gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
               gridTemplateRows: "repeat(5, 1fr)",

@@ -36,9 +36,26 @@ function titleForHostname(hostname: string): string {
 // because generateMetadata's headers()-based host lookup isn't reliable on
 // this Cloudflare Workers/OpenNext deployment. window.location.hostname is
 // always correct, so set the real tab title here once the page hydrates.
+//
+// Next streams its own <title> element in asynchronously (the
+// "Next.MetadataOutlet" Suspense boundary), which can patch document.title
+// back to "Core47 Labs" a moment AFTER this effect's first run — a plain
+// one-shot `document.title = ...` loses that race. A MutationObserver on
+// the <title> node re-asserts our value any time something else changes it.
 export function SubdomainTitle() {
   useEffect(() => {
-    document.title = titleForHostname(window.location.hostname);
+    const desired = titleForHostname(window.location.hostname);
+    document.title = desired;
+
+    const titleEl = document.querySelector("title");
+    if (!titleEl) return;
+
+    const observer = new MutationObserver(() => {
+      if (document.title !== desired) document.title = desired;
+    });
+    observer.observe(titleEl, { childList: true, characterData: true, subtree: true });
+
+    return () => observer.disconnect();
   }, []);
 
   return null;

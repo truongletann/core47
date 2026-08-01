@@ -10,30 +10,32 @@ type Length = "short" | "long";
 const SAMPLES: Record<Lang, Record<Length, string[]>> = {
   en: {
     short: [
-      "The quick brown fox jumps over the lazy dog while the sun sets behind the mountains.",
-      "Programming is the art of telling another human what one wants the computer to do.",
-      "Success usually comes to those who are too busy to be looking for it every single day.",
-      "A journey of a thousand miles begins with a single step, so start typing right now.",
-      "Practice makes perfect, and the only way to type faster is to keep practicing every day.",
+      "The quick brown fox jumps over the lazy dog while the sun sets behind the distant mountains, painting the whole sky in warm shades of orange and deep purple.",
+      "Programming is the art of telling another human what one wants the computer to do, and most of the craft is spent reading code written by someone else.",
+      "Success usually comes to those who are too busy looking for it to notice how far they have already come, one small and steady step at a time each day.",
+      "A journey of a thousand miles begins with a single step, so stop overthinking the whole plan and just start typing the very first sentence right now.",
+      "Practice makes perfect, and the only real way to type faster without more mistakes is to keep practicing a little every single day without skipping.",
     ],
     long: [
-      "The quick brown fox jumps over the lazy dog while the sun sets behind the mountains, painting the sky in shades of orange and purple. Somewhere in the distance, a train whistle echoes across the valley, reminding travelers that the last ride of the day is about to depart from the old station.",
-      "Programming is the art of telling another human what one wants the computer to do, and yet so much of the craft is spent reading code written by someone else, or by yourself six months ago, trying to reconstruct the reasoning behind a decision that once made perfect sense but now looks like a riddle.",
-      "In the middle of every difficulty lies opportunity, or so the saying goes, and nowhere is that more true than in the process of learning to type quickly and accurately. Every mistake is simply feedback, a small nudge pointing toward which finger needs a little more practice before the next attempt.",
-      "A journey of a thousand miles begins with a single step, and the same is true of building any large piece of software. What looks like an impossible task on day one slowly becomes a familiar routine after weeks of small, steady, unglamorous progress that nobody notices until the project finally ships.",
+      "The quick brown fox jumps over the lazy dog while the sun sets behind the distant mountains, painting the whole sky in warm shades of orange and deep purple. Somewhere far in the valley below, a train whistle echoes gently across the fields, reminding every tired traveler that the very last ride of the day is about to depart from the old wooden station near the river.",
+      "Programming is the art of telling another human what one wants the computer to do, and yet so much of the actual craft is spent reading code written by someone else, or even by yourself six months ago, trying patiently to reconstruct the exact reasoning behind a decision that once made perfect sense but now looks like nothing more than a confusing riddle.",
+      "In the middle of every difficulty lies a hidden opportunity, or so the old saying goes, and nowhere does that feel more true than in the slow process of learning to type quickly and accurately. Every single mistake is simply feedback, a small gentle nudge pointing toward exactly which finger needs a little more patient practice before the next attempt.",
+      "A journey of a thousand miles begins with a single step, and the very same idea is true of building any large piece of software from nothing. What looks like an impossible task on the first day slowly becomes a familiar, comfortable routine after weeks of small, steady, unglamorous progress that nobody else really notices until the project finally ships.",
     ],
   },
   vi: {
     short: [
-      "Toi thich lap trinh va uong ca phe vao moi buoi sang truoc khi bat dau lam viec.",
-      "Cuoc song la mot chuyen di dai, hay tan huong tung khoanh khac ben nhung nguoi ta yeu thuong.",
-      "Du an nay duoc xay dung tren nen tang Next.js va trien khai tren Cloudflare Workers.",
-      "Hoc go phim nhanh giup tiet kiem thoi gian lam viec va giam moi tay dang ke.",
+      "Tôi thích lập trình và uống cà phê vào mỗi buổi sáng trước khi bắt đầu công việc, vì đó là khoảng thời gian yên tĩnh nhất trong ngày để suy nghĩ thấu đáo.",
+      "Cuộc sống là một chuyến đi dài, hãy tận hưởng từng khoảnh khắc bên những người ta yêu thương, vì không ai biết trước được ngày mai sẽ mang đến điều gì.",
+      "Dự án này được xây dựng trên nền tảng Next.js và triển khai trên Cloudflare Workers, tận dụng khả năng chạy ở rất nhiều điểm edge trên toàn cầu.",
+      "Học gõ phím nhanh giúp tiết kiệm thời gian làm việc và giảm mỏi tay đáng kể, đặc biệt là khi phải soạn thảo văn bản hoặc viết mã nguồn liên tục.",
+      "Kiên trì mỗi ngày một chút sẽ mang lại kết quả bất ngờ, giống như những giọt nước nhỏ bé cuối cùng cũng có thể làm đầy cả một chiếc bình lớn.",
     ],
     long: [
-      "Toi thich lap trinh va uong ca phe vao moi buoi sang truoc khi bat dau lam viec, vi khoang thoi gian yen tinh do la luc dau oc minh man nhat de giai quyet nhung van de phuc tap ma ca ngay hop hanh khong the nao lam duoc.",
-      "Cuoc song la mot chuyen di dai, hay tan huong tung khoanh khac ben nhung nguoi ta yeu thuong, boi vi khong ai biet truoc duoc ngay mai se mang den dieu gi, va nhung ky niem dep hom nay chinh la hanh trang quy gia nhat cho chang duong phia truoc.",
-      "Du an nay duoc xay dung tren nen tang Next.js va trien khai tren Cloudflare Workers, tan dung kha nang chay o rat nhieu diem edge tren toan cau de mang lai toc do phan hoi nhanh nhat co the cho nguoi dung o bat ky dau.",
+      "Tôi thích lập trình và uống cà phê vào mỗi buổi sáng trước khi bắt đầu công việc, vì đó là khoảng thời gian yên tĩnh nhất trong ngày để suy nghĩ thấu đáo mọi vấn đề phức tạp mà cả ngày họp hành không thể nào giải quyết nổi. Chỉ cần một tách cà phê nóng và một đoạn nhạc nhẹ nhàng là đủ để bắt đầu một ngày làm việc hiệu quả.",
+      "Cuộc sống là một chuyến đi dài, hãy tận hưởng từng khoảnh khắc bên những người ta yêu thương, vì không ai biết trước được ngày mai sẽ mang đến điều gì cho chúng ta. Những kỷ niệm đẹp hôm nay chính là hành trang quý giá nhất cho chặng đường phía trước, dù con đường đó có nhiều gian nan đến đâu đi chăng nữa.",
+      "Dự án này được xây dựng trên nền tảng Next.js và triển khai trên Cloudflare Workers, tận dụng khả năng chạy ở rất nhiều điểm edge trên toàn cầu để mang lại tốc độ phản hồi nhanh nhất có thể cho người dùng ở bất kỳ đâu, đồng thời vẫn giữ được chi phí vận hành ở mức thấp nhờ mô hình serverless hiện đại.",
+      "Học gõ phím nhanh giúp tiết kiệm thời gian làm việc và giảm mỏi tay đáng kể, đặc biệt là khi phải soạn thảo văn bản hoặc viết mã nguồn trong nhiều giờ liên tục mỗi ngày. Việc luyện tập đều đặn không chỉ cải thiện tốc độ mà còn giúp giảm hẳn số lỗi gõ sai, từ đó nâng cao chất lượng công việc tổng thể.",
     ],
   },
 };
