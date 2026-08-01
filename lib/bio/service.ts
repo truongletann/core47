@@ -25,6 +25,8 @@ export async function getOrCreateBioPage(userId: string) {
     buttonStyle: "solid" as const,
     isPublished: 1,
     shortCode: null,
+    bannerKey: null,
+    backgroundColor: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -55,11 +57,21 @@ export async function updateBioPage(userId: string, raw: UpdateBioPageInput) {
       theme: input.theme,
       buttonStyle: input.buttonStyle,
       isPublished: input.isPublished ? 1 : 0,
+      backgroundColor: input.backgroundColor === undefined ? undefined : input.backgroundColor,
       updatedAt: new Date().toISOString(),
     })
     .where(eq(bioPages.userId, userId));
 
   return db.select().from(bioPages).where(eq(bioPages.userId, userId)).get();
+}
+
+// Sets or clears the wide cover banner image key — called from the banner
+// upload/delete route, bypasses UpdateBioPageSchema since it's not part of
+// the regular page-settings form submit.
+export async function setBioBanner(userId: string, bannerKey: string | null) {
+  const db = await getDb();
+  await getOrCreateBioPage(userId);
+  await db.update(bioPages).set({ bannerKey, updatedAt: new Date().toISOString() }).where(eq(bioPages.userId, userId));
 }
 
 export async function addBioLink(userId: string, raw: CreateBioLinkInput) {
@@ -80,6 +92,10 @@ export async function addBioLink(userId: string, raw: CreateBioLinkInput) {
     isEnabled: 1,
     clicks: 0,
     sortOrder: maxSort + 1,
+    color: input.color ?? null,
+    subtitle: input.subtitle ?? null,
+    thumbnailKey: null,
+    isHeader: input.isHeader ? 1 : 0,
     createdAt: new Date().toISOString(),
   };
   await db.insert(bioLinks).values(record);
@@ -100,9 +116,22 @@ export async function updateBioLink(userId: string, id: string, raw: UpdateBioLi
   if (input.url !== undefined) patch.url = input.url;
   if (input.icon !== undefined) patch.icon = input.icon;
   if (input.isEnabled !== undefined) patch.isEnabled = input.isEnabled ? 1 : 0;
+  if (input.color !== undefined) patch.color = input.color ?? null;
+  if (input.subtitle !== undefined) patch.subtitle = input.subtitle ?? null;
+  if (input.isHeader !== undefined) patch.isHeader = input.isHeader ? 1 : 0;
 
   await db.update(bioLinks).set(patch).where(eq(bioLinks.id, id));
   return db.select().from(bioLinks).where(eq(bioLinks.id, id)).get();
+}
+
+// Sets or clears a link's thumbnail image key — called from the per-link
+// thumbnail upload/delete route, bypasses UpdateBioLinkSchema since it's a
+// file upload, not a JSON field on the regular link-edit form.
+export async function setBioLinkThumbnail(userId: string, id: string, thumbnailKey: string | null) {
+  const db = await getDb();
+  const link = await db.select().from(bioLinks).where(eq(bioLinks.id, id)).get();
+  if (!link || link.userId !== userId) throw new Error("NOT_FOUND");
+  await db.update(bioLinks).set({ thumbnailKey }).where(eq(bioLinks.id, id));
 }
 
 export async function deleteBioLink(userId: string, id: string) {
@@ -129,6 +158,19 @@ export async function incrementBioLinkClicks(id: string) {
   await db.update(bioLinks).set({ clicks: sql`${bioLinks.clicks} + 1` }).where(eq(bioLinks.id, id));
 }
 
+export interface PublicBioLink {
+  id: string;
+  kind: string;
+  platform: string | null;
+  title: string | null;
+  url: string;
+  icon: string | null;
+  color: string | null;
+  subtitle: string | null;
+  thumbnailKey: string | null;
+  isHeader: boolean;
+}
+
 export interface PublicBioData {
   userId: string;
   username: string;
@@ -137,7 +179,9 @@ export interface PublicBioData {
   bio: string;
   theme: string;
   buttonStyle: string;
-  links: { id: string; kind: string; platform: string | null; title: string | null; url: string; icon: string | null }[];
+  bannerKey: string | null;
+  backgroundColor: string | null;
+  links: PublicBioLink[];
 }
 
 export async function getPublicBioByUsername(username: string): Promise<PublicBioData | null> {
@@ -163,9 +207,22 @@ export async function getPublicBioByUsername(username: string): Promise<PublicBi
     bio: page.bio,
     theme: page.theme,
     buttonStyle: page.buttonStyle,
+    bannerKey: page.bannerKey,
+    backgroundColor: page.backgroundColor,
     links: links
       .filter((l) => l.isEnabled)
-      .map((l) => ({ id: l.id, kind: l.kind, platform: l.platform, title: l.title, url: l.url, icon: l.icon })),
+      .map((l) => ({
+        id: l.id,
+        kind: l.kind,
+        platform: l.platform,
+        title: l.title,
+        url: l.url,
+        icon: l.icon,
+        color: l.color,
+        subtitle: l.subtitle,
+        thumbnailKey: l.thumbnailKey,
+        isHeader: Boolean(l.isHeader),
+      })),
   };
 }
 

@@ -392,11 +392,13 @@ export const bioPages = sqliteTable("bio_pages", {
   // The to2.site short code minted the first time the owner asks to share
   // the page — reused on subsequent shares instead of minting a new one.
   shortCode: text("short_code"),
+  bannerKey: text("banner_key"), // R2 key in AVATARS bucket, bio-banner/ prefix — optional wide cover image
+  backgroundColor: text("background_color"), // hex — used when theme = "custom"
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
 
-// NEW — Bio: individual links/social icons on a bio page
+// NEW — Bio: individual links/social icons/section-headers on a bio page
 export const bioLinks = sqliteTable("bio_links", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
@@ -408,6 +410,10 @@ export const bioLinks = sqliteTable("bio_links", {
   isEnabled: integer("is_enabled").notNull().default(1),
   clicks: integer("clicks").notNull().default(0),
   sortOrder: integer("sort_order").notNull().default(0),
+  color: text("color"), // hex — per-link button color override, null = theme default
+  subtitle: text("subtitle"), // small text line under the title (card-style rendering)
+  thumbnailKey: text("thumbnail_key"), // R2 key in AVATARS bucket, bio-link-thumb/ prefix
+  isHeader: integer("is_header").notNull().default(0), // renders as a plain section label, no button (url unused, kept "#")
   createdAt: text("created_at").notNull(),
 });
 

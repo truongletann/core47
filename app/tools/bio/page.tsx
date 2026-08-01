@@ -13,6 +13,9 @@ import {
   Upload,
   Share2,
   Loader2,
+  ImagePlus,
+  X,
+  Heading,
 } from "lucide-react";
 import { BioPreview, type BioPreviewLink } from "@/components/bio/BioPreview";
 import { BIO_THEME_CONFIG } from "@/lib/bio/themes";
@@ -29,13 +32,18 @@ interface EditorLink extends BioPreviewLink {
   isEnabled: boolean;
 }
 
-function normalizeLink(raw: BioPreviewLink & { isEnabled?: boolean | number }): EditorLink {
-  return { ...raw, isEnabled: raw.isEnabled === undefined ? true : Boolean(raw.isEnabled) };
+function normalizeLink(raw: BioPreviewLink & { isEnabled?: boolean | number; thumbnailKey?: string | null }): EditorLink {
+  return {
+    ...raw,
+    isEnabled: raw.isEnabled === undefined ? true : Boolean(raw.isEnabled),
+    thumbnailUrl: raw.thumbnailKey ? `/api/bio/link-thumb/${raw.id}` : raw.thumbnailUrl ?? null,
+  };
 }
 
 type ButtonStyle = "solid" | "outline" | "soft";
+type NewLinkKind = "link" | "social" | "header";
 
-const THEME_KEYS = Object.keys(BIO_THEME_CONFIG) as BioTheme[];
+const THEME_KEYS = (Object.keys(BIO_THEME_CONFIG) as BioTheme[]).filter((k) => k !== "custom");
 
 export default function BioEditorPage() {
   const [loading, setLoading] = useState(true);
@@ -44,20 +52,24 @@ export default function BioEditorPage() {
   const [title, setTitle] = useState("");
   const [bio, setBio] = useState("");
   const [theme, setTheme] = useState<BioTheme>("sunset");
+  const [backgroundColor, setBackgroundColor] = useState("#6d28d9");
   const [buttonStyle, setButtonStyle] = useState<ButtonStyle>("solid");
   const [isPublished, setIsPublished] = useState(true);
   const [links, setLinks] = useState<EditorLink[]>([]);
   const [avatarVersion, setAvatarVersion] = useState(0);
+  const [bannerVersion, setBannerVersion] = useState(0);
+  const [hasBanner, setHasBanner] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [usernameDraft, setUsernameDraft] = useState("");
   const [usernameSaving, setUsernameSaving] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
 
-  const [newLinkKind, setNewLinkKind] = useState<"link" | "social">("link");
+  const [newLinkKind, setNewLinkKind] = useState<NewLinkKind>("link");
   const [newLinkPlatform, setNewLinkPlatform] = useState<(typeof SOCIAL_PLATFORMS)[number]>("website");
   const [newLinkTitle, setNewLinkTitle] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("");
+  const [newLinkSubtitle, setNewLinkSubtitle] = useState("");
   const [addingLink, setAddingLink] = useState(false);
 
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -77,8 +89,16 @@ export default function BioEditorPage() {
         return fetch("/api/bio", { credentials: "include" })
           .then((r) => r.json() as Promise<{
             data?: {
-              page?: { title: string; bio: string; theme: string; buttonStyle: string; isPublished: number };
-              links?: (BioPreviewLink & { isEnabled: number })[];
+              page?: {
+                title: string;
+                bio: string;
+                theme: string;
+                buttonStyle: string;
+                isPublished: number;
+                bannerKey: string | null;
+                backgroundColor: string | null;
+              };
+              links?: (BioPreviewLink & { isEnabled: number; thumbnailKey?: string | null })[];
             };
           }>)
           .then((json2) => {
@@ -89,6 +109,8 @@ export default function BioEditorPage() {
               setTheme((page.theme as BioTheme) || "sunset");
               setButtonStyle((page.buttonStyle as ButtonStyle) || "solid");
               setIsPublished(Boolean(page.isPublished));
+              setHasBanner(Boolean(page.bannerKey));
+              if (page.backgroundColor) setBackgroundColor(page.backgroundColor);
             }
             setLinks((json2?.data?.links ?? []).map(normalizeLink));
           });
@@ -107,7 +129,14 @@ export default function BioEditorPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ title, bio, theme, buttonStyle, isPublished }),
+        body: JSON.stringify({
+          title,
+          bio,
+          theme,
+          buttonStyle,
+          isPublished,
+          backgroundColor: theme === "custom" ? backgroundColor : undefined,
+        }),
       });
     } finally {
       setSaving(false);
@@ -145,8 +174,25 @@ export default function BioEditorPage() {
     setAvatarVersion((v) => v + 1);
   }
 
+  async function handleBannerChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("banner", file);
+    await fetch("/api/bio/banner", { method: "POST", credentials: "include", body: formData });
+    setHasBanner(true);
+    setBannerVersion((v) => v + 1);
+  }
+
+  async function handleRemoveBanner() {
+    setHasBanner(false);
+    await fetch("/api/bio/banner", { method: "DELETE", credentials: "include" });
+  }
+
   async function handleAddLink() {
-    if (!newLinkUrl.trim()) return;
+    const isHeader = newLinkKind === "header";
+    if (!isHeader && !newLinkUrl.trim()) return;
+    if (isHeader && !newLinkTitle.trim()) return;
     setAddingLink(true);
     try {
       const res = await fetch("/api/bio/links", {
@@ -154,20 +200,23 @@ export default function BioEditorPage() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          kind: newLinkKind,
+          kind: newLinkKind === "social" ? "social" : "link",
+          isHeader,
           platform: newLinkKind === "social" ? newLinkPlatform : undefined,
-          title: newLinkKind === "link" ? newLinkTitle || undefined : undefined,
-          url: newLinkUrl,
+          title: newLinkKind !== "social" ? newLinkTitle || undefined : undefined,
+          subtitle: newLinkKind === "link" ? newLinkSubtitle || undefined : undefined,
+          url: isHeader ? undefined : newLinkUrl,
         }),
       });
       const json = (await res.json()) as {
         success: boolean;
-        data?: { link: BioPreviewLink & { isEnabled: number } };
+        data?: { link: BioPreviewLink & { isEnabled: number; thumbnailKey?: string | null } };
       };
       if (json.success && json.data) {
         setLinks((prev) => [...prev, normalizeLink(json.data!.link)]);
         setNewLinkTitle("");
         setNewLinkUrl("");
+        setNewLinkSubtitle("");
       }
     } finally {
       setAddingLink(false);
@@ -188,6 +237,25 @@ export default function BioEditorPage() {
       credentials: "include",
       body: JSON.stringify({ isEnabled: nextEnabled }),
     });
+  }
+
+  async function handleLinkColorChange(id: string, color: string) {
+    setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, color } : l)));
+    await fetch(`/api/bio/links/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ color }),
+    });
+  }
+
+  async function handleLinkThumbnailChange(id: string, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("thumbnail", file);
+    await fetch(`/api/bio/links/${id}/thumbnail`, { method: "POST", credentials: "include", body: formData });
+    setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, thumbnailUrl: `/api/bio/link-thumb/${id}?v=${Date.now()}` } : l)));
   }
 
   function move(index: number, dir: -1 | 1) {
@@ -288,6 +356,32 @@ export default function BioEditorPage() {
         {/* Profile */}
         <section className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-5">
           <h2 className="font-display text-sm font-semibold">Profile</h2>
+
+          <div className="mt-4">
+            <span className="mb-1 block text-xs text-[rgb(var(--muted))]">Cover banner (optional)</span>
+            {hasBanner ? (
+              <div className="relative">
+                <img
+                  src={`/api/bio/banner/${me.id}?v=${bannerVersion}`}
+                  alt="banner"
+                  className="h-24 w-full rounded-lg border border-[rgb(var(--border))] object-cover"
+                />
+                <button
+                  onClick={handleRemoveBanner}
+                  className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+                  aria-label="Remove banner"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            ) : (
+              <label className="flex h-16 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-dashed border-[rgb(var(--border))] text-xs font-semibold text-[rgb(var(--muted))] hover:bg-[rgb(var(--border)/0.3)]">
+                <ImagePlus size={14} /> Upload cover banner
+                <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleBannerChange} />
+              </label>
+            )}
+          </div>
+
           <div className="mt-4 flex items-center gap-4">
             <img
               src={`/api/avatar/${me.id}?v=${avatarVersion}`}
@@ -326,7 +420,7 @@ export default function BioEditorPage() {
         {/* Theme */}
         <section className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-5">
           <h2 className="font-display text-sm font-semibold">Theme</h2>
-          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
+          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-7">
             {THEME_KEYS.map((key) => (
               <button
                 key={key}
@@ -336,6 +430,23 @@ export default function BioEditorPage() {
                 title={BIO_THEME_CONFIG[key].label}
               />
             ))}
+            <label
+              className={`relative flex h-12 cursor-pointer items-center justify-center rounded-lg border-2 text-[10px] font-semibold text-white ${theme === "custom" ? "border-[rgb(var(--accent))]" : "border-transparent"}`}
+              style={{ background: backgroundColor }}
+              title="Custom color"
+            >
+              Custom
+              <input
+                type="color"
+                value={backgroundColor}
+                onChange={(e) => {
+                  setBackgroundColor(e.target.value);
+                  setTheme("custom");
+                }}
+                onClick={() => setTheme("custom")}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
+            </label>
           </div>
 
           <div className="mt-4 flex gap-2">
@@ -393,18 +504,45 @@ export default function BioEditorPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">
-                    {link.kind === "social" ? `${link.platform} (social icon)` : link.title || link.url}
+                    {link.isHeader
+                      ? `— ${link.title || "Section"} —`
+                      : link.kind === "social"
+                        ? `${link.platform} (social icon)`
+                        : link.title || link.url}
                   </p>
-                  <p className="truncate text-xs text-[rgb(var(--muted))]">{link.url}</p>
+                  {!link.isHeader && <p className="truncate text-xs text-[rgb(var(--muted))]">{link.url}</p>}
                 </div>
+                {!link.isHeader && link.kind === "link" && (
+                  <>
+                    <input
+                      type="color"
+                      value={link.color || "#6366f1"}
+                      onChange={(e) => handleLinkColorChange(link.id, e.target.value)}
+                      title="Button color"
+                      className="h-6 w-6 shrink-0 cursor-pointer rounded border border-[rgb(var(--border))] bg-transparent p-0"
+                    />
+                    <label
+                      className="shrink-0 cursor-pointer text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+                      title="Card thumbnail image"
+                    >
+                      <ImagePlus size={16} />
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(e) => handleLinkThumbnailChange(link.id, e)}
+                      />
+                    </label>
+                  </>
+                )}
                 <button
                   onClick={() => handleToggleLink(link)}
-                  className="text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+                  className="shrink-0 text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
                   title={link.isEnabled ? "Visible" : "Hidden"}
                 >
                   {link.isEnabled ? <Eye size={16} /> : <EyeOff size={16} />}
                 </button>
-                <button onClick={() => handleDeleteLink(link.id)} className="text-[rgb(var(--muted))] hover:text-red-600">
+                <button onClick={() => handleDeleteLink(link.id)} className="shrink-0 text-[rgb(var(--muted))] hover:text-red-600">
                   <Trash2 size={16} />
                 </button>
               </div>
@@ -428,6 +566,12 @@ export default function BioEditorPage() {
               >
                 Social icon
               </button>
+              <button
+                onClick={() => setNewLinkKind("header")}
+                className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold ${newLinkKind === "header" ? "bg-[rgb(var(--accent))] text-white" : "text-[rgb(var(--muted))]"}`}
+              >
+                <Heading size={12} /> Section header
+              </button>
             </div>
 
             {newLinkKind === "social" && (
@@ -443,23 +587,33 @@ export default function BioEditorPage() {
                 ))}
               </select>
             )}
-            {newLinkKind === "link" && (
+            {newLinkKind !== "social" && (
               <input
                 value={newLinkTitle}
                 onChange={(e) => setNewLinkTitle(e.target.value)}
-                placeholder="Label (optional)"
+                placeholder={newLinkKind === "header" ? "Section title, e.g. My courses" : "Label (optional)"}
                 className="mt-2 w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
               />
             )}
-            <input
-              value={newLinkUrl}
-              onChange={(e) => setNewLinkUrl(e.target.value)}
-              placeholder="https://..."
-              className="font-data mt-2 w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
-            />
+            {newLinkKind === "link" && (
+              <input
+                value={newLinkSubtitle}
+                onChange={(e) => setNewLinkSubtitle(e.target.value)}
+                placeholder="Subtitle (optional, shown under the title if you add a thumbnail)"
+                className="mt-2 w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+              />
+            )}
+            {newLinkKind !== "header" && (
+              <input
+                value={newLinkUrl}
+                onChange={(e) => setNewLinkUrl(e.target.value)}
+                placeholder="https://..."
+                className="font-data mt-2 w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none"
+              />
+            )}
             <button
               onClick={handleAddLink}
-              disabled={addingLink || !newLinkUrl.trim()}
+              disabled={addingLink || (newLinkKind === "header" ? !newLinkTitle.trim() : !newLinkUrl.trim())}
               className="mt-2 flex items-center gap-1.5 rounded-md bg-[rgb(var(--accent))] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
             >
               <Plus size={13} /> {addingLink ? "Adding..." : "Add"}
@@ -499,10 +653,12 @@ export default function BioEditorPage() {
           <div className="h-full overflow-y-auto">
             <BioPreview
               avatarUrl={`/api/avatar/${me.id}?v=${avatarVersion}`}
+              bannerUrl={hasBanner ? `/api/bio/banner/${me.id}?v=${bannerVersion}` : null}
               name={me.name}
               title={title}
               bio={bio}
               theme={theme}
+              backgroundColor={backgroundColor}
               buttonStyle={buttonStyle}
               links={links.filter((l) => l.isEnabled)}
               interactive={false}

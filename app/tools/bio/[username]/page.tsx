@@ -26,12 +26,17 @@ export default async function PublicBioPage({
   return (
     <BioPreview
       avatarUrl={`/api/avatar/${data.userId}`}
+      bannerUrl={data.bannerKey ? `/api/bio/banner/${data.userId}` : null}
       name={data.name}
       title={data.title}
       bio={data.bio}
       theme={data.theme as BioTheme}
+      backgroundColor={data.backgroundColor}
       buttonStyle={data.buttonStyle as "solid" | "outline" | "soft"}
-      links={data.links}
+      links={data.links.map((l) => ({
+        ...l,
+        thumbnailUrl: l.thumbnailKey ? `/api/bio/link-thumb/${l.id}` : null,
+      }))}
       interactive
     />
   );
