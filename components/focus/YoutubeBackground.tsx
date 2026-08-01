@@ -75,10 +75,13 @@ export function YoutubeBackground({ videoId, startSeconds, endSeconds }: Youtube
         loop: 1,
         playlist: videoId,
         controls: 0,
+        disablekb: 1,
+        fs: 0,
         showinfo: 0,
         modestbranding: 1,
         playsinline: 1,
         iv_load_policy: 3,
+        cc_load_policy: 0,
         rel: 0,
       };
       if (startSeconds != null) playerVars.start = startSeconds;
@@ -112,7 +115,7 @@ export function YoutubeBackground({ videoId, startSeconds, endSeconds }: Youtube
   return (
     <div className="absolute inset-0 overflow-hidden">
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2">
-        <div ref={containerRef} className="h-full w-full" />
+        <div ref={containerRef} className="pointer-events-none h-full w-full" />
       </div>
     </div>
   );
