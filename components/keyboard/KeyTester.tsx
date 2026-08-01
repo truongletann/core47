@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { RotateCcw, MousePointerClick } from "lucide-react";
+import { RotateCcw, MousePointerClick, Volume2, VolumeX } from "lucide-react";
 import { getKeyboardRows, countTotalKeys, type OS } from "@/lib/keyboard/layout";
+import { playKeyClick } from "@/lib/audio/tones";
 import { cn } from "@/lib/utils/cn";
 
 export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => void }) {
@@ -10,25 +11,35 @@ export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => 
   const [tested, setTested] = useState<Set<string>>(new Set());
   const [lastKey, setLastKey] = useState<{ code: string; key: string } | null>(null);
   const [focused, setFocused] = useState(false);
+  const [muted, setMuted] = useState(false);
 
   const rows = getKeyboardRows(os);
   const totalKeys = countTotalKeys(os);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    e.preventDefault();
-    setPressed((prev) => new Set(prev).add(e.code));
-    setTested((prev) => new Set(prev).add(e.code));
-    setLastKey({ code: e.code, key: e.key });
-  }, []);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      e.preventDefault();
+      if (e.repeat) return; // don't spam the click sound while a key is held down
+      setPressed((prev) => new Set(prev).add(e.code));
+      setTested((prev) => new Set(prev).add(e.code));
+      setLastKey({ code: e.code, key: e.key });
+      playKeyClick(muted, true);
+    },
+    [muted],
+  );
 
-  const handleKeyUp = useCallback((e: React.KeyboardEvent) => {
-    e.preventDefault();
-    setPressed((prev) => {
-      const next = new Set(prev);
-      next.delete(e.code);
-      return next;
-    });
-  }, []);
+  const handleKeyUp = useCallback(
+    (e: React.KeyboardEvent) => {
+      e.preventDefault();
+      setPressed((prev) => {
+        const next = new Set(prev);
+        next.delete(e.code);
+        return next;
+      });
+      playKeyClick(muted, false);
+    },
+    [muted],
+  );
 
   return (
     <div className="space-y-4">
@@ -53,6 +64,14 @@ export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => 
           <span className="font-data text-xs text-[rgb(var(--muted))]">
             Đã test {tested.size}/{totalKeys} phím
           </span>
+          <button
+            type="button"
+            onClick={() => setMuted((v) => !v)}
+            aria-label={muted ? "Bật âm thanh" : "Tắt âm thanh"}
+            className="flex items-center gap-1.5 rounded-md border border-[rgb(var(--border))] px-2.5 py-1.5 text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+          >
+            {muted ? <VolumeX size={12} /> : <Volume2 size={12} />}
+          </button>
           <button
             type="button"
             onClick={() => setTested(new Set())}
