@@ -5,13 +5,7 @@ import * as Icons from "lucide-react";
 import { motion } from "framer-motion";
 import type { Tool } from "@/types/tool";
 import { cn } from "@/lib/utils/cn";
-
-const CATEGORY_VAR: Record<string, string> = {
-  "dev-utilities": "--cat-dev-utilities",
-  documents: "--cat-documents",
-  productivity: "--cat-productivity",
-  links: "--cat-links",
-};
+import { getCategoryColorVar } from "@/lib/tools/categoryColor";
 
 const statusLabel: Record<Tool["status"], string> = {
   active: "",
@@ -23,7 +17,7 @@ export function ToolCard({ tool, index }: { tool: Tool; index: number }) {
   const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[tool.icon] ?? Icons.Box;
   const isDisabled = tool.status === "soon";
   const code = `C47/${String(index + 1).padStart(2, "0")}`;
-  const catVar = CATEGORY_VAR[tool.categoryId] ?? "--cat-dev-utilities";
+  const catVar = getCategoryColorVar(tool.categoryId);
   const cardRef = useRef<HTMLAnchorElement>(null);
   const [flashing, setFlashing] = useState(false);
 

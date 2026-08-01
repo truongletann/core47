@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { Tool } from "@/types/tool";
+import { getCategoryColorVar } from "@/lib/tools/categoryColor";
 
 const SLOTS = [
   { top: 10, left: 8 },
@@ -13,13 +14,6 @@ const SLOTS = [
   { top: 88, left: 44 },
   { top: 45, left: 93 },
 ];
-
-const CATEGORY_VAR: Record<string, string> = {
-  "dev-utilities": "--cat-dev-utilities",
-  documents: "--cat-documents",
-  productivity: "--cat-productivity",
-  links: "--cat-links",
-};
 
 export function Hero({ tools }: { tools: Tool[] }) {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -169,7 +163,7 @@ export function Hero({ tools }: { tools: Tool[] }) {
       <svg ref={connectSvgRef} className="pointer-events-none absolute inset-0 -z-10 h-full w-full" />
 
       {featured.map((tool, i) => {
-        const catVar = CATEGORY_VAR[tool.categoryId] ?? "--cat-dev-utilities";
+        const catVar = getCategoryColorVar(tool.categoryId);
         return (
           <span
             key={tool.id}
