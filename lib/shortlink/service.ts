@@ -136,10 +136,6 @@ export async function deleteShortLink(
 
   await db.delete(shortLinks).where(eq(shortLinks.code, code));
 }
-export async function getAllShortLinks(): Promise<ShortLink[]> {
-  const db = await getDb();
-  return db.select().from(shortLinks).orderBy(desc(shortLinks.createdAt));
-}
 
 export interface ShortLinkWithCreator extends ShortLink {
   creatorEmail: string | null;
