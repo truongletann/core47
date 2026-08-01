@@ -15,21 +15,6 @@ export interface FocusSession {
   completedAt: string;
 }
 
-export interface FocusHabit {
-  id: string;
-  name: string;
-  logDates: string[];
-}
-
-export interface FocusStats {
-  todayMinutes: number;
-  weekMinutes: number;
-  monthMinutes: number;
-  streakDays: number;
-  totalSessions: number;
-  dayTotals: Record<string, number>;
-}
-
 export interface SoundTrack {
   id: string;
   name: string;
@@ -48,15 +33,6 @@ export interface Playlist {
   isEnabled: boolean;
   sortOrder: number;
   thumbnailUrl?: string | null;
-}
-
-export interface FocusPreset {
-  id: string;
-  name: string;
-  soundIds: { id: string; volume: number }[];
-  sceneKey: string;
-  workMinutes: number;
-  breakMinutes: number;
 }
 
 // Ambience theme catalog — admin-managed (see admin.core47.xyz/focus/themes),

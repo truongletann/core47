@@ -3,9 +3,6 @@ import { getDb } from "@/db/client";
 import {
   focusTasks,
   focusSessions,
-  focusHabits,
-  focusHabitLogs,
-  focusPresets,
   focusSettings,
   focusSoundTracks,
   focusPlaylists,
@@ -15,9 +12,6 @@ import {
   TaskSchema,
   UpdateTaskSchema,
   SessionSchema,
-  HabitSchema,
-  HabitLogSchema,
-  PresetSchema,
   FocusSettingsSchema,
   SoundTrackSchema,
   PlaylistSchema,
@@ -26,9 +20,6 @@ import {
   type TaskInput,
   type UpdateTaskInput,
   type SessionInput,
-  type HabitInput,
-  type HabitLogInput,
-  type PresetInput,
   type FocusSettingsInput,
   type SoundTrackInput,
   type PlaylistInput,
@@ -117,159 +108,6 @@ export async function listSessions(userId: string, sinceIso?: string) {
     ? and(eq(focusSessions.userId, userId), gte(focusSessions.completedAt, sinceIso))
     : eq(focusSessions.userId, userId);
   return db.select().from(focusSessions).where(conditions).orderBy(desc(focusSessions.completedAt));
-}
-
-export async function getStats(userId: string) {
-  const db = await getDb();
-  const now = new Date();
-  const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
-  const startOfWeek = new Date(now.getTime() - 6 * 86400000).toISOString();
-  const startOfMonth = new Date(now.getTime() - 29 * 86400000).toISOString();
-
-  const rows = await db
-    .select()
-    .from(focusSessions)
-    .where(and(eq(focusSessions.userId, userId), eq(focusSessions.type, "work"), gte(focusSessions.completedAt, startOfMonth)));
-
-  let today = 0;
-  let week = 0;
-  let month = 0;
-  const dayTotals = new Map<string, number>();
-  for (const r of rows) {
-    month += r.durationMinutes;
-    if (r.completedAt >= startOfWeek) week += r.durationMinutes;
-    if (r.completedAt >= startOfToday) today += r.durationMinutes;
-    const day = r.completedAt.slice(0, 10);
-    dayTotals.set(day, (dayTotals.get(day) ?? 0) + r.durationMinutes);
-  }
-
-  // streak: consecutive days (including today) with at least one work session
-  let streak = 0;
-  const cursor = new Date();
-  for (;;) {
-    const key = cursor.toISOString().slice(0, 10);
-    if (!dayTotals.has(key)) break;
-    streak += 1;
-    cursor.setUTCDate(cursor.getUTCDate() - 1);
-  }
-
-  return {
-    todayMinutes: today,
-    weekMinutes: week,
-    monthMinutes: month,
-    streakDays: streak,
-    totalSessions: rows.length,
-    dayTotals: Object.fromEntries(dayTotals),
-  };
-}
-
-// ---------- Habits ----------
-
-export async function listHabits(userId: string) {
-  const db = await getDb();
-  const habits = await db
-    .select()
-    .from(focusHabits)
-    .where(eq(focusHabits.userId, userId))
-    .orderBy(asc(focusHabits.sortOrder), asc(focusHabits.createdAt));
-
-  const logsByHabit = new Map<string, string[]>();
-  for (const h of habits) {
-    const logs = await db
-      .select({ logDate: focusHabitLogs.logDate })
-      .from(focusHabitLogs)
-      .where(eq(focusHabitLogs.habitId, h.id));
-    logsByHabit.set(
-      h.id,
-      logs.map((l) => l.logDate).sort(),
-    );
-  }
-
-  return habits.map((h) => ({ ...h, logDates: logsByHabit.get(h.id) ?? [] }));
-}
-
-export async function createHabit(userId: string, raw: HabitInput) {
-  const input = HabitSchema.parse(raw);
-  const db = await getDb();
-  const record = {
-    id: crypto.randomUUID(),
-    userId,
-    name: input.name,
-    sortOrder: 0,
-    createdAt: new Date().toISOString(),
-  };
-  await db.insert(focusHabits).values(record);
-  return record;
-}
-
-export async function deleteHabit(userId: string, id: string) {
-  const db = await getDb();
-  await db.delete(focusHabitLogs).where(eq(focusHabitLogs.habitId, id));
-  await db.delete(focusHabits).where(and(eq(focusHabits.id, id), eq(focusHabits.userId, userId)));
-}
-
-export async function toggleHabitLog(userId: string, habitId: string, raw: HabitLogInput) {
-  const input = HabitLogSchema.parse(raw);
-  const db = await getDb();
-
-  const habit = await db
-    .select()
-    .from(focusHabits)
-    .where(and(eq(focusHabits.id, habitId), eq(focusHabits.userId, userId)))
-    .get();
-  if (!habit) throw new Error("HABIT_NOT_FOUND");
-
-  const existing = await db
-    .select()
-    .from(focusHabitLogs)
-    .where(and(eq(focusHabitLogs.habitId, habitId), eq(focusHabitLogs.logDate, input.logDate)))
-    .get();
-
-  if (existing) {
-    await db.delete(focusHabitLogs).where(eq(focusHabitLogs.id, existing.id));
-    return { checked: false };
-  }
-  await db.insert(focusHabitLogs).values({
-    id: crypto.randomUUID(),
-    habitId,
-    logDate: input.logDate,
-    createdAt: new Date().toISOString(),
-  });
-  return { checked: true };
-}
-
-// ---------- Presets ----------
-
-export async function listPresets(userId: string) {
-  const db = await getDb();
-  const rows = await db
-    .select()
-    .from(focusPresets)
-    .where(eq(focusPresets.userId, userId))
-    .orderBy(desc(focusPresets.createdAt));
-  return rows.map((r) => ({ ...r, soundIds: JSON.parse(r.soundIds) }));
-}
-
-export async function createPreset(userId: string, raw: PresetInput) {
-  const input = PresetSchema.parse(raw);
-  const db = await getDb();
-  const record = {
-    id: crypto.randomUUID(),
-    userId,
-    name: input.name,
-    soundIds: JSON.stringify(input.soundIds),
-    sceneKey: input.sceneKey,
-    workMinutes: input.workMinutes,
-    breakMinutes: input.breakMinutes,
-    createdAt: new Date().toISOString(),
-  };
-  await db.insert(focusPresets).values(record);
-  return { ...record, soundIds: input.soundIds };
-}
-
-export async function deletePreset(userId: string, id: string) {
-  const db = await getDb();
-  await db.delete(focusPresets).where(and(eq(focusPresets.id, id), eq(focusPresets.userId, userId)));
 }
 
 // ---------- Settings (singleton, admin-editable) ----------
@@ -546,20 +384,8 @@ export async function importLocalData(userId: string, raw: ImportPayload) {
     });
   }
 
-  for (const h of input.habits) {
-    const habitId = crypto.randomUUID();
-    await db.insert(focusHabits).values({ id: habitId, userId, name: h.name, sortOrder: 0, createdAt: now });
-    for (const logDate of h.logDates) {
-      await db
-        .insert(focusHabitLogs)
-        .values({ id: crypto.randomUUID(), habitId, logDate, createdAt: now })
-        .onConflictDoNothing();
-    }
-  }
-
   return {
     importedTasks: input.tasks.length,
     importedSessions: input.sessions.length,
-    importedHabits: input.habits.length,
   };
 }

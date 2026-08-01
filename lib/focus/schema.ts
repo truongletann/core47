@@ -19,27 +19,6 @@ export const SessionSchema = z.object({
   completedAt: z.string().trim().min(1),
 });
 
-export const HabitSchema = z.object({
-  name: z.string().trim().min(1).max(120),
-});
-
-export const HabitLogSchema = z.object({
-  logDate: z
-    .string()
-    .trim()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD"),
-});
-
-export const PresetSchema = z.object({
-  name: z.string().trim().min(1).max(80),
-  soundIds: z
-    .array(z.object({ id: z.string(), volume: z.number().min(0).max(1) }))
-    .max(10),
-  sceneKey: z.string().trim().min(1).max(60),
-  workMinutes: z.coerce.number().int().min(1).max(180).default(25),
-  breakMinutes: z.coerce.number().int().min(1).max(60).default(5),
-});
-
 export const FocusSettingsSchema = z.object({
   workMinutes: z.coerce.number().int().min(1).max(180),
   breakMinutes: z.coerce.number().int().min(1).max(60),
@@ -108,22 +87,11 @@ export const ImportPayloadSchema = z.object({
       }),
     )
     .max(2000),
-  habits: z
-    .array(
-      z.object({
-        name: z.string().trim().min(1).max(120),
-        logDates: z.array(z.string()).max(3660),
-      }),
-    )
-    .max(100),
 });
 
 export type TaskInput = z.infer<typeof TaskSchema>;
 export type UpdateTaskInput = z.infer<typeof UpdateTaskSchema>;
 export type SessionInput = z.infer<typeof SessionSchema>;
-export type HabitInput = z.infer<typeof HabitSchema>;
-export type HabitLogInput = z.infer<typeof HabitLogSchema>;
-export type PresetInput = z.infer<typeof PresetSchema>;
 export type FocusSettingsInput = z.infer<typeof FocusSettingsSchema>;
 export type SoundTrackInput = z.infer<typeof SoundTrackSchema>;
 export type ThemeInput = z.infer<typeof ThemeSchema>;

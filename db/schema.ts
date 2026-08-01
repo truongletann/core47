@@ -253,35 +253,6 @@ export const focusSessions = sqliteTable("focus_sessions", {
   createdAt: text("created_at").notNull(),
 });
 
-// NEW — Focus: user-defined habits (separate from Pomodoro tasks)
-export const focusHabits = sqliteTable("focus_habits", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull(),
-  name: text("name").notNull(),
-  sortOrder: integer("sort_order").notNull().default(0),
-  createdAt: text("created_at").notNull(),
-});
-
-// NEW — Focus: one check-in per habit per day
-export const focusHabitLogs = sqliteTable("focus_habit_logs", {
-  id: text("id").primaryKey(),
-  habitId: text("habit_id").notNull(),
-  logDate: text("log_date").notNull(), // "YYYY-MM-DD"
-  createdAt: text("created_at").notNull(),
-});
-
-// NEW — Focus: saved sound+scene+duration combos for one-tap reuse
-export const focusPresets = sqliteTable("focus_presets", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull(),
-  name: text("name").notNull(),
-  soundIds: text("sound_ids").notNull(), // JSON array of {id, volume}
-  sceneKey: text("scene_key").notNull(),
-  workMinutes: integer("work_minutes").notNull().default(25),
-  breakMinutes: integer("break_minutes").notNull().default(5),
-  createdAt: text("created_at").notNull(),
-});
-
 // NEW — Focus: singleton row of default timer durations, admin-editable
 export const focusSettings = sqliteTable("focus_settings", {
   id: text("id").primaryKey(), // fixed to "default", single row

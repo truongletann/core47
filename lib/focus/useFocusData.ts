@@ -8,12 +8,11 @@ import {
   updateLocalTask,
   deleteLocalTask,
   logLocalSession,
-  getLocalStats,
   hasLocalData,
   buildImportPayload,
   clearLocalData,
 } from "./local";
-import type { FocusTask, FocusStats } from "./types";
+import type { FocusTask } from "./types";
 
 const API = ""; // same-origin: focus.core47.xyz/api/focus/* is served by the same worker
 
@@ -34,25 +33,8 @@ async function api<T>(path: string, init?: RequestInit): Promise<T | null> {
 export function useFocusData() {
   const user = useFocusAuth();
   const [tasks, setTasks] = useState<FocusTask[]>([]);
-  const [stats, setStats] = useState<FocusStats>({
-    todayMinutes: 0,
-    weekMinutes: 0,
-    monthMinutes: 0,
-    streakDays: 0,
-    totalSessions: 0,
-    dayTotals: {},
-  });
   const [ready, setReady] = useState(false);
   const importedRef = useRef(false);
-
-  const refreshStats = useCallback(async () => {
-    if (user) {
-      const data = await api<{ stats: FocusStats }>("/stats");
-      if (data) setStats(data.stats);
-    } else {
-      setStats(getLocalStats());
-    }
-  }, [user]);
 
   const refreshTasks = useCallback(async () => {
     if (user) {
@@ -73,11 +55,11 @@ export function useFocusData() {
         await api("/import", { method: "POST", body: JSON.stringify(payload) });
         clearLocalData();
       }
-      await Promise.all([refreshTasks(), refreshStats()]);
+      await refreshTasks();
       setReady(true);
     }
     init();
-  }, [user, refreshTasks, refreshStats]);
+  }, [user, refreshTasks]);
 
   const addTask = useCallback(
     async (title: string, estimatedPomodoros: number) => {
@@ -125,10 +107,10 @@ export function useFocusData() {
       } else {
         logLocalSession(type, durationMinutes, taskId);
       }
-      await Promise.all([refreshTasks(), refreshStats()]);
+      await refreshTasks();
     },
-    [user, refreshTasks, refreshStats],
+    [user, refreshTasks],
   );
 
-  return { user, ready, tasks, stats, addTask, toggleTaskDone, deleteTask, logSession, refreshStats };
+  return { user, ready, tasks, addTask, toggleTaskDone, deleteTask, logSession };
 }
