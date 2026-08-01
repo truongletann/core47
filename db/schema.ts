@@ -360,3 +360,20 @@ export const priceSymbols = sqliteTable("price_symbols", {
   lastFetchedAt: text("last_fetched_at"),
   createdAt: text("created_at").notNull(),
 });
+
+// NEW — Market: Vietnam domestic gold (SJC/DOJI/PNJ), shown on
+// /market/prices. Uses vang.today's public aggregator API (free, no key,
+// CORS-open, and — unlike SJC's own endpoint or Binance — not blocked from
+// this Worker's network), so this follows the normal lazy-refresh + D1
+// cache pattern instead of the client-side workaround needed for those.
+export const vnGoldPrices = sqliteTable("vn_gold_prices", {
+  id: text("id").primaryKey(),
+  typeCode: text("type_code").notNull(), // vang.today's own code, e.g. "SJL1L10"
+  label: text("label").notNull(),
+  unit: text("unit").notNull().default("đ/lượng"),
+  buyPrice: real("buy_price"),
+  sellPrice: real("sell_price"),
+  changePercent: real("change_percent"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  lastFetchedAt: text("last_fetched_at"),
+});
