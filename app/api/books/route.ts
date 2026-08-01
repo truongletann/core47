@@ -4,6 +4,8 @@ import { CreateBookMetaSchema } from "@/lib/books/schema";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 const MAX_SIZE = 80 * 1024 * 1024; // 80MB — scanned PDFs can be large, stay under Workers' request body ceiling
+const MAX_COVER_SIZE = 5 * 1024 * 1024; // 5MB
+const COVER_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const TYPE_BY_MIME: Record<string, "pdf" | "epub"> = {
   "application/pdf": "pdf",
   "application/epub+zip": "epub",
@@ -53,9 +55,22 @@ export async function POST(req: NextRequest) {
     title: formData.get("title"),
     author: formData.get("author") || undefined,
     description: formData.get("description") || undefined,
+    genre: formData.get("genre") || undefined,
   });
   if (!parseResult.success) {
     return NextResponse.json({ success: false, error: "INVALID_INPUT" }, { status: 400 });
+  }
+
+  let cover: { buffer: ArrayBuffer; contentType: string } | null = null;
+  const coverFile = formData.get("cover");
+  if (coverFile instanceof File && coverFile.size > 0) {
+    if (!COVER_TYPES.includes(coverFile.type)) {
+      return NextResponse.json({ success: false, error: "INVALID_COVER_TYPE" }, { status: 400 });
+    }
+    if (coverFile.size > MAX_COVER_SIZE) {
+      return NextResponse.json({ success: false, error: "COVER_TOO_LARGE" }, { status: 400 });
+    }
+    cover = { buffer: await coverFile.arrayBuffer(), contentType: coverFile.type };
   }
 
   const book = await createBook(
@@ -66,6 +81,7 @@ export async function POST(req: NextRequest) {
       buffer: await file.arrayBuffer(),
       contentType: fileType === "pdf" ? "application/pdf" : "application/epub+zip",
     },
+    cover,
     ip,
   );
 

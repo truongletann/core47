@@ -365,6 +365,8 @@ export const libraryBooks = sqliteTable("library_books", {
   fileType: text("file_type", { enum: ["pdf", "epub"] }).notNull(),
   fileKey: text("file_key").notNull(), // R2 key in the LIBRARY bucket
   fileSize: integer("file_size").notNull(),
+  coverKey: text("cover_key"), // R2 key in the LIBRARY bucket, books-covers/ prefix — extracted client-side at upload
+  genre: text("genre"), // from EPUB dc:subject, comma-joined; null for PDFs
   uploaderIp: text("uploader_ip"), // abuse-tracing only, never shown in UI
   createdAt: text("created_at").notNull(),
 });

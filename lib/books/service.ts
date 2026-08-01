@@ -17,6 +17,7 @@ export async function getBook(id: string) {
 export async function createBook(
   meta: CreateBookMetaInput,
   file: { fileType: "pdf" | "epub"; size: number; buffer: ArrayBuffer; contentType: string },
+  cover: { buffer: ArrayBuffer; contentType: string } | null,
   uploaderIp: string | null,
 ) {
   const db = await getDb();
@@ -27,6 +28,12 @@ export async function createBook(
 
   await bucket.put(fileKey, file.buffer, { httpMetadata: { contentType: file.contentType } });
 
+  let coverKey: string | null = null;
+  if (cover) {
+    coverKey = `books-covers/${id}`;
+    await bucket.put(coverKey, cover.buffer, { httpMetadata: { contentType: cover.contentType } });
+  }
+
   const record = {
     id,
     title: meta.title,
@@ -35,6 +42,8 @@ export async function createBook(
     fileType: file.fileType,
     fileKey,
     fileSize: file.size,
+    coverKey,
+    genre: meta.genre ?? null,
     uploaderIp,
     createdAt: new Date().toISOString(),
   };
@@ -49,5 +58,6 @@ export async function deleteBook(id: string) {
 
   const bucket = await getLibraryBucket();
   await bucket.delete(book.fileKey);
+  if (book.coverKey) await bucket.delete(book.coverKey);
   await db.delete(libraryBooks).where(eq(libraryBooks.id, id));
 }
