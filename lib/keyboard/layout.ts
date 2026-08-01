@@ -3,7 +3,16 @@ export type OS = "windows" | "mac";
 export interface KeyDef {
   code: string; // KeyboardEvent.code
   label: string;
-  flex: number; // relative width
+  flex: number; // relative width, 0 = invisible spacer of that width
+}
+
+export interface GridKey {
+  code: string;
+  label: string;
+  row: number; // 1-indexed
+  col: number; // 1-indexed
+  rowSpan?: number;
+  colSpan?: number;
 }
 
 const FUNCTION_ROW: KeyDef[] = [
@@ -87,27 +96,19 @@ const ZXCV_ROW: KeyDef[] = [
   { code: "ShiftRight", label: "Shift", flex: 2.7 },
 ];
 
-const ARROW_CLUSTER: KeyDef[] = [
-  { code: "ArrowUp", label: "↑", flex: 1 },
-  { code: "ArrowLeft", label: "←", flex: 1 },
-  { code: "ArrowDown", label: "↓", flex: 1 },
-  { code: "ArrowRight", label: "→", flex: 1 },
-];
-
 function bottomRow(os: OS): KeyDef[] {
-  const ctrl = { label: "Ctrl" };
   const alt = os === "mac" ? "Option" : "Alt";
   const meta = os === "mac" ? "Cmd" : "Win";
 
   const left =
     os === "mac"
       ? [
-          { code: "ControlLeft", label: ctrl.label, flex: 1.3 },
+          { code: "ControlLeft", label: "Ctrl", flex: 1.3 },
           { code: "AltLeft", label: alt, flex: 1.3 },
           { code: "MetaLeft", label: meta, flex: 1.3 },
         ]
       : [
-          { code: "ControlLeft", label: ctrl.label, flex: 1.3 },
+          { code: "ControlLeft", label: "Ctrl", flex: 1.3 },
           { code: "MetaLeft", label: meta, flex: 1.3 },
           { code: "AltLeft", label: alt, flex: 1.3 },
         ];
@@ -117,22 +118,93 @@ function bottomRow(os: OS): KeyDef[] {
       ? [
           { code: "MetaRight", label: meta, flex: 1.3 },
           { code: "AltRight", label: alt, flex: 1.3 },
-          { code: "ControlRight", label: ctrl.label, flex: 1.3 },
+          { code: "ControlRight", label: "Ctrl", flex: 1.3 },
         ]
       : [
           { code: "AltRight", label: alt, flex: 1.3 },
           { code: "MetaRight", label: meta, flex: 1.3 },
           { code: "ContextMenu", label: "Menu", flex: 1.3 },
-          { code: "ControlRight", label: ctrl.label, flex: 1.3 },
+          { code: "ControlRight", label: "Ctrl", flex: 1.3 },
         ];
 
   return [...left, { code: "Space", label: "", flex: 6 }, ...right];
 }
 
+/** Main alphanumeric block — function row through the space bar row. */
 export function getKeyboardRows(os: OS): KeyDef[][] {
-  return [FUNCTION_ROW, NUMBER_ROW, QWERTY_ROW, ASDF_ROW, ZXCV_ROW, bottomRow(os), ARROW_CLUSTER];
+  return [FUNCTION_ROW, NUMBER_ROW, QWERTY_ROW, ASDF_ROW, ZXCV_ROW, bottomRow(os)];
 }
 
+/**
+ * Nav / system cluster, six rows to line up next to the main block:
+ * PrtSc/ScrLk/Pause, Ins/Home/PgUp, Del/End/PgDn, a spacer (Caps row has no
+ * neighbor), the Up arrow (Z row), then Left/Down/Right (bottom row).
+ */
+export function getNavCluster(): KeyDef[][] {
+  return [
+    [
+      { code: "PrintScreen", label: "PrtSc", flex: 1 },
+      { code: "ScrollLock", label: "ScrLk", flex: 1 },
+      { code: "Pause", label: "Pause", flex: 1 },
+    ],
+    [
+      { code: "Insert", label: "Ins", flex: 1 },
+      { code: "Home", label: "Home", flex: 1 },
+      { code: "PageUp", label: "PgUp", flex: 1 },
+    ],
+    [
+      { code: "Delete", label: "Del", flex: 1 },
+      { code: "End", label: "End", flex: 1 },
+      { code: "PageDown", label: "PgDn", flex: 1 },
+    ],
+    [{ code: "__spacer_0", label: "", flex: 3 }],
+    [
+      { code: "__spacer_1", label: "", flex: 1 },
+      { code: "ArrowUp", label: "↑", flex: 1 },
+      { code: "__spacer_2", label: "", flex: 1 },
+    ],
+    [
+      { code: "ArrowLeft", label: "←", flex: 1 },
+      { code: "ArrowDown", label: "↓", flex: 1 },
+      { code: "ArrowRight", label: "→", flex: 1 },
+    ],
+  ];
+}
+
+/** Numpad — CSS grid so NumpadAdd/NumpadEnter/Numpad0 can span cells like a real keyboard. */
+export function getNumpadKeys(): GridKey[] {
+  return [
+    { code: "NumLock", label: "Num", row: 1, col: 1 },
+    { code: "NumpadDivide", label: "/", row: 1, col: 2 },
+    { code: "NumpadMultiply", label: "*", row: 1, col: 3 },
+    { code: "NumpadSubtract", label: "-", row: 1, col: 4 },
+    { code: "Numpad7", label: "7", row: 2, col: 1 },
+    { code: "Numpad8", label: "8", row: 2, col: 2 },
+    { code: "Numpad9", label: "9", row: 2, col: 3 },
+    { code: "NumpadAdd", label: "+", row: 2, col: 4, rowSpan: 2 },
+    { code: "Numpad4", label: "4", row: 3, col: 1 },
+    { code: "Numpad5", label: "5", row: 3, col: 2 },
+    { code: "Numpad6", label: "6", row: 3, col: 3 },
+    { code: "Numpad1", label: "1", row: 4, col: 1 },
+    { code: "Numpad2", label: "2", row: 4, col: 2 },
+    { code: "Numpad3", label: "3", row: 4, col: 3 },
+    { code: "NumpadEnter", label: "Enter", row: 4, col: 4, rowSpan: 2 },
+    { code: "Numpad0", label: "0", row: 5, col: 1, colSpan: 2 },
+    { code: "NumpadDecimal", label: ".", row: 5, col: 3 },
+  ];
+}
+
+function isSpacer(code: string): boolean {
+  return code.startsWith("__spacer_");
+}
+
+export { isSpacer };
+
 export function countTotalKeys(os: OS): number {
-  return getKeyboardRows(os).reduce((sum, row) => sum + row.length, 0);
+  const main = getKeyboardRows(os).reduce((sum, row) => sum + row.length, 0);
+  const nav = getNavCluster()
+    .flat()
+    .filter((k) => !isSpacer(k.code)).length;
+  const numpad = getNumpadKeys().length;
+  return main + nav + numpad;
 }

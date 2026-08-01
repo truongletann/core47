@@ -45,9 +45,41 @@ export function playWinFanfare(muted: boolean) {
   );
 }
 
+// A short burst of filtered white noise reads as a mechanical-keyboard
+// "clack" far better than a pure tone — press is sharper/higher-passed,
+// release is a softer, lower thud, mirroring how a real switch sounds.
+function clack(ctx: AudioContext, { filterFreq, q, duration, gain }: { filterFreq: number; q: number; duration: number; gain: number }) {
+  const sampleCount = Math.ceil(ctx.sampleRate * duration);
+  const buffer = ctx.createBuffer(1, sampleCount, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < sampleCount; i++) data[i] = Math.random() * 2 - 1;
+
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.frequency.value = filterFreq;
+  filter.Q.value = q;
+
+  const gainNode = ctx.createGain();
+  const t0 = ctx.currentTime;
+  gainNode.gain.setValueAtTime(gain, t0);
+  gainNode.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+
+  noise.connect(filter).connect(gainNode).connect(ctx.destination);
+  noise.start(t0);
+  noise.stop(t0 + duration + 0.01);
+}
+
 export function playKeyClick(muted: boolean, down: boolean) {
   if (muted) return;
   const ctx = getCtx();
   if (!ctx) return;
-  beep(ctx, { freq: down ? 260 : 190, duration: 0.045, type: "square", gain: 0.06 });
+  clack(
+    ctx,
+    down
+      ? { filterFreq: 2400, q: 0.9, duration: 0.045, gain: 0.5 }
+      : { filterFreq: 1400, q: 1.1, duration: 0.035, gain: 0.28 },
+  );
 }

@@ -1,10 +1,21 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { RotateCcw, MousePointerClick, Volume2, VolumeX } from "lucide-react";
-import { getKeyboardRows, countTotalKeys, type OS } from "@/lib/keyboard/layout";
+import { getKeyboardRows, getNavCluster, getNumpadKeys, countTotalKeys, isSpacer, type OS, type KeyDef } from "@/lib/keyboard/layout";
 import { playKeyClick } from "@/lib/audio/tones";
 import { cn } from "@/lib/utils/cn";
+
+function keycapClass(isPressed: boolean, isTested: boolean) {
+  return cn(
+    "flex h-9 min-w-[1.75rem] items-center justify-center rounded-md border font-data text-[11px] transition-colors duration-75 sm:h-10 sm:text-xs",
+    isPressed
+      ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent))] text-white"
+      : isTested
+        ? "border-[rgb(var(--accent)/0.5)] bg-[rgb(var(--accent)/0.12)] text-[rgb(var(--accent))]"
+        : "border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-[rgb(var(--fg))]",
+  );
+}
 
 export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => void }) {
   const [pressed, setPressed] = useState<Set<string>>(new Set());
@@ -14,7 +25,18 @@ export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => 
   const [muted, setMuted] = useState(false);
 
   const rows = getKeyboardRows(os);
+  const navRows = getNavCluster();
+  const numpadKeys = getNumpadKeys();
   const totalKeys = countTotalKeys(os);
+
+  // Switching OS swaps modifier labels (Ctrl/Win/Alt vs Ctrl/Option/Cmd) —
+  // the previous "tested" set no longer maps to the same physical keys, so
+  // start the run over instead of leaving stale highlights around.
+  useEffect(() => {
+    setPressed(new Set());
+    setTested(new Set());
+    setLastKey(null);
+  }, [os]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -40,6 +62,17 @@ export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => 
     },
     [muted],
   );
+
+  function renderKey(k: KeyDef) {
+    if (isSpacer(k.code)) {
+      return <div key={k.code} style={{ flexGrow: k.flex }} className="h-9 sm:h-10" />;
+    }
+    return (
+      <div key={k.code} style={{ flexGrow: k.flex }} className={keycapClass(pressed.has(k.code), tested.has(k.code))}>
+        {k.label}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -92,7 +125,7 @@ export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => 
           setPressed(new Set());
         }}
         className={cn(
-          "relative select-none rounded-2xl border-2 bg-[rgb(var(--card))] p-4 outline-none transition-colors sm:p-5",
+          "relative select-none overflow-x-auto rounded-2xl border-2 bg-[rgb(var(--card))] p-4 outline-none transition-colors sm:p-5",
           focused ? "border-[rgb(var(--accent))]" : "border-[rgb(var(--border))]",
         )}
       >
@@ -102,31 +135,46 @@ export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => 
           </div>
         )}
 
-        <div className="flex flex-col gap-1.5">
-          {rows.map((row, ri) => (
-            <div key={ri} className="flex gap-1.5">
-              {row.map((k) => {
-                const isPressed = pressed.has(k.code);
-                const isTested = tested.has(k.code);
-                return (
-                  <div
-                    key={k.code}
-                    style={{ flexGrow: k.flex }}
-                    className={cn(
-                      "flex h-9 min-w-0 items-center justify-center rounded-md border font-data text-[11px] transition-colors duration-75 sm:h-10 sm:text-xs",
-                      isPressed
-                        ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent))] text-white"
-                        : isTested
-                          ? "border-[rgb(var(--accent)/0.5)] bg-[rgb(var(--accent)/0.12)] text-[rgb(var(--accent))]"
-                          : "border-[rgb(var(--border))] bg-[rgb(var(--bg))] text-[rgb(var(--fg))]",
-                    )}
-                  >
-                    {k.label}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+        <div className="flex w-fit min-w-full gap-4">
+          {/* Main alphanumeric block */}
+          <div className="flex flex-1 flex-col gap-1.5">
+            {rows.map((row, ri) => (
+              <div key={ri} className="flex gap-1.5">
+                {row.map(renderKey)}
+              </div>
+            ))}
+          </div>
+
+          {/* Nav / system cluster: PrtSc-ScrLk-Pause, Ins/Home/PgUp, Del/End/PgDn, arrows */}
+          <div className="flex w-[8.5rem] shrink-0 flex-col gap-1.5 border-l border-[rgb(var(--border))] pl-4 sm:w-32">
+            {navRows.map((row, ri) => (
+              <div key={ri} className="flex gap-1.5">
+                {row.map(renderKey)}
+              </div>
+            ))}
+          </div>
+
+          {/* Numpad — CSS grid so + / Enter / 0 can span cells like a real keyboard */}
+          <div
+            className="grid w-[9.5rem] shrink-0 gap-1.5 border-l border-[rgb(var(--border))] pl-4 sm:w-36"
+            style={{
+              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+              gridTemplateRows: "repeat(5, 1fr)",
+            }}
+          >
+            {numpadKeys.map((k) => (
+              <div
+                key={k.code}
+                style={{
+                  gridRow: `${k.row} / span ${k.rowSpan ?? 1}`,
+                  gridColumn: `${k.col} / span ${k.colSpan ?? 1}`,
+                }}
+                className={keycapClass(pressed.has(k.code), tested.has(k.code))}
+              >
+                {k.label}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
