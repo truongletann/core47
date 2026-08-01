@@ -254,13 +254,15 @@ export function LivePrices({ initial }: { initial: PriceItem[] }) {
   ];
 
   const liveLabels: string[] = [];
-  if (oandaSymbols.length > 0) liveLabels.push(oandaLive ? "● Live (OANDA)" : "○ Đang kết nối OANDA...");
-  if (binanceSymbols.length > 0) liveLabels.push(binanceLive ? "● Live (Binance)" : "○ Đang kết nối Binance...");
+  if (oandaLive) liveLabels.push("● Live (OANDA)");
+  if (binanceLive) liveLabels.push("● Live (Binance)");
 
   return (
     <div>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
-        <p className="font-data text-xs text-[rgb(var(--muted))]">{liveLabels.join(" · ")}</p>
+        {liveLabels.length > 0 && (
+          <p className="font-data text-xs text-emerald-600">{liveLabels.join(" · ")}</p>
+        )}
         <AddSymbolBox
           existingSymbols={allSymbols}
           onAdd={handleAdd}
