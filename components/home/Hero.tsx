@@ -192,8 +192,8 @@ export function Hero({ tools }: { tools: Tool[] }) {
 
       <div className="relative z-10">
         <h1 id="core-logo-mark" className="font-display text-5xl font-semibold tracking-tight sm:text-6xl">
-          <span className="text-[rgb(var(--fg))]">Family Sharing</span>{" "}
-          <span className="text-[rgb(var(--accent))]">Hub</span>
+          <span className="text-[rgb(var(--fg))]">Family</span>{" "}
+          <span className="text-[rgb(var(--accent))]">Sharing</span>
         </h1>
       </div>
     </section>
