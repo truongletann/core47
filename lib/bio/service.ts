@@ -3,6 +3,7 @@ import { getDb } from "@/db/client";
 import { bioPages, bioLinks, users } from "@/db/schema";
 import { getOrCreateInternalShortLink } from "@/lib/shortlink/service";
 import { SHORT_DOMAIN } from "@/lib/shortlink/config";
+import { getAvatarsBucket } from "@/lib/storage/r2";
 import {
   UpdateBioPageSchema,
   CreateBioLinkSchema,
@@ -138,6 +139,12 @@ export async function deleteBioLink(userId: string, id: string) {
   const db = await getDb();
   const link = await db.select().from(bioLinks).where(eq(bioLinks.id, id)).get();
   if (!link || link.userId !== userId) throw new Error("NOT_FOUND");
+
+  if (link.thumbnailKey) {
+    const bucket = await getAvatarsBucket();
+    await bucket.delete(link.thumbnailKey);
+  }
+
   await db.delete(bioLinks).where(eq(bioLinks.id, id));
 }
 

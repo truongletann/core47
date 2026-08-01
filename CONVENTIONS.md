@@ -137,6 +137,28 @@ dependency to code that runs in the Worker** (i.e. imported by `app/` or
 weight — prefer zero-dep or edge-runtime-native approaches, especially for
 anything HTML/DOM-parsing-shaped.
 
+## R2 image uploads — never leave orphaned objects behind
+
+When a feature lets a user replace or remove an uploaded image (avatar,
+bio banner, bio link thumbnail, blog cover, etc.), the old R2 object must
+not just be forgotten:
+
+- **Replacing an image** (re-upload): use a fixed, deterministic key (e.g.
+  `avatars/<userId>`, `bio-banner/<userId>`, `bio-link-thumb/<linkId>`) so
+  the new `bucket.put()` overwrites the old object in place instead of
+  minting a new key — this is already the pattern for every image upload
+  route in this repo, keep it that way for new ones.
+- **Deleting the thing the image belongs to** (a bio link, a blog post,
+  etc.): explicitly `bucket.delete(key)` the associated R2 object as part
+  of that delete, before/alongside the D1 row delete. Don't just delete
+  the DB row and leave the file behind — R2 storage isn't free and orphaned
+  objects never get cleaned up on their own (no cron in this project, see
+  below). Example: `deleteBioLink()` in `lib/bio/service.ts` deletes
+  `bio-link-thumb/<id>` before deleting the row.
+- **Explicit "remove image" actions** (e.g. the bio banner's remove
+  button): the DELETE route must call `bucket.delete()`, not just clear
+  the DB column.
+
 ## Architecture pattern: no cron, lazy on-demand refresh
 
 There is no Cloudflare Cron Trigger in this OpenNext build (would require
