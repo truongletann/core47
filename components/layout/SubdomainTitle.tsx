@@ -17,8 +17,6 @@ const SUBDOMAIN_TITLES: Record<string, string> = {
   keyboard: "Core47 Keyboard",
   tools: "Core47 Tools",
   admin: "Core47 Admin",
-  bio: "Core47 Bio",
-  yt: "Core47 YT",
 };
 
 function titleForHostname(hostname: string): string {
