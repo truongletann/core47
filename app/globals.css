@@ -14,9 +14,10 @@
   --muted: 100 116 139;
   --border: 226 232 240;
   --accent: 13 122 130;
-  --cat-utility: 13 122 130;
-  --cat-media: 180 83 9;
-  --cat-text: 124 58 237;
+  --cat-dev-utilities: 13 122 130;
+  --cat-documents: 180 83 9;
+  --cat-productivity: 124 58 237;
+  --cat-links: 37 99 235;
 }
 
 .dark {
@@ -26,9 +27,10 @@
   --muted: 129 140 163;
   --border: 31 37 54;
   --accent: 45 212 191;
-  --cat-utility: 45 212 191;
-  --cat-media: 251 191 36;
-  --cat-text: 167 139 250;
+  --cat-dev-utilities: 45 212 191;
+  --cat-documents: 251 191 36;
+  --cat-productivity: 167 139 250;
+  --cat-links: 96 165 250;
 }
 
 body {

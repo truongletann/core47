@@ -15,9 +15,10 @@ const SLOTS = [
 ];
 
 const CATEGORY_VAR: Record<string, string> = {
-  utility: "--cat-utility",
-  media: "--cat-media",
-  text: "--cat-text",
+  "dev-utilities": "--cat-dev-utilities",
+  documents: "--cat-documents",
+  productivity: "--cat-productivity",
+  links: "--cat-links",
 };
 
 export function Hero({ tools }: { tools: Tool[] }) {
@@ -168,7 +169,7 @@ export function Hero({ tools }: { tools: Tool[] }) {
       <svg ref={connectSvgRef} className="pointer-events-none absolute inset-0 -z-10 h-full w-full" />
 
       {featured.map((tool, i) => {
-        const catVar = CATEGORY_VAR[tool.categoryId] ?? "--cat-utility";
+        const catVar = CATEGORY_VAR[tool.categoryId] ?? "--cat-dev-utilities";
         return (
           <span
             key={tool.id}

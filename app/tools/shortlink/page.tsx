@@ -343,7 +343,7 @@ export default function ShortlinkPage() {
           <polyline
             points={toPoints(UNIQUE_SERIES, 300, 100, maxVal)}
             fill="none"
-            stroke="rgb(var(--cat-media))"
+            stroke="rgb(var(--cat-links))"
             strokeWidth={2}
           />
           {CHART_DAYS.map((d, i) => (
@@ -366,7 +366,7 @@ export default function ShortlinkPage() {
             <span className="h-2 w-2 rounded-full bg-[rgb(var(--accent))]" /> Clicks
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-[rgb(var(--cat-media))]" /> Unique visitors
+            <span className="h-2 w-2 rounded-full bg-[rgb(var(--cat-links))]" /> Unique visitors
           </span>
         </div>
 
