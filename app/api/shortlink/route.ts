@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createShortLink } from "@/lib/shortlink/service";
 import { CreateShortLinkSchema } from "@/lib/shortlink/schema";
 import { SHORT_DOMAIN } from "@/lib/shortlink/config";
-import { getUserBySessionId } from "@/lib/auth/service";
-import { SESSION_COOKIE_NAME } from "@/lib/auth/config";
+import { requireUser } from "@/lib/auth/guard";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
@@ -31,8 +30,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const sessionId = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const user = await getUserBySessionId(sessionId);
+  const user = await requireUser(req);
 
   const ipAddress = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-forwarded-for");
   const userAgent = req.headers.get("user-agent");

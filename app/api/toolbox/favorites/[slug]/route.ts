@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserBySessionId } from "@/lib/auth/service";
+import { requireUser } from "@/lib/auth/guard";
 import { removeFavorite } from "@/lib/toolbox/favorites";
-import { SESSION_COOKIE_NAME } from "@/lib/auth/config";
 
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
 ) {
-  const sessionId = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const user = await getUserBySessionId(sessionId);
+  const user = await requireUser(req);
   if (!user) {
     return NextResponse.json({ success: false, error: "UNAUTHENTICATED" }, { status: 401 });
   }

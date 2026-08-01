@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserBySessionId } from "@/lib/auth/service";
 import { getHistoryForUser } from "@/lib/shortlink/service";
-import { SESSION_COOKIE_NAME } from "@/lib/auth/config";
+import { requireUser } from "@/lib/auth/guard";
 import { SHORT_DOMAIN } from "@/lib/shortlink/config";
 import { corsHeaders } from "@/lib/cors";
 
 export async function GET(req: NextRequest) {
   const origin = req.headers.get("origin");
-  const sessionId = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const user = await getUserBySessionId(sessionId);
+  const user = await requireUser(req);
 
   if (!user) {
     return NextResponse.json(
