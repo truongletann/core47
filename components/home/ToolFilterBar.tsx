@@ -35,7 +35,7 @@ export function ToolFilterBar({
         </kbd>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="scrollbar-hide flex gap-2 overflow-x-auto">
         <button
           onClick={() => onCategoryChange(null)}
           className={cn(
