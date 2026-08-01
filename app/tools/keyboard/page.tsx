@@ -14,7 +14,7 @@ export default function KeyboardPage() {
   const [os, setOs] = useState<OS>("windows");
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-16">
+    <main className="mx-auto max-w-7xl px-6 py-16">
       <div className="text-center">
         <span className="font-data inline-flex items-center gap-2 rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--card))] px-3 py-1 text-xs text-[rgb(var(--muted))]">
           <span className="led-dot bg-[rgb(var(--accent))]" />

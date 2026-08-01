@@ -124,8 +124,10 @@ export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => 
           setFocused(false);
           setPressed(new Set());
         }}
+        style={{ scrollbarWidth: "thin", scrollbarColor: "rgb(var(--border)) transparent" }}
         className={cn(
           "relative select-none overflow-x-auto rounded-2xl border-2 bg-[rgb(var(--card))] p-5 outline-none transition-colors sm:p-8",
+          "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgb(var(--border))]",
           focused ? "border-[rgb(var(--accent))]" : "border-[rgb(var(--border))]",
         )}
       >
