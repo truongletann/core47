@@ -328,6 +328,10 @@ export const priceSymbols = sqliteTable("price_symbols", {
   sortOrder: integer("sort_order").notNull().default(0),
   lastPrice: real("last_price"),
   lastChangePercent: real("last_change_percent"),
+  dayOpen: real("day_open"), // today's (incomplete) daily candle open
+  dayHigh: real("day_high"), // today's running high
+  dayLow: real("day_low"), // today's running low
+  prevClose: real("prev_close"), // previous complete day's close
   lastFetchedAt: text("last_fetched_at"),
   createdAt: text("created_at").notNull(),
 });

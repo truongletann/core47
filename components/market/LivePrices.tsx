@@ -13,6 +13,10 @@ interface PriceItem {
   unit: string;
   lastPrice: number | null;
   lastChangePercent: number | null;
+  dayOpen: number | null;
+  dayHigh: number | null;
+  dayLow: number | null;
+  prevClose: number | null;
 }
 
 interface ExtraSymbol {
@@ -36,7 +40,14 @@ interface OandaStreamTick {
 }
 
 interface BinanceStreamMessage {
-  data?: { s?: string; c?: string; P?: string };
+  data?: { s?: string; c?: string; P?: string; o?: string; h?: string; l?: string };
+}
+
+interface Ohlc {
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  prevClose: number | null;
 }
 
 const MAX_EXTRA_SYMBOLS = 10;
@@ -134,6 +145,14 @@ export function LivePrices({ initial }: { initial: PriceItem[] }) {
   const [changePercents, setChangePercents] = useState<Record<string, number | null>>(() =>
     Object.fromEntries(initial.map((p) => [p.symbol, p.lastChangePercent])),
   );
+  const [ohlc, setOhlc] = useState<Record<string, Ohlc>>(() =>
+    Object.fromEntries(
+      initial.map((p) => [
+        p.symbol,
+        { open: p.dayOpen, high: p.dayHigh, low: p.dayLow, prevClose: p.prevClose },
+      ]),
+    ),
+  );
   const [oandaLive, setOandaLive] = useState(false);
   const [binanceLive, setBinanceLive] = useState(false);
 
@@ -226,6 +245,17 @@ export function LivePrices({ initial }: { initial: PriceItem[] }) {
           if (msg.data?.P) {
             setChangePercents((prev) => ({ ...prev, [symbol]: Number(msg.data!.P) }));
           }
+          if (msg.data?.o || msg.data?.h || msg.data?.l) {
+            setOhlc((prev) => ({
+              ...prev,
+              [symbol]: {
+                open: msg.data!.o ? Number(msg.data!.o) : (prev[symbol]?.open ?? null),
+                high: msg.data!.h ? Number(msg.data!.h) : (prev[symbol]?.high ?? null),
+                low: msg.data!.l ? Number(msg.data!.l) : (prev[symbol]?.low ?? null),
+                prevClose: prev[symbol]?.prevClose ?? null,
+              },
+            }));
+          }
         } catch {
           // ignore malformed messages
         }
@@ -258,6 +288,11 @@ export function LivePrices({ initial }: { initial: PriceItem[] }) {
       delete next[symbol];
       return next;
     });
+    setOhlc((prev) => {
+      const next = { ...prev };
+      delete next[symbol];
+      return next;
+    });
   }
 
   const items: (PriceItem & { removable?: boolean })[] = [
@@ -270,6 +305,10 @@ export function LivePrices({ initial }: { initial: PriceItem[] }) {
       unit: "",
       lastPrice: null,
       lastChangePercent: null,
+      dayOpen: null,
+      dayHigh: null,
+      dayLow: null,
+      prevClose: null,
       removable: true,
     })),
   ];
@@ -289,6 +328,8 @@ export function LivePrices({ initial }: { initial: PriceItem[] }) {
           const changePct = changePercents[p.symbol] ?? null;
           const isUp = changePct !== null && changePct >= 0;
           const isLive = p.source === "binance" ? binanceLive : oandaLive;
+          const c = ohlc[p.symbol];
+          const hasOhlc = c && (c.open !== null || c.high !== null || c.low !== null || c.prevClose !== null);
           return (
             <div key={p.id} className="relative rounded-xl border border-[rgb(var(--border))] p-4">
               {p.removable && (
@@ -322,6 +363,25 @@ export function LivePrices({ initial }: { initial: PriceItem[] }) {
                 {price !== null && price !== undefined ? formatPrice(price) : "—"}
               </p>
               {p.unit && <p className="text-xs text-[rgb(var(--muted))]">{p.unit}</p>}
+              {hasOhlc && (
+                <div className="font-data mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 border-t border-[rgb(var(--border))] pt-2 text-[11px] text-[rgb(var(--muted))]">
+                  <span>
+                    O <span className="text-[rgb(var(--fg))]">{c.open !== null ? formatPrice(c.open) : "—"}</span>
+                  </span>
+                  <span>
+                    H <span className="text-[rgb(var(--fg))]">{c.high !== null ? formatPrice(c.high) : "—"}</span>
+                  </span>
+                  <span>
+                    L <span className="text-[rgb(var(--fg))]">{c.low !== null ? formatPrice(c.low) : "—"}</span>
+                  </span>
+                  <span>
+                    PC{" "}
+                    <span className="text-[rgb(var(--fg))]">
+                      {c.prevClose !== null ? formatPrice(c.prevClose) : "—"}
+                    </span>
+                  </span>
+                </div>
+              )}
             </div>
           );
         })}

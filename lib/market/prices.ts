@@ -13,7 +13,14 @@ interface OandaPrice {
 
 interface OandaCandle {
   complete: boolean;
-  mid?: { c: string };
+  mid?: { o: string; h: string; l: string; c: string };
+}
+
+interface DayCandleInfo {
+  prevClose: number | null;
+  dayOpen: number | null;
+  dayHigh: number | null;
+  dayLow: number | null;
 }
 
 function midPrice(p: OandaPrice): number | null {
@@ -21,21 +28,33 @@ function midPrice(p: OandaPrice): number | null {
   return (Number(p.closeoutBid) + Number(p.closeoutAsk)) / 2;
 }
 
-// Previous complete day's close, used to derive a day-over-day % change —
-// OANDA's pricing endpoint doesn't return that itself.
-async function fetchPreviousClose(host: string, apiKey: string, instrument: string): Promise<number | null> {
+// Previous complete day's close (for the day-over-day % change calc) plus
+// today's running open/high/low, all from the same 2-candle fetch — OANDA's
+// pricing endpoint doesn't return any of this itself.
+async function fetchDayCandleInfo(host: string, apiKey: string, instrument: string): Promise<DayCandleInfo> {
+  const empty: DayCandleInfo = { prevClose: null, dayOpen: null, dayHigh: null, dayLow: null };
   try {
     const res = await fetch(
       `${host}/v3/instruments/${encodeURIComponent(instrument)}/candles?granularity=D&count=2&price=M`,
       { headers: { Authorization: `Bearer ${apiKey}` } },
     );
-    if (!res.ok) return null;
+    if (!res.ok) return empty;
     const json = (await res.json()) as { candles?: OandaCandle[] };
-    const complete = (json.candles ?? []).filter((c) => c.complete && c.mid?.c);
-    if (complete.length === 0) return null;
-    return Number(complete[complete.length - 1].mid!.c);
+    const candles = json.candles ?? [];
+    if (candles.length === 0) return empty;
+
+    const today = candles[candles.length - 1];
+    const complete = candles.filter((c) => c.complete && c.mid?.c);
+    const prevClose = complete.length > 0 ? Number(complete[complete.length - 1].mid!.c) : null;
+
+    return {
+      prevClose,
+      dayOpen: today.mid ? Number(today.mid.o) : null,
+      dayHigh: today.mid ? Number(today.mid.h) : null,
+      dayLow: today.mid ? Number(today.mid.l) : null,
+    };
   } catch {
-    return null;
+    return empty;
   }
 }
 
@@ -73,7 +92,7 @@ async function fetchAndStoreOandaPrices(symbols: (typeof priceSymbols.$inferSele
       const mid = midPrice(price);
       if (mid === null) return;
 
-      const prevClose = await fetchPreviousClose(host, apiKey, s.symbol);
+      const { prevClose, dayOpen, dayHigh, dayLow } = await fetchDayCandleInfo(host, apiKey, s.symbol);
       const changePercent = prevClose ? ((mid - prevClose) / prevClose) * 100 : null;
 
       await db
@@ -81,6 +100,10 @@ async function fetchAndStoreOandaPrices(symbols: (typeof priceSymbols.$inferSele
         .set({
           lastPrice: mid,
           lastChangePercent: changePercent,
+          dayOpen,
+          dayHigh,
+          dayLow,
+          prevClose,
           lastFetchedAt: now,
         })
         .where(eq(priceSymbols.id, s.id));
