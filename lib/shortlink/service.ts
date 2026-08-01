@@ -57,6 +57,45 @@ export async function createShortLink(
   return record;
 }
 
+// Server-originated short links (e.g. bio page share links) skip the public
+// CreateShortLinkSchema — that schema rejects core47.xyz targets to stop
+// users from creating self-referential redirect loops, but here the target
+// URL is built by our own code, not user input, so the guard doesn't apply.
+// Reuses an existing code for the same target instead of minting duplicates.
+export async function getOrCreateInternalShortLink(
+  targetUrl: string,
+  userId: string | null,
+  existingCode: string | null,
+): Promise<ShortLink> {
+  const db = await getDb();
+
+  if (existingCode) {
+    const existing = await db.select().from(shortLinks).where(eq(shortLinks.code, existingCode)).get();
+    if (existing) return existing;
+  }
+
+  let code = generateCode();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const existing = await db.select().from(shortLinks).where(eq(shortLinks.code, code)).get();
+    if (!existing) break;
+    code = generateCode();
+  }
+
+  const record = {
+    id: crypto.randomUUID(),
+    code,
+    targetUrl,
+    clicks: 0,
+    createdAt: new Date().toISOString(),
+    userId,
+    ipAddress: null,
+    userAgent: null,
+  };
+
+  await db.insert(shortLinks).values(record);
+  return record;
+}
+
 export async function resolveShortLink(code: string): Promise<string | null> {
   const db = await getDb();
   const row = await db.select().from(shortLinks).where(eq(shortLinks.code, code)).get();

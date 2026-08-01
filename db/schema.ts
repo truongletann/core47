@@ -377,3 +377,48 @@ export const vnGoldPrices = sqliteTable("vn_gold_prices", {
   sortOrder: integer("sort_order").notNull().default(0),
   lastFetchedAt: text("last_fetched_at"),
 });
+
+// NEW — Bio: one link-in-bio page per user, published at bio.core47.xyz/<username>
+// (reuses users.username as the public slug — no separate slug column needed).
+export const bioPages = sqliteTable("bio_pages", {
+  userId: text("user_id").primaryKey(),
+  title: text("title").notNull().default(""),
+  bio: text("bio").notNull().default(""),
+  theme: text("theme").notNull().default("sunset"),
+  buttonStyle: text("button_style", { enum: ["solid", "outline", "soft"] })
+    .notNull()
+    .default("solid"),
+  isPublished: integer("is_published").notNull().default(1),
+  // The to2.site short code minted the first time the owner asks to share
+  // the page — reused on subsequent shares instead of minting a new one.
+  shortCode: text("short_code"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// NEW — Bio: individual links/social icons on a bio page
+export const bioLinks = sqliteTable("bio_links", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  kind: text("kind", { enum: ["link", "social"] }).notNull().default("link"),
+  platform: text("platform"), // social kind only — "github" | "instagram" | "tiktok" | "facebook" | "youtube" | "twitter" | "telegram" | "zalo" | "email" | "website"
+  title: text("title"),
+  url: text("url").notNull(),
+  icon: text("icon"), // link kind only — lucide-react icon name override
+  isEnabled: integer("is_enabled").notNull().default(1),
+  clicks: integer("clicks").notNull().default(0),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: text("created_at").notNull(),
+});
+
+// NEW — Downloader (yt.core47.xyz): singleton row holding the configurable
+// media-resolver backend. Cloudflare Workers can't run yt-dlp/ffmpeg, so
+// this proxies to an external Cobalt-API-compatible instance (self-hosted
+// or third-party) that the admin points at — same "external config,
+// no redeploy" pattern as calendarSettings/priceSettings.
+export const downloaderSettings = sqliteTable("downloader_settings", {
+  id: text("id").primaryKey(), // fixed to "default", single row
+  apiBaseUrl: text("api_base_url"),
+  apiKey: text("api_key"),
+  updatedAt: text("updated_at").notNull(),
+});

@@ -21,6 +21,7 @@ const NAV = [
   { href: "/focus/themes", label: "Focus: Themes" },
   { href: "/focus/sounds", label: "Focus: Sounds" },
   { href: "/focus/playlists", label: "Focus: Playlists" },
+  { href: "/download-settings", label: "Downloader: Settings" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
