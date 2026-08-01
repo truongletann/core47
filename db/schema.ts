@@ -353,3 +353,19 @@ export const vnGoldPrices = sqliteTable("vn_gold_prices", {
   lastFetchedAt: text("last_fetched_at"),
 });
 
+// NEW — Books: open, anonymous-upload personal ebook library
+// (books.core47.xyz). No user_id column on purpose — uploads aren't
+// account-scoped, anyone with the link can add/read; moderation is
+// admin-only delete via requireAdmin.
+export const libraryBooks = sqliteTable("library_books", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  author: text("author"),
+  description: text("description"),
+  fileType: text("file_type", { enum: ["pdf", "epub"] }).notNull(),
+  fileKey: text("file_key").notNull(), // R2 key in the LIBRARY bucket
+  fileSize: integer("file_size").notNull(),
+  uploaderIp: text("uploader_ip"), // abuse-tracing only, never shown in UI
+  createdAt: text("created_at").notNull(),
+});
+

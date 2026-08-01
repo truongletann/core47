@@ -20,13 +20,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Focus is a full-screen immersive experience (like a focus-room app) —
   // site chrome would eat into the viewport and break the effect.
   const isFocusArea = host.startsWith("focus.") || host === "focus";
+  // Books' reader needs the full viewport too (PDF/EPUB page area + its own
+  // header bar) — same reasoning as Focus above.
+  const isBooksArea = host.startsWith("books.") || host === "books";
 
   return (
     <html lang="en" suppressHydrationWarning className="h-full">
       <body className="flex min-h-screen flex-col">
         <SubdomainTitle />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          {isFocusArea ? (
+          {isFocusArea || isBooksArea ? (
             children
           ) : (
             <>

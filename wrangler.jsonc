@@ -26,6 +26,10 @@
   {
     "binding": "FOCUS_SOUNDS",
     "bucket_name": "core47-focus-sounds"
+  },
+  {
+    "binding": "LIBRARY",
+    "bucket_name": "core47-library"
   }
 ]
 }
