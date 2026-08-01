@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Dices, Copy, Check, RotateCcw, ListChecks, Hash, Shuffle, Eraser } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Dices, Copy, Check, RotateCcw, ListChecks, Hash, Shuffle, Eraser, Share2, Scale, Minus, Plus } from "lucide-react";
 import { secureRandomInt, secureRandomFloat, secureShuffle } from "@/lib/random/secureRandom";
 import { SpinWheel } from "@/components/random/SpinWheel";
 import { cn } from "@/lib/utils/cn";
@@ -16,12 +16,17 @@ function parseListItems(text: string): string[] {
 }
 
 const DEFAULT_LIST = "Sherlock Holmes\nElizabeth Bennet\nJay Gatsby\nHermione Granger\nAtticus Finch\nHuckleberry Finn\nJane Eyre\nFrodo Baggins\nHarry Potter\nKatniss Everdeen";
+const LIST_STORAGE_KEY = "core47:random:list";
+const WEIGHTS_STORAGE_KEY = "core47:random:weights";
 
 export default function RandomPage() {
   const [mode, setMode] = useState<Mode>("list");
 
   // --- List mode state ---
   const [listText, setListText] = useState(DEFAULT_LIST);
+  const [weights, setWeights] = useState<Record<string, number>>({});
+  const [weightMode, setWeightMode] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   // --- Range mode state ---
   const [rangeMin, setRangeMin] = useState(1);
@@ -37,6 +42,48 @@ export default function RandomPage() {
   const [error, setError] = useState<string | null>(null);
 
   const listItems = useMemo(() => parseListItems(listText), [listText]);
+  const weightsArray = useMemo(() => listItems.map((name) => weights[name] ?? 1), [listItems, weights]);
+
+  // Load a shared list from the URL (?list=...) if present, otherwise
+  // restore whatever the user last had saved locally.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shared = params.get("list");
+    if (shared) {
+      setListText(decodeURIComponent(shared));
+      return;
+    }
+    const savedList = localStorage.getItem(LIST_STORAGE_KEY);
+    if (savedList) setListText(savedList);
+    const savedWeights = localStorage.getItem(WEIGHTS_STORAGE_KEY);
+    if (savedWeights) {
+      try {
+        setWeights(JSON.parse(savedWeights));
+      } catch {
+        // ignore malformed storage
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(LIST_STORAGE_KEY, listText);
+  }, [listText]);
+
+  useEffect(() => {
+    localStorage.setItem(WEIGHTS_STORAGE_KEY, JSON.stringify(weights));
+  }, [weights]);
+
+  function adjustWeight(name: string, delta: number) {
+    setWeights((prev) => ({ ...prev, [name]: Math.min(10, Math.max(1, (prev[name] ?? 1) + delta)) }));
+  }
+
+  function handleShare() {
+    const url = `${window.location.origin}/?list=${encodeURIComponent(listItems.join("\n"))}`;
+    navigator.clipboard?.writeText(url).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 1500);
+    });
+  }
 
   function rollRange() {
     setError(null);
@@ -94,7 +141,7 @@ export default function RandomPage() {
           Random <span className="text-[rgb(var(--accent))]">có chủ đích</span>
         </h1>
         <p className="mt-3 text-[rgb(var(--muted))]">
-          Quay vòng quay để bốc thăm từ danh sách, hoặc random số trong một khoảng — dùng CSPRNG, công bằng và không lưu dữ liệu.
+          Quay vòng quay để bốc thăm từ danh sách, hoặc random số trong một khoảng — dùng CSPRNG, công bằng và không lưu dữ liệu lên máy chủ.
         </p>
       </div>
 
@@ -125,11 +172,32 @@ export default function RandomPage() {
       {mode === "list" ? (
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-6 shadow-sm">
-            <SpinWheel items={listItems} onItemsChange={(next) => setListText(next.join("\n"))} />
+            <SpinWheel items={listItems} weights={weightsArray} onItemsChange={(next) => setListText(next.join("\n"))} />
           </div>
 
           <div className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-4 shadow-sm">
-            <div className="mb-2 flex items-center justify-end gap-2">
+            <div className="mb-2 flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setWeightMode((v) => !v)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs",
+                  weightMode
+                    ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent)/0.1)] text-[rgb(var(--accent))]"
+                    : "border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]",
+                )}
+              >
+                <Scale size={12} /> Trọng số
+              </button>
+              <button
+                type="button"
+                onClick={handleShare}
+                disabled={listItems.length === 0}
+                className="flex items-center gap-1.5 rounded-md border border-[rgb(var(--border))] px-2.5 py-1.5 text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] disabled:opacity-40"
+              >
+                {shareCopied ? <Check size={12} /> : <Share2 size={12} />}
+                {shareCopied ? "Đã chép link" : "Chia sẻ"}
+              </button>
               <button
                 type="button"
                 onClick={() => setListText(secureShuffle(listItems).join("\n"))}
@@ -147,14 +215,51 @@ export default function RandomPage() {
                 <Eraser size={12} /> Xoá hết
               </button>
             </div>
-            <textarea
-              value={listText}
-              onChange={(e) => setListText(e.target.value)}
-              placeholder={"An\nBình\nChi\nDũng"}
-              rows={16}
-              className="font-data w-full resize-y rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[rgb(var(--accent)/0.3)]"
-            />
-            <p className="mt-1.5 text-right text-xs text-[rgb(var(--muted))]">{listItems.length} mục</p>
+
+            {weightMode ? (
+              <div className="max-h-[26rem] overflow-y-auto rounded-lg border border-[rgb(var(--border))]">
+                {listItems.length === 0 ? (
+                  <p className="p-4 text-center text-xs text-[rgb(var(--muted))]">Danh sách trống — tắt chế độ trọng số để nhập mục.</p>
+                ) : (
+                  listItems.map((name, i) => (
+                    <div
+                      key={`${name}-${i}`}
+                      className="flex items-center justify-between gap-2 border-b border-[rgb(var(--border))] px-3 py-2 last:border-0"
+                    >
+                      <span className="truncate text-sm">{name}</span>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => adjustWeight(name, -1)}
+                          className="flex h-6 w-6 items-center justify-center rounded-md border border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+                        >
+                          <Minus size={11} />
+                        </button>
+                        <span className="font-data w-5 text-center text-xs">{weights[name] ?? 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => adjustWeight(name, 1)}
+                          className="flex h-6 w-6 items-center justify-center rounded-md border border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+                        >
+                          <Plus size={11} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : (
+              <textarea
+                value={listText}
+                onChange={(e) => setListText(e.target.value)}
+                placeholder={"An\nBình\nChi\nDũng"}
+                rows={16}
+                className="font-data w-full resize-y rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[rgb(var(--accent)/0.3)]"
+              />
+            )}
+            <p className="mt-1.5 text-right text-xs text-[rgb(var(--muted))]">
+              {listItems.length} mục{weightMode ? " · trọng số cao hơn = xác suất trúng cao hơn" : " · tự lưu trên trình duyệt của bạn"}
+            </p>
           </div>
         </div>
       ) : (

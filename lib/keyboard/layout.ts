@@ -1,4 +1,5 @@
 export type OS = "windows" | "mac";
+export type BoardLayout = "ansi" | "iso";
 
 export interface KeyDef {
   code: string; // KeyboardEvent.code
@@ -48,53 +49,70 @@ const NUMBER_ROW: KeyDef[] = [
   { code: "Backspace", label: "Backspace", flex: 2 },
 ];
 
-const QWERTY_ROW: KeyDef[] = [
-  { code: "Tab", label: "Tab", flex: 1.5 },
-  { code: "KeyQ", label: "Q", flex: 1 },
-  { code: "KeyW", label: "W", flex: 1 },
-  { code: "KeyE", label: "E", flex: 1 },
-  { code: "KeyR", label: "R", flex: 1 },
-  { code: "KeyT", label: "T", flex: 1 },
-  { code: "KeyY", label: "Y", flex: 1 },
-  { code: "KeyU", label: "U", flex: 1 },
-  { code: "KeyI", label: "I", flex: 1 },
-  { code: "KeyO", label: "O", flex: 1 },
-  { code: "KeyP", label: "P", flex: 1 },
-  { code: "BracketLeft", label: "[", flex: 1 },
-  { code: "BracketRight", label: "]", flex: 1 },
-  { code: "Backslash", label: "\\", flex: 1.5 },
-];
+// ANSI keeps Backslash at the end of the QWERTY row with a single-row Enter
+// below. ISO drops that Backslash (its Enter key physically wraps down and
+// occupies that space instead — we approximate the wrap with a wider Enter
+// rather than a true L-shape) and adds a separate "IntlBackslash" key
+// between left Shift and Z, which is where ISO boards actually put it.
+function qwertyRow(layout: BoardLayout): KeyDef[] {
+  const base: KeyDef[] = [
+    { code: "Tab", label: "Tab", flex: 1.5 },
+    { code: "KeyQ", label: "Q", flex: 1 },
+    { code: "KeyW", label: "W", flex: 1 },
+    { code: "KeyE", label: "E", flex: 1 },
+    { code: "KeyR", label: "R", flex: 1 },
+    { code: "KeyT", label: "T", flex: 1 },
+    { code: "KeyY", label: "Y", flex: 1 },
+    { code: "KeyU", label: "U", flex: 1 },
+    { code: "KeyI", label: "I", flex: 1 },
+    { code: "KeyO", label: "O", flex: 1 },
+    { code: "KeyP", label: "P", flex: 1 },
+    { code: "BracketLeft", label: "[", flex: 1 },
+    { code: "BracketRight", label: "]", flex: 1 },
+  ];
+  if (layout === "ansi") base.push({ code: "Backslash", label: "\\", flex: 1.5 });
+  return base;
+}
 
-const ASDF_ROW: KeyDef[] = [
-  { code: "CapsLock", label: "Caps", flex: 1.8 },
-  { code: "KeyA", label: "A", flex: 1 },
-  { code: "KeyS", label: "S", flex: 1 },
-  { code: "KeyD", label: "D", flex: 1 },
-  { code: "KeyF", label: "F", flex: 1 },
-  { code: "KeyG", label: "G", flex: 1 },
-  { code: "KeyH", label: "H", flex: 1 },
-  { code: "KeyJ", label: "J", flex: 1 },
-  { code: "KeyK", label: "K", flex: 1 },
-  { code: "KeyL", label: "L", flex: 1 },
-  { code: "Semicolon", label: ";", flex: 1 },
-  { code: "Quote", label: "'", flex: 1 },
-  { code: "Enter", label: "Enter", flex: 2.2 },
-];
+function asdfRow(layout: BoardLayout): KeyDef[] {
+  return [
+    { code: "CapsLock", label: "Caps", flex: 1.8 },
+    { code: "KeyA", label: "A", flex: 1 },
+    { code: "KeyS", label: "S", flex: 1 },
+    { code: "KeyD", label: "D", flex: 1 },
+    { code: "KeyF", label: "F", flex: 1 },
+    { code: "KeyG", label: "G", flex: 1 },
+    { code: "KeyH", label: "H", flex: 1 },
+    { code: "KeyJ", label: "J", flex: 1 },
+    { code: "KeyK", label: "K", flex: 1 },
+    { code: "KeyL", label: "L", flex: 1 },
+    { code: "Semicolon", label: ";", flex: 1 },
+    { code: "Quote", label: "'", flex: 1 },
+    { code: "Enter", label: "Enter", flex: layout === "iso" ? 2.6 : 2.2 },
+  ];
+}
 
-const ZXCV_ROW: KeyDef[] = [
-  { code: "ShiftLeft", label: "Shift", flex: 2.3 },
-  { code: "KeyZ", label: "Z", flex: 1 },
-  { code: "KeyX", label: "X", flex: 1 },
-  { code: "KeyC", label: "C", flex: 1 },
-  { code: "KeyV", label: "V", flex: 1 },
-  { code: "KeyB", label: "B", flex: 1 },
-  { code: "KeyN", label: "N", flex: 1 },
-  { code: "KeyM", label: "M", flex: 1 },
-  { code: "Comma", label: ",", flex: 1 },
-  { code: "Period", label: ".", flex: 1 },
-  { code: "Slash", label: "/", flex: 1 },
-  { code: "ShiftRight", label: "Shift", flex: 2.7 },
-];
+function zxcvRow(layout: BoardLayout): KeyDef[] {
+  const shiftLeft: KeyDef =
+    layout === "iso" ? { code: "ShiftLeft", label: "Shift", flex: 1.3 } : { code: "ShiftLeft", label: "Shift", flex: 2.3 };
+  const isoKey: KeyDef[] = layout === "iso" ? [{ code: "IntlBackslash", label: "\\", flex: 1 }] : [];
+
+  return [
+    shiftLeft,
+    ...isoKey,
+    { code: "KeyZ", label: "Z", flex: 1 },
+    { code: "KeyX", label: "X", flex: 1 },
+    { code: "KeyC", label: "C", flex: 1 },
+    { code: "KeyV", label: "V", flex: 1 },
+    { code: "KeyB", label: "B", flex: 1 },
+    { code: "KeyN", label: "N", flex: 1 },
+    { code: "KeyM", label: "M", flex: 1 },
+    { code: "Comma", label: ",", flex: 1 },
+    { code: "Period", label: ".", flex: 1 },
+    { code: "Slash", label: "/", flex: 1 },
+    { code: "ShiftRight", label: "Shift", flex: 2.7 },
+  ];
+}
 
 function bottomRow(os: OS): KeyDef[] {
   const alt = os === "mac" ? "Option" : "Alt";
@@ -131,8 +149,8 @@ function bottomRow(os: OS): KeyDef[] {
 }
 
 /** Main alphanumeric block — function row through the space bar row. */
-export function getKeyboardRows(os: OS): KeyDef[][] {
-  return [FUNCTION_ROW, NUMBER_ROW, QWERTY_ROW, ASDF_ROW, ZXCV_ROW, bottomRow(os)];
+export function getKeyboardRows(os: OS, layout: BoardLayout = "ansi"): KeyDef[][] {
+  return [FUNCTION_ROW, NUMBER_ROW, qwertyRow(layout), asdfRow(layout), zxcvRow(layout), bottomRow(os)];
 }
 
 /**
@@ -194,17 +212,22 @@ export function getNumpadKeys(): GridKey[] {
   ];
 }
 
-function isSpacer(code: string): boolean {
+export function isSpacer(code: string): boolean {
   return code.startsWith("__spacer_");
 }
 
-export { isSpacer };
-
-export function countTotalKeys(os: OS): number {
-  const main = getKeyboardRows(os).reduce((sum, row) => sum + row.length, 0);
+/** Flat list of every real (non-spacer) key on the board, for counting and for the "not tested yet" list. */
+export function getAllKeys(os: OS, layout: BoardLayout = "ansi"): { code: string; label: string }[] {
+  const main = getKeyboardRows(os, layout)
+    .flat()
+    .filter((k) => !isSpacer(k.code));
   const nav = getNavCluster()
     .flat()
-    .filter((k) => !isSpacer(k.code)).length;
-  const numpad = getNumpadKeys().length;
-  return main + nav + numpad;
+    .filter((k) => !isSpacer(k.code));
+  const numpad = getNumpadKeys();
+  return [...main, ...nav, ...numpad].map((k) => ({ code: k.code, label: k.label || k.code }));
+}
+
+export function countTotalKeys(os: OS, layout: BoardLayout = "ansi"): number {
+  return getAllKeys(os, layout).length;
 }

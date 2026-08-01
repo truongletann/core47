@@ -1,11 +1,28 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { RotateCcw, Timer, Target, Zap } from "lucide-react";
+import { RotateCcw, Timer, Target, Zap, Trophy } from "lucide-react";
 import { generatePassage, type Lang, type Length } from "@/lib/keyboard/passageGenerator";
 import { cn } from "@/lib/utils/cn";
 
 type Status = "idle" | "running" | "done";
+
+function countCorrect(typed: string, sample: string): number {
+  let correct = 0;
+  for (let i = 0; i < typed.length; i++) {
+    if (typed[i] === sample[i]) correct++;
+  }
+  return correct;
+}
+
+function computeWpm(correctChars: number, elapsedMs: number): number {
+  const minutes = Math.max(elapsedMs, 1) / 60000;
+  return Math.round(correctChars / 5 / minutes);
+}
+
+function bestKey(lang: Lang, length: Length): string {
+  return `core47:keyboard:best:${lang}:${length}`;
+}
 
 export function TypingTest() {
   const [lang, setLang] = useState<Lang>("en");
@@ -15,7 +32,13 @@ export function TypingTest() {
   const [status, setStatus] = useState<Status>("idle");
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [best, setBest] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(bestKey(lang, length));
+    setBest(stored ? Number(stored) : null);
+  }, [lang, length]);
 
   useEffect(() => {
     if (status !== "running" || startedAt === null) return;
@@ -24,12 +47,8 @@ export function TypingTest() {
   }, [status, startedAt]);
 
   const stats = useMemo(() => {
-    let correct = 0;
-    for (let i = 0; i < typed.length; i++) {
-      if (typed[i] === sample[i]) correct++;
-    }
-    const minutes = Math.max(elapsedMs, 1) / 60000;
-    const wpm = Math.round(correct / 5 / minutes);
+    const correct = countCorrect(typed, sample);
+    const wpm = computeWpm(correct, elapsedMs);
     const accuracy = typed.length > 0 ? Math.round((correct / typed.length) * 100) : 100;
     return { correct, wpm, accuracy };
   }, [typed, sample, elapsedMs]);
@@ -56,7 +75,17 @@ export function TypingTest() {
 
     if (value.length === sample.length) {
       setStatus("done");
-      if (startedAt !== null) setElapsedMs(Date.now() - startedAt);
+      const finalElapsed = startedAt !== null ? Date.now() - startedAt : elapsedMs;
+      setElapsedMs(finalElapsed);
+
+      const wpm = computeWpm(countCorrect(value, sample), finalElapsed);
+      setBest((prev) => {
+        if (prev === null || wpm > prev) {
+          localStorage.setItem(bestKey(lang, length), String(wpm));
+          return wpm;
+        }
+        return prev;
+      });
     }
   }
 
@@ -116,7 +145,7 @@ export function TypingTest() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-3 text-center">
           <p className="flex items-center justify-center gap-1 font-data text-[10px] text-[rgb(var(--muted))]">
             <Zap size={11} /> WPM
@@ -134,6 +163,12 @@ export function TypingTest() {
             <Timer size={11} /> Thời gian
           </p>
           <p className="font-display mt-1 text-2xl font-bold">{(elapsedMs / 1000).toFixed(1)}s</p>
+        </div>
+        <div className="rounded-lg border border-[rgb(var(--accent)/0.4)] bg-[rgb(var(--accent)/0.06)] p-3 text-center">
+          <p className="flex items-center justify-center gap-1 font-data text-[10px] text-[rgb(var(--muted))]">
+            <Trophy size={11} /> Kỷ lục
+          </p>
+          <p className="font-display mt-1 text-2xl font-bold text-[rgb(var(--accent))]">{best ?? "–"}</p>
         </div>
       </div>
 
@@ -176,6 +211,7 @@ export function TypingTest() {
         <div className="rounded-xl border border-[rgb(var(--accent)/0.4)] bg-[rgb(var(--accent)/0.08)] p-4 text-center">
           <p className="font-display text-lg font-semibold">
             Hoàn thành! {stats.wpm} WPM · {stats.accuracy}% chính xác
+            {best === stats.wpm && stats.wpm > 0 ? " · Kỷ lục mới! 🎉" : ""}
           </p>
         </div>
       )}

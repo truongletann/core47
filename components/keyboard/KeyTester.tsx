@@ -1,8 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { RotateCcw, MousePointerClick, Volume2, VolumeX } from "lucide-react";
-import { getKeyboardRows, getNavCluster, getNumpadKeys, countTotalKeys, isSpacer, type OS, type KeyDef } from "@/lib/keyboard/layout";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { RotateCcw, MousePointerClick, Volume2, VolumeX, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  getKeyboardRows,
+  getNavCluster,
+  getNumpadKeys,
+  getAllKeys,
+  countTotalKeys,
+  isSpacer,
+  type OS,
+  type BoardLayout,
+  type KeyDef,
+} from "@/lib/keyboard/layout";
 import { playKeyClick } from "@/lib/audio/tones";
 import { cn } from "@/lib/utils/cn";
 
@@ -17,26 +27,42 @@ function keycapClass(isPressed: boolean, isTested: boolean) {
   );
 }
 
-export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => void }) {
+export function KeyTester({
+  os,
+  onOsChange,
+  layout,
+  onLayoutChange,
+}: {
+  os: OS;
+  onOsChange: (os: OS) => void;
+  layout: BoardLayout;
+  onLayoutChange: (layout: BoardLayout) => void;
+}) {
   const [pressed, setPressed] = useState<Set<string>>(new Set());
   const [tested, setTested] = useState<Set<string>>(new Set());
   const [lastKey, setLastKey] = useState<{ code: string; key: string } | null>(null);
   const [focused, setFocused] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [showUntested, setShowUntested] = useState(false);
 
-  const rows = getKeyboardRows(os);
+  const rows = getKeyboardRows(os, layout);
   const navRows = getNavCluster();
   const numpadKeys = getNumpadKeys();
-  const totalKeys = countTotalKeys(os);
+  const totalKeys = countTotalKeys(os, layout);
 
-  // Switching OS swaps modifier labels (Ctrl/Win/Alt vs Ctrl/Option/Cmd) —
-  // the previous "tested" set no longer maps to the same physical keys, so
-  // start the run over instead of leaving stale highlights around.
+  const untestedKeys = useMemo(
+    () => getAllKeys(os, layout).filter((k) => !tested.has(k.code)),
+    [os, layout, tested],
+  );
+
+  // Switching OS or ANSI/ISO layout changes which physical keys map to which
+  // codes (or removes/adds keys entirely) — the previous "tested" set no
+  // longer applies, so start the run over instead of leaving stale state.
   useEffect(() => {
     setPressed(new Set());
     setTested(new Set());
     setLastKey(null);
-  }, [os]);
+  }, [os, layout]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -77,20 +103,37 @@ export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-1">
-          {(["windows", "mac"] as OS[]).map((o) => (
-            <button
-              key={o}
-              type="button"
-              onClick={() => onOsChange(o)}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
-                os === o ? "bg-[rgb(var(--accent))] text-white" : "text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]",
-              )}
-            >
-              {o === "windows" ? "Windows" : "macOS"}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-1">
+            {(["windows", "mac"] as OS[]).map((o) => (
+              <button
+                key={o}
+                type="button"
+                onClick={() => onOsChange(o)}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
+                  os === o ? "bg-[rgb(var(--accent))] text-white" : "text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]",
+                )}
+              >
+                {o === "windows" ? "Windows" : "macOS"}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-1">
+            {(["ansi", "iso"] as BoardLayout[]).map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => onLayoutChange(l)}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-xs font-semibold uppercase transition-colors",
+                  layout === l ? "bg-[rgb(var(--accent))] text-white" : "text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]",
+                )}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -190,6 +233,31 @@ export function KeyTester({ os, onOsChange }: { os: OS; onOsChange: (os: OS) => 
           "Chưa có phím nào được nhấn"
         )}
       </p>
+
+      {untestedKeys.length > 0 && untestedKeys.length < totalKeys && (
+        <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))]">
+          <button
+            type="button"
+            onClick={() => setShowUntested((v) => !v)}
+            className="flex w-full items-center justify-between px-4 py-2.5 text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+          >
+            <span>Còn {untestedKeys.length} phím chưa test</span>
+            {showUntested ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+          {showUntested && (
+            <div className="font-data flex flex-wrap gap-1.5 border-t border-[rgb(var(--border))] px-4 py-3 text-xs">
+              {untestedKeys.map((k) => (
+                <span
+                  key={k.code}
+                  className="rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-2 py-1 text-[rgb(var(--muted))]"
+                >
+                  {k.label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

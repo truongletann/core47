@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Keyboard as KeyboardIcon, Gauge } from "lucide-react";
 import { KeyTester } from "@/components/keyboard/KeyTester";
 import { TypingTest } from "@/components/keyboard/TypingTest";
-import type { OS } from "@/lib/keyboard/layout";
+import type { OS, BoardLayout } from "@/lib/keyboard/layout";
 import { cn } from "@/lib/utils/cn";
 
 type Tab = "test" | "speed";
@@ -12,6 +12,7 @@ type Tab = "test" | "speed";
 export default function KeyboardPage() {
   const [tab, setTab] = useState<Tab>("test");
   const [os, setOs] = useState<OS>("windows");
+  const [layout, setLayout] = useState<BoardLayout>("ansi");
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-16">
@@ -52,7 +53,11 @@ export default function KeyboardPage() {
       </div>
 
       <div className="mt-6">
-        {tab === "test" ? <KeyTester os={os} onOsChange={setOs} /> : <TypingTest />}
+        {tab === "test" ? (
+          <KeyTester os={os} onOsChange={setOs} layout={layout} onLayoutChange={setLayout} />
+        ) : (
+          <TypingTest />
+        )}
       </div>
     </main>
   );

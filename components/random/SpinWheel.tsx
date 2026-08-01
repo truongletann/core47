@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Volume2, VolumeX, X } from "lucide-react";
-import { secureRandomInt, secureRandomFloat } from "@/lib/random/secureRandom";
+import { secureRandomFloat } from "@/lib/random/secureRandom";
 import { playTick, playWinFanfare } from "@/lib/audio/tones";
 
 const PALETTE = ["#f2b705", "#22c55e", "#3b82f6", "#a855f7", "#ef4444", "#f97316"];
@@ -14,22 +14,42 @@ function normalizeAngle(a: number): number {
   return ((a % twoPi) + twoPi) % twoPi;
 }
 
-function textColorFor(bg: string): string {
-  // Every PALETTE color here is dark enough for white text — keep it simple.
-  return bg ? "#ffffff" : "#ffffff";
+// Cumulative angle boundaries so slices can be sized proportionally to
+// weight instead of always equal — boundaries[i]..boundaries[i+1] is slice i.
+function computeBoundaries(weights: number[]): number[] {
+  const total = weights.reduce((s, w) => s + w, 0) || 1;
+  const boundaries: number[] = [0];
+  let acc = 0;
+  for (const w of weights) {
+    acc += (w / total) * Math.PI * 2;
+    boundaries.push(acc);
+  }
+  return boundaries;
+}
+
+function pickWeightedIndex(weights: number[]): number {
+  const total = weights.reduce((s, w) => s + w, 0);
+  let r = secureRandomFloat(0, total, 6);
+  for (let i = 0; i < weights.length; i++) {
+    if (r < weights[i]) return i;
+    r -= weights[i];
+  }
+  return weights.length - 1;
 }
 
 export function SpinWheel({
   items,
+  weights,
   onItemsChange,
 }: {
   items: string[];
+  weights: number[];
   onItemsChange: (items: string[]) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rotationRef = useRef(0);
   const animRef = useRef<number | null>(null);
-  const lastTickSliceRef = useRef(0);
+  const lastTickBoundaryRef = useRef(0);
 
   const [spinning, setSpinning] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -56,7 +76,7 @@ export function SpinWheel({
     const cy = size / 2;
     const radius = size / 2 - 10;
     const n = Math.max(items.length, 1);
-    const sliceAngle = (Math.PI * 2) / n;
+    const boundaries = computeBoundaries(weights.length === items.length ? weights : items.map(() => 1));
 
     if (items.length === 0) {
       ctx.beginPath();
@@ -71,7 +91,7 @@ export function SpinWheel({
       items.forEach((_, i) => {
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.arc(0, 0, radius, i * sliceAngle, (i + 1) * sliceAngle);
+        ctx.arc(0, 0, radius, boundaries[i], boundaries[i + 1]);
         ctx.closePath();
         ctx.fillStyle = PALETTE[i % PALETTE.length];
         ctx.fill();
@@ -83,14 +103,14 @@ export function SpinWheel({
 
       // Labels (own rotation per slice so the left half can flip for readability)
       items.forEach((label, i) => {
-        const mid = i * sliceAngle + sliceAngle / 2;
+        const mid = (boundaries[i] + boundaries[i + 1]) / 2;
         const visualMid = normalizeAngle(mid + rotation);
         const flip = visualMid > Math.PI * 0.5 && visualMid < Math.PI * 1.5;
 
         ctx.save();
         ctx.translate(cx, cy);
         ctx.rotate(rotation + mid + (flip ? Math.PI : 0));
-        ctx.fillStyle = textColorFor(PALETTE[i % PALETTE.length]);
+        ctx.fillStyle = "#ffffff";
         ctx.font = `600 ${Math.max(11, Math.min(16, 220 / n))}px "Space Grotesk", ui-sans-serif, sans-serif`;
         ctx.textBaseline = "middle";
         const maxWidth = radius - 34;
@@ -140,7 +160,8 @@ export function SpinWheel({
 
   useEffect(() => {
     if (!spinning) draw(rotationRef.current);
-  }, [items, spinning]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, weights, spinning]);
 
   useEffect(() => {
     draw(rotationRef.current);
@@ -155,11 +176,13 @@ export function SpinWheel({
   function spin() {
     if (spinning || items.length < 2) return;
 
-    const n = items.length;
-    const sliceAngle = (Math.PI * 2) / n;
-    const winnerIndex = secureRandomInt(0, n - 1);
-    const jitter = secureRandomFloat(sliceAngle * 0.15, sliceAngle * 0.85, 6);
-    const targetNorm = winnerIndex * sliceAngle + jitter;
+    const w = weights.length === items.length ? weights : items.map(() => 1);
+    const boundaries = computeBoundaries(w);
+    const winnerIndex = pickWeightedIndex(w);
+    const sliceStart = boundaries[winnerIndex];
+    const sliceEnd = boundaries[winnerIndex + 1];
+    const jitter = secureRandomFloat((sliceEnd - sliceStart) * 0.15, (sliceEnd - sliceStart) * 0.85, 6);
+    const targetNorm = sliceStart + jitter;
     const base = normalizeAngle(-targetNorm);
     const currentNorm = normalizeAngle(rotationRef.current);
     const diff = normalizeAngle(base - currentNorm);
@@ -168,7 +191,7 @@ export function SpinWheel({
 
     setSpinning(true);
     setWinner(null);
-    lastTickSliceRef.current = Math.floor(start / sliceAngle);
+    lastTickBoundaryRef.current = 0;
     const t0 = performance.now();
 
     function frame(now: number) {
@@ -178,9 +201,11 @@ export function SpinWheel({
       rotationRef.current = current;
       draw(current);
 
-      const currentSlice = Math.floor(current / sliceAngle);
-      if (currentSlice !== lastTickSliceRef.current) {
-        lastTickSliceRef.current = currentSlice;
+      // Tick whenever we cross a slice boundary, evenly spaced regardless of weight.
+      const avgSliceAngle = (Math.PI * 2) / Math.max(items.length, 1);
+      const currentSlot = Math.floor(current / avgSliceAngle);
+      if (currentSlot !== lastTickBoundaryRef.current) {
+        lastTickBoundaryRef.current = currentSlot;
         playTick(muted);
       }
 
