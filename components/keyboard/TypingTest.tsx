@@ -2,56 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RotateCcw, Timer, Target, Zap } from "lucide-react";
+import { generatePassage, type Lang, type Length } from "@/lib/keyboard/passageGenerator";
 import { cn } from "@/lib/utils/cn";
 
-type Lang = "en" | "vi";
-type Length = "short" | "long";
-
-const SAMPLES: Record<Lang, Record<Length, string[]>> = {
-  en: {
-    short: [
-      "The quick brown fox jumps over the lazy dog while the sun sets behind the distant mountains, painting the whole sky in warm shades of orange and deep purple.",
-      "Programming is the art of telling another human what one wants the computer to do, and most of the craft is spent reading code written by someone else.",
-      "Success usually comes to those who are too busy looking for it to notice how far they have already come, one small and steady step at a time each day.",
-      "A journey of a thousand miles begins with a single step, so stop overthinking the whole plan and just start typing the very first sentence right now.",
-      "Practice makes perfect, and the only real way to type faster without more mistakes is to keep practicing a little every single day without skipping.",
-    ],
-    long: [
-      "The quick brown fox jumps over the lazy dog while the sun sets behind the distant mountains, painting the whole sky in warm shades of orange and deep purple. Somewhere far in the valley below, a train whistle echoes gently across the fields, reminding every tired traveler that the very last ride of the day is about to depart from the old wooden station near the river.",
-      "Programming is the art of telling another human what one wants the computer to do, and yet so much of the actual craft is spent reading code written by someone else, or even by yourself six months ago, trying patiently to reconstruct the exact reasoning behind a decision that once made perfect sense but now looks like nothing more than a confusing riddle.",
-      "In the middle of every difficulty lies a hidden opportunity, or so the old saying goes, and nowhere does that feel more true than in the slow process of learning to type quickly and accurately. Every single mistake is simply feedback, a small gentle nudge pointing toward exactly which finger needs a little more patient practice before the next attempt.",
-      "A journey of a thousand miles begins with a single step, and the very same idea is true of building any large piece of software from nothing. What looks like an impossible task on the first day slowly becomes a familiar, comfortable routine after weeks of small, steady, unglamorous progress that nobody else really notices until the project finally ships.",
-    ],
-  },
-  vi: {
-    short: [
-      "Tôi thích lập trình và uống cà phê vào mỗi buổi sáng trước khi bắt đầu công việc, vì đó là khoảng thời gian yên tĩnh nhất trong ngày để suy nghĩ thấu đáo.",
-      "Cuộc sống là một chuyến đi dài, hãy tận hưởng từng khoảnh khắc bên những người ta yêu thương, vì không ai biết trước được ngày mai sẽ mang đến điều gì.",
-      "Dự án này được xây dựng trên nền tảng Next.js và triển khai trên Cloudflare Workers, tận dụng khả năng chạy ở rất nhiều điểm edge trên toàn cầu.",
-      "Học gõ phím nhanh giúp tiết kiệm thời gian làm việc và giảm mỏi tay đáng kể, đặc biệt là khi phải soạn thảo văn bản hoặc viết mã nguồn liên tục.",
-      "Kiên trì mỗi ngày một chút sẽ mang lại kết quả bất ngờ, giống như những giọt nước nhỏ bé cuối cùng cũng có thể làm đầy cả một chiếc bình lớn.",
-    ],
-    long: [
-      "Tôi thích lập trình và uống cà phê vào mỗi buổi sáng trước khi bắt đầu công việc, vì đó là khoảng thời gian yên tĩnh nhất trong ngày để suy nghĩ thấu đáo mọi vấn đề phức tạp mà cả ngày họp hành không thể nào giải quyết nổi. Chỉ cần một tách cà phê nóng và một đoạn nhạc nhẹ nhàng là đủ để bắt đầu một ngày làm việc hiệu quả.",
-      "Cuộc sống là một chuyến đi dài, hãy tận hưởng từng khoảnh khắc bên những người ta yêu thương, vì không ai biết trước được ngày mai sẽ mang đến điều gì cho chúng ta. Những kỷ niệm đẹp hôm nay chính là hành trang quý giá nhất cho chặng đường phía trước, dù con đường đó có nhiều gian nan đến đâu đi chăng nữa.",
-      "Dự án này được xây dựng trên nền tảng Next.js và triển khai trên Cloudflare Workers, tận dụng khả năng chạy ở rất nhiều điểm edge trên toàn cầu để mang lại tốc độ phản hồi nhanh nhất có thể cho người dùng ở bất kỳ đâu, đồng thời vẫn giữ được chi phí vận hành ở mức thấp nhờ mô hình serverless hiện đại.",
-      "Học gõ phím nhanh giúp tiết kiệm thời gian làm việc và giảm mỏi tay đáng kể, đặc biệt là khi phải soạn thảo văn bản hoặc viết mã nguồn trong nhiều giờ liên tục mỗi ngày. Việc luyện tập đều đặn không chỉ cải thiện tốc độ mà còn giúp giảm hẳn số lỗi gõ sai, từ đó nâng cao chất lượng công việc tổng thể.",
-    ],
-  },
-};
-
 type Status = "idle" | "running" | "done";
-
-function pickSample(lang: Lang, length: Length, exclude?: string): string {
-  const pool = SAMPLES[lang][length].filter((s) => s !== exclude);
-  const source = pool.length > 0 ? pool : SAMPLES[lang][length];
-  return source[Math.floor(Math.random() * source.length)] ?? SAMPLES[lang][length][0];
-}
 
 export function TypingTest() {
   const [lang, setLang] = useState<Lang>("en");
   const [length, setLength] = useState<Length>("short");
-  const [sample, setSample] = useState(() => pickSample("en", "short"));
+  const [sample, setSample] = useState(() => generatePassage("en", "short"));
   const [typed, setTyped] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -76,7 +35,7 @@ export function TypingTest() {
   }, [typed, sample, elapsedMs]);
 
   function resetWith(nextLang: Lang, nextLength: Length) {
-    setSample(pickSample(nextLang, nextLength));
+    setSample(generatePassage(nextLang, nextLength));
     setTyped("");
     setStatus("idle");
     setStartedAt(null);
@@ -102,7 +61,7 @@ export function TypingTest() {
   }
 
   function restart() {
-    setSample((prev) => pickSample(lang, length, prev));
+    setSample(generatePassage(lang, length));
     setTyped("");
     setStatus("idle");
     setStartedAt(null);
