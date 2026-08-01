@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 // component) — imperatively created/managed via refs rather than JSX, so no
 // custom JSX typings are needed.
 interface FoliateView extends HTMLElement {
-  open(book: Blob): Promise<void>;
+  open(book: unknown): Promise<void>;
   close(): void;
   next(): Promise<void>;
   prev(): Promise<void>;
@@ -18,39 +18,98 @@ const READER_CSS = `
   p, li, blockquote, dd { line-height: 1.6; }
 `;
 
+// foliate-js's bundled zip.js (used to read the EPUB's ZIP container) and
+// its paginator have both been observed to hang or crash on some
+// real-world EPUBs — including a null-`iframe.contentDocument` race in its
+// own minified paginator.js (`afterLoad` reading `doc.head` when `doc` is
+// null). There's only one published version of the library, so there's no
+// newer release to pick up a fix from, and a from-scratch replacement
+// loader (tried: feeding it a book parsed via jszip instead of its own
+// zip.js) made things *less* reliable, not more — reverted. Retrying with
+// a fresh <foliate-view> a couple of times recovers some of these
+// transient failures; if every attempt fails, surface a clear error
+// instead of a silently blank reader.
+const OPEN_TIMEOUT_MS = 12000;
+const MAX_ATTEMPTS = 2;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("TIMEOUT")), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      },
+    );
+  });
+}
+
 export function EpubReader({ fileUrl }: { fileUrl: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<FoliateView | null>(null);
   const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(1);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+
+    async function openOnce(file: File): Promise<FoliateView> {
+      if (!containerRef.current) throw new Error("NO_CONTAINER");
+      const view = document.createElement("foliate-view") as FoliateView;
+      containerRef.current.appendChild(view);
+      try {
+        await withTimeout(view.open(file), OPEN_TIMEOUT_MS);
+        await withTimeout(Promise.resolve(view.renderer.next()), OPEN_TIMEOUT_MS);
+        return view;
+      } catch (e) {
+        view.close?.();
+        view.remove();
+        throw e;
+      }
+    }
 
     async function load() {
       try {
         await import("foliate-js/view.js");
         if (cancelled || !containerRef.current) return;
 
-        const view = document.createElement("foliate-view") as FoliateView;
-        containerRef.current.appendChild(view);
-        viewRef.current = view;
-
         const res = await fetch(fileUrl);
-        const blob = await res.blob();
+        const buffer = await res.arrayBuffer();
         if (cancelled) return;
-
         // foliate-js's format sniffing (isCBZ/isFB2/isFBZ) reads `.name` —
-        // a plain Blob from fetch().blob() doesn't have one and crashes it.
-        const file = new File([blob], "book.epub", { type: blob.type || "application/epub+zip" });
+        // a plain Blob doesn't have one and crashes it.
+        const file = new File([buffer], "book.epub", {
+          type: res.headers.get("content-type") || "application/epub+zip",
+        });
 
-        await view.open(file);
-        view.renderer.setStyles?.(READER_CSS);
-        view.renderer.next();
-        setLoading(false);
+        let lastErr: unknown;
+        for (let i = 1; i <= MAX_ATTEMPTS; i++) {
+          if (cancelled) return;
+          setAttempt(i);
+          try {
+            const view = await openOnce(file);
+            if (cancelled) {
+              view.close?.();
+              view.remove();
+              return;
+            }
+            viewRef.current = view;
+            view.renderer.setStyles?.(READER_CSS);
+            setLoading(false);
+            return;
+          } catch (e) {
+            lastErr = e;
+          }
+        }
+        throw lastErr ?? new Error("UNKNOWN");
       } catch {
         if (!cancelled) {
-          setError("Không đọc được file EPUB này.");
+          setError("Không đọc được file EPUB này — có thể file bị lỗi hoặc quá phức tạp để đọc trên trình duyệt.");
           setLoading(false);
         }
       }
@@ -70,11 +129,13 @@ export function EpubReader({ fileUrl }: { fileUrl: string }) {
       <div ref={containerRef} className="relative min-h-0 flex-1 [&_foliate-view]:block [&_foliate-view]:h-full [&_foliate-view]:w-full">
         {loading && !error && (
           <p className="absolute inset-0 flex items-center justify-center text-sm text-[rgb(var(--muted))]">
-            Đang tải...
+            Đang tải{attempt > 1 ? ` (lần thử ${attempt}/${MAX_ATTEMPTS})` : "..."}
           </p>
         )}
         {error && (
-          <p className="absolute inset-0 flex items-center justify-center text-sm text-red-600">{error}</p>
+          <p className="absolute inset-0 flex items-center justify-center px-8 text-center text-sm text-red-600">
+            {error}
+          </p>
         )}
       </div>
       {!loading && !error && (
