@@ -274,16 +274,9 @@ export function LivePrices({ initial }: { initial: PriceItem[] }) {
     })),
   ];
 
-  const liveLabels: string[] = [];
-  if (oandaLive) liveLabels.push("● Live (OANDA)");
-  if (binanceLive) liveLabels.push("● Live (Binance)");
-
   return (
     <div>
-      <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
-        {liveLabels.length > 0 && (
-          <p className="font-data text-xs text-emerald-600">{liveLabels.join(" · ")}</p>
-        )}
+      <div className="mt-1 flex flex-wrap items-center justify-end gap-2">
         <AddSymbolBox
           existingSymbols={allSymbols}
           onAdd={handleAdd}
@@ -295,6 +288,7 @@ export function LivePrices({ initial }: { initial: PriceItem[] }) {
           const price = prices[p.symbol];
           const changePct = changePercents[p.symbol] ?? null;
           const isUp = changePct !== null && changePct >= 0;
+          const isLive = p.source === "binance" ? binanceLive : oandaLive;
           return (
             <div key={p.id} className="relative rounded-xl border border-[rgb(var(--border))] p-4">
               {p.removable && (
@@ -308,7 +302,12 @@ export function LivePrices({ initial }: { initial: PriceItem[] }) {
                 </button>
               )}
               <div className="flex items-center justify-between">
-                <span className="font-data text-xs text-[rgb(var(--muted))]">{p.symbol}</span>
+                <span className="font-data flex items-center gap-1.5 text-xs text-[rgb(var(--muted))]">
+                  {isLive && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" title="Live" aria-label="Live" />
+                  )}
+                  {p.symbol}
+                </span>
                 {changePct !== null && (
                   <span
                     className={`font-data text-xs font-semibold ${isUp ? "text-emerald-600" : "text-red-600"}`}
