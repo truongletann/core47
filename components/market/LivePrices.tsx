@@ -197,27 +197,48 @@ export function LivePrices({ initial }: { initial: PriceItem[] }) {
     }
 
     // Binance's public market-data stream — no key needed, connected
-    // directly from the browser (no server proxy involved).
+    // directly from the browser (no server proxy involved). Unlike
+    // EventSource, WebSocket has no built-in reconnect, so it's done here
+    // manually — otherwise a single drop (Binance closes idle connections
+    // periodically) leaves the badge off for good.
+    let cancelled = false;
+    let ws: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     const streams = binanceSymbols.map((s) => `${s.toLowerCase()}@ticker`).join("/");
-    const ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
-    ws.onopen = () => setBinanceLive(true);
-    ws.onerror = () => setBinanceLive(false);
-    ws.onclose = () => setBinanceLive(false);
-    ws.onmessage = (ev) => {
-      try {
-        const msg = JSON.parse(ev.data) as BinanceStreamMessage;
-        const symbol = msg.data?.s;
-        if (!symbol || !msg.data?.c) return;
-        setPrices((prev) => ({ ...prev, [symbol]: Number(msg.data!.c) }));
-        if (msg.data?.P) {
-          setChangePercents((prev) => ({ ...prev, [symbol]: Number(msg.data!.P) }));
-        }
-      } catch {
-        // ignore malformed messages
-      }
-    };
 
-    return () => ws.close();
+    function connect() {
+      if (cancelled) return;
+      // Default port (443), not :9443 — some networks/firewalls block
+      // non-standard outbound ports, silently failing the connection.
+      ws = new WebSocket(`wss://stream.binance.com/stream?streams=${streams}`);
+      ws.onopen = () => setBinanceLive(true);
+      ws.onerror = () => ws?.close();
+      ws.onclose = () => {
+        setBinanceLive(false);
+        if (!cancelled) reconnectTimer = setTimeout(connect, 3000);
+      };
+      ws.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(ev.data) as BinanceStreamMessage;
+          const symbol = msg.data?.s;
+          if (!symbol || !msg.data?.c) return;
+          setPrices((prev) => ({ ...prev, [symbol]: Number(msg.data!.c) }));
+          if (msg.data?.P) {
+            setChangePercents((prev) => ({ ...prev, [symbol]: Number(msg.data!.P) }));
+          }
+        } catch {
+          // ignore malformed messages
+        }
+      };
+    }
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      ws?.close();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [binanceKey]);
 
