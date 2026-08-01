@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserBySessionId, updateProfile } from "@/lib/auth/service";
+import { updateProfile } from "@/lib/auth/service";
+import { requireUser } from "@/lib/auth/guard";
 import { UpdateProfileSchema } from "@/lib/auth/schema";
-import { SESSION_COOKIE_NAME } from "@/lib/auth/config";
 
 export async function POST(req: NextRequest) {
-  const sessionId = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const currentUser = await getUserBySessionId(sessionId);
+  const currentUser = await requireUser(req);
   if (!currentUser) {
     return NextResponse.json({ success: false, error: "UNAUTHENTICATED" }, { status: 401 });
   }

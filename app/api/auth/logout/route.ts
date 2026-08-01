@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deleteSession } from "@/lib/auth/service";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/config";
+import { clearSessionCookie } from "@/lib/auth/cookies";
 import { corsHeaders } from "@/lib/cors";
 
 export async function POST(req: NextRequest) {
@@ -10,11 +11,7 @@ export async function POST(req: NextRequest) {
     await deleteSession(sessionId);
   }
   const res = NextResponse.json({ success: true }, { headers: corsHeaders(origin) });
-  res.cookies.set(SESSION_COOKIE_NAME, "", {
-    domain: ".core47.xyz",
-    path: "/",
-    maxAge: 0,
-  });
+  clearSessionCookie(res);
   return res;
 }
 

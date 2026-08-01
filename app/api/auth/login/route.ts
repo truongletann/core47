@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loginUser } from "@/lib/auth/service";
 import { LoginSchema } from "@/lib/auth/schema";
-import { SESSION_COOKIE_NAME, SESSION_DURATION_DAYS } from "@/lib/auth/config";
+import { setSessionCookie } from "@/lib/auth/cookies";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
@@ -25,14 +25,7 @@ export async function POST(req: NextRequest) {
   try {
     const { user, sessionId } = await loginUser(parseResult.data);
     const res = NextResponse.json({ success: true, data: { user } }, { status: 200 });
-    res.cookies.set(SESSION_COOKIE_NAME, sessionId, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      domain: ".core47.xyz",
-      maxAge: SESSION_DURATION_DAYS * 24 * 60 * 60,
-      path: "/",
-    });
+    setSessionCookie(res, sessionId);
     return res;
   } catch (err) {
     if (err instanceof Error && err.message === "INVALID_CREDENTIALS") {

@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserBySessionId } from "@/lib/auth/service";
-import { SESSION_COOKIE_NAME } from "@/lib/auth/config";
+import { requireUser } from "@/lib/auth/guard";
 import { getAvatarsBucket } from "@/lib/storage/r2";
 
 const MAX_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 export async function POST(req: NextRequest) {
-  const sessionId = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const user = await getUserBySessionId(sessionId);
+  const user = await requireUser(req);
   if (!user) {
     return NextResponse.json({ success: false, error: "UNAUTHENTICATED" }, { status: 401 });
   }

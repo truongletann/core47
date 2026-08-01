@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserBySessionId, changePassword } from "@/lib/auth/service";
+import { changePassword } from "@/lib/auth/service";
+import { requireUser } from "@/lib/auth/guard";
 import { ChangePasswordSchema } from "@/lib/auth/schema";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/config";
 
 export async function POST(req: NextRequest) {
-  const sessionId = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const user = await getUserBySessionId(sessionId);
+  const user = await requireUser(req);
   if (!user) {
     return NextResponse.json({ success: false, error: "UNAUTHENTICATED" }, { status: 401 });
   }
@@ -23,7 +23,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await changePassword(user.id, parseResult.data, sessionId);
+    const currentSessionId = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+    await changePassword(user.id, parseResult.data, currentSessionId);
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof Error && err.message === "WRONG_CURRENT_PASSWORD") {
