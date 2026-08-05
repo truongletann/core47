@@ -17,7 +17,6 @@
     "docx": "^9.7.1",
     "drizzle-orm": "^0.45.2",
     "fast-xml-parser": "^5.10.1",
-    "foliate-js": "^1.0.1",
     "framer-motion": "^12.42.2",
     "gray-matter": "^4.0.3",
     "highlight.js": "^11.11.1",

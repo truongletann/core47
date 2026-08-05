@@ -23,13 +23,3 @@ export async function getFocusSoundsBucket() {
   }
   return env.FOCUS_SOUNDS;
 }
-
-export async function getLibraryBucket() {
-  const { env } = await getCloudflareContext({ async: true });
-  if (!env.LIBRARY) {
-    throw new Error(
-      "R2 binding 'LIBRARY' does not exist. Check that wrangler.jsonc declares r2_buckets.",
-    );
-  }
-  return env.LIBRARY;
-}
