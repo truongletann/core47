@@ -7,6 +7,7 @@ interface YTPlayer {
   destroy: () => void;
   mute: () => void;
   playVideo: () => void;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
   setPlaybackQuality: (quality: string) => void;
 }
 interface YTPlayerOptions {
@@ -69,11 +70,14 @@ export function YoutubeBackground({ videoId, startSeconds, endSeconds }: Youtube
     loadYoutubeApi().then(() => {
       if (cancelled || !containerRef.current || !window.YT) return;
 
+      // Deliberately NOT using the loop:1 + playlist:videoId trick — YouTube
+      // treats that as a (1-item) playlist embed, which brings back the
+      // title/channel bar and playlist-style controls even with controls:0.
+      // Looping a single video is instead done manually below (seekTo on
+      // ENDED), which keeps it a genuine single-video embed.
       const playerVars: Record<string, string | number> = {
         autoplay: 1,
         mute: 1,
-        loop: 1,
-        playlist: videoId,
         controls: 0,
         disablekb: 1,
         fs: 0,
@@ -103,6 +107,12 @@ export function YoutubeBackground({ videoId, startSeconds, endSeconds }: Youtube
               e.target.setPlaybackQuality("highres");
               return;
             }
+            if (e.data === YT.PlayerState.ENDED) {
+              // Manual loop instead of the loop+playlist trick (see above).
+              e.target.seekTo(startSeconds ?? 0, true);
+              e.target.playVideo();
+              return;
+            }
             // Force playback to actually resume whenever it's not — a
             // muted autoplay that got stuck cued/paused (rather than
             // truly playing) leaves YouTube's own center play icon
@@ -111,8 +121,7 @@ export function YoutubeBackground({ videoId, startSeconds, endSeconds }: Youtube
             if (
               e.data === YT.PlayerState.PAUSED ||
               e.data === YT.PlayerState.CUED ||
-              e.data === YT.PlayerState.UNSTARTED ||
-              e.data === YT.PlayerState.ENDED
+              e.data === YT.PlayerState.UNSTARTED
             ) {
               e.target.playVideo();
             }
