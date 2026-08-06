@@ -6,6 +6,7 @@ export interface BlogPost {
   title: string;
   excerpt: string;
   content: string;
+  contentHtml: string;
   coverImageUrl: string | null;
   tags: string[];
   status: BlogStatus;

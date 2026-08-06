@@ -11,6 +11,7 @@ function toBlogPost(r: typeof blogPosts.$inferSelect): BlogPost {
     title: r.title,
     excerpt: r.excerpt || fallbackExcerpt(r.content),
     content: r.content,
+    contentHtml: r.contentHtml ?? "",
     coverImageUrl: r.coverImageKey ? `/api/blog/cover/${r.coverImageKey}` : null,
     tags: r.tags ? r.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
     status: r.status as BlogPost["status"],

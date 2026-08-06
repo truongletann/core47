@@ -238,7 +238,11 @@ async function deleteBlogCoverImage(key: string) {
   }
 }
 
-export async function createBlogPost(input: BlogPostInput) {
+// contentHtml is rendered by the caller (app/api/admin/blog/**) rather than
+// here — this file is imported by 13+ unrelated admin routes, and pulling
+// the markdown renderer (marked/highlight.js/gray-matter/node-emoji) into
+// this shared module would drag it into every one of those routes' bundles.
+export async function createBlogPost(input: BlogPostInput, contentHtml: string) {
   const db = await getDb();
 
   const existingSlug = await db.select().from(blogPosts).where(eq(blogPosts.slug, input.slug)).get();
@@ -251,6 +255,7 @@ export async function createBlogPost(input: BlogPostInput) {
     title: input.title,
     excerpt: input.excerpt,
     content: input.content,
+    contentHtml,
     coverImageKey: input.coverImageKey,
     tags: input.tags,
     status: input.status,
@@ -262,7 +267,7 @@ export async function createBlogPost(input: BlogPostInput) {
   return record;
 }
 
-export async function updateBlogPost(id: string, input: BlogPostInput) {
+export async function updateBlogPost(id: string, input: BlogPostInput, contentHtml: string) {
   const db = await getDb();
 
   const existingSlug = await db.select().from(blogPosts).where(eq(blogPosts.slug, input.slug)).get();
@@ -281,6 +286,7 @@ export async function updateBlogPost(id: string, input: BlogPostInput) {
       title: input.title,
       excerpt: input.excerpt,
       content: input.content,
+      contentHtml,
       coverImageKey: input.coverImageKey,
       tags: input.tags,
       status: input.status,

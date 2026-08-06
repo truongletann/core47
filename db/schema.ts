@@ -106,6 +106,7 @@ export const blogPosts = sqliteTable("blog_posts", {
   title: text("title").notNull(),
   excerpt: text("excerpt").notNull(),
   content: text("content").notNull(), // markdown
+  contentHtml: text("content_html"), // rendered HTML, computed once on create/update — see 0050_blog_content_html
   coverImageKey: text("cover_image_key"), // key in the AVATARS R2 bucket, blog-covers/ prefix
   tags: text("tags"), // comma-separated
   status: text("status", { enum: ["draft", "published"] })

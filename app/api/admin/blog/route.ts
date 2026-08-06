@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/guard";
 import { listBlogPostsAdmin, createBlogPost } from "@/lib/admin/service";
 import { BlogPostSchema } from "@/lib/admin/schema";
+import { renderMarkdown } from "@/lib/blog/markdown";
 
 export async function GET(req: NextRequest) {
   const admin = await requireAdmin(req);
@@ -32,7 +33,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const post = await createBlogPost(parseResult.data);
+    const html = renderMarkdown(parseResult.data.content);
+    const post = await createBlogPost(parseResult.data, html);
     return NextResponse.json({ success: true, data: { post } }, { status: 201 });
   } catch (err) {
     if (err instanceof Error && err.message === "SLUG_TAKEN") {

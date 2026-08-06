@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/guard";
 import { updateBlogPost, deleteBlogPost } from "@/lib/admin/service";
 import { BlogPostSchema } from "@/lib/admin/schema";
+import { renderMarkdown } from "@/lib/blog/markdown";
 
 export async function PUT(
   req: NextRequest,
@@ -28,7 +29,8 @@ export async function PUT(
   }
 
   try {
-    await updateBlogPost(id, parseResult.data);
+    const html = renderMarkdown(parseResult.data.content);
+    await updateBlogPost(id, parseResult.data, html);
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof Error && err.message === "SLUG_TAKEN") {
