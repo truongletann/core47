@@ -1,12 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import * as Icons from "lucide-react";
 import { TOOLBOX_TOOLS, getCategoryBySlug } from "@/lib/toolbox/registry";
+import { iconMap } from "@/lib/toolbox/iconMap";
 
 function Icon({ name }: { name: string }) {
-  const LucideIcon = (Icons as unknown as Record<string, React.ComponentType<{ size?: number }>>)[
-    name
-  ];
+  const LucideIcon = iconMap[name];
   if (!LucideIcon) return null;
   return <LucideIcon size={20} />;
 }

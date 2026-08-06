@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import * as Icons from "lucide-react";
 import { motion } from "framer-motion";
 import type { Tool } from "@/types/tool";
 import { cn } from "@/lib/utils/cn";
 import { getCategoryColorVar } from "@/lib/tools/categoryColor";
+import { getIcon } from "@/lib/toolbox/iconMap";
 
 const statusLabel: Record<Tool["status"], string> = {
   active: "",
@@ -14,7 +14,7 @@ const statusLabel: Record<Tool["status"], string> = {
 };
 
 export function ToolCard({ tool, index }: { tool: Tool; index: number }) {
-  const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[tool.icon] ?? Icons.Box;
+  const Icon = getIcon(tool.icon);
   const isDisabled = tool.status === "soon";
   const code = `C47/${String(index + 1).padStart(2, "0")}`;
   const catVar = getCategoryColorVar(tool.categoryId);

@@ -1,11 +1,9 @@
 "use client";
 
-import * as Icons from "lucide-react";
+import { iconMap } from "@/lib/toolbox/iconMap";
 
 export function DynamicIcon({ name, size = 15 }: { name: string; size?: number }) {
-  const LucideIcon = (Icons as unknown as Record<string, React.ComponentType<{ size?: number }>>)[
-    name
-  ];
+  const LucideIcon = iconMap[name];
   if (!LucideIcon) return null;
   return <LucideIcon size={size} />;
 }

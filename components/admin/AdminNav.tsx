@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import * as Icons from "lucide-react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { getIcon, iconMap } from "@/lib/toolbox/iconMap";
 
 export interface AdminNavItem {
   href: string;
@@ -19,7 +19,7 @@ export interface AdminNavSection {
 }
 
 function NavIcon({ name }: { name: string }) {
-  const LucideIcon = (Icons as unknown as Record<string, Icons.LucideIcon>)[name] ?? Icons.Circle;
+  const LucideIcon = getIcon(name, iconMap.Circle);
   return <LucideIcon size={15} strokeWidth={2} />;
 }
 
@@ -48,7 +48,7 @@ export function AdminNav({
           <Menu size={16} />
           Admin CMS
         </span>
-        {mobileOpen ? <X size={16} /> : <Icons.ChevronDown size={16} />}
+        {mobileOpen ? <X size={16} /> : <ChevronDown size={16} />}
       </button>
 
       <div className={`${mobileOpen ? "block" : "hidden"} md:block`}>
