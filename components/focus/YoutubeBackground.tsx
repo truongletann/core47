@@ -17,6 +17,7 @@ interface YTPlayerOptions {
   events: {
     onReady: (e: { target: YTPlayer }) => void;
     onStateChange: (e: { target: YTPlayer; data: number }) => void;
+    onError: (e: { target: YTPlayer; data: number }) => void;
   };
 }
 interface YTNamespace {
@@ -70,9 +71,16 @@ export function YoutubeBackground({ videoId, startSeconds, endSeconds }: Youtube
   // the first real PLAYING state means the visitor never sees that flash of
   // "this is a YouTube player" and just gets a clean video once it's ready.
   const [visible, setVisible] = useState(false);
+  // Once true, stop retrying — an errored video (embed disabled, deleted,
+  // region-blocked, etc.) will never recover, and calling playVideo() in a
+  // loop just keeps re-triggering the same error. Fall back to the plain
+  // scene gradient instead of ever showing YouTube's own error/suggestions
+  // screen.
+  const brokenRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    brokenRef.current = false;
     setVisible(false);
 
     loadYoutubeApi().then(() => {
@@ -145,9 +153,20 @@ export function YoutubeBackground({ videoId, startSeconds, endSeconds }: Youtube
               e.data === YT.PlayerState.CUED ||
               e.data === YT.PlayerState.UNSTARTED
             ) {
+              if (brokenRef.current) return;
               setVisible(false);
               e.target.playVideo();
             }
+          },
+          // Fires for embed-disabled (101/150), deleted/private (100), or
+          // invalid-param (2) videos — none of these are recoverable by
+          // retrying playVideo(), and left alone YouTube shows its own
+          // "video unavailable" / related-videos screen right through our
+          // pointer-events-none overlay. Stop retrying and stay on the
+          // scene gradient.
+          onError: () => {
+            brokenRef.current = true;
+            setVisible(false);
           },
         },
       });
