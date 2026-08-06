@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Minimal shape of the bits of the YT IFrame Player API this file touches.
 interface YTPlayer {
@@ -63,9 +63,16 @@ interface YoutubeBackgroundProps {
 export function YoutubeBackground({ videoId, startSeconds, endSeconds }: YoutubeBackgroundProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
+  // YouTube's own chrome (autoplay-muted unmute prompt, the big center
+  // play/pause icon, buffering spinner) can't be turned off via playerVars —
+  // controls:0 only hides the bottom bar. Keeping the iframe invisible until
+  // the first real PLAYING state means the visitor never sees that flash of
+  // "this is a YouTube player" and just gets a clean video once it's ready.
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    setVisible(false);
 
     loadYoutubeApi().then(() => {
       if (cancelled || !containerRef.current || !window.YT) return;
@@ -105,6 +112,7 @@ export function YoutubeBackground({ videoId, startSeconds, endSeconds }: Youtube
             if (!YT) return;
             if (e.data === YT.PlayerState.PLAYING) {
               e.target.setPlaybackQuality("highres");
+              setVisible(true);
               return;
             }
             if (e.data === YT.PlayerState.ENDED) {
@@ -139,7 +147,11 @@ export function YoutubeBackground({ videoId, startSeconds, endSeconds }: Youtube
 
   return (
     <div className="absolute inset-0 overflow-hidden">
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2">
+      <div
+        className={`pointer-events-none absolute left-1/2 top-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2 transition-opacity duration-500 ${
+          visible ? "opacity-100" : "opacity-0"
+        }`}
+      >
         <div ref={containerRef} className="pointer-events-none h-full w-full" />
       </div>
     </div>
