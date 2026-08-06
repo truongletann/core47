@@ -150,6 +150,18 @@ Always run a real `rm -rf .next .open-next && npm run deploy` (not just
 `tsc --noEmit`) before declaring a heavy-client-lib feature done, since this
 class of bug only shows up at deploy time.
 
+**`import * as Icons from "lucide-react"` for dynamic icon-by-name lookups
+defeats tree-shaking and pulls the whole ~1000-icon library into the Worker
+bundle** — confirmed this alone added ~1.4MiB (duplicated across two
+chunks) and was enough by itself to push the deploy over the 3MiB gzip cap
+(error 10027) even with no other heavy deps. Any place that resolves an
+icon component from a DB/string value (tool icons, category icons, admin
+nav icons) must import from `lib/toolbox/iconMap.ts` instead — a curated
+`Record<string, LucideIcon>` built from named imports of only the icon
+names actually in use. When adding a new tool/category with a new icon
+name, add that icon's named import to `iconMap.ts` too, or it'll silently
+render nothing (`getIcon()` falls back to `Box`).
+
 **pdf.js (`pdfjs-dist`) `page.render()` hangs forever if the tab is
 backgrounded while rendering.** Its default screen-rendering path schedules
 continuation via `requestAnimationFrame`, which browsers pause for
