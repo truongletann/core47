@@ -9,6 +9,7 @@ interface YTPlayer {
   playVideo: () => void;
   seekTo: (seconds: number, allowSeekAhead: boolean) => void;
   setPlaybackQuality: (quality: string) => void;
+  unloadModule?: (module: string) => void;
 }
 interface YTPlayerOptions {
   videoId: string;
@@ -105,6 +106,13 @@ export function YoutubeBackground({ videoId, startSeconds, endSeconds }: Youtube
           onReady: (e) => {
             e.target.mute();
             e.target.setPlaybackQuality("highres");
+            // cc_load_policy:0 only sets the *default* — if the viewer's own
+            // YouTube/Google account has "always show captions" turned on,
+            // that account-level preference wins over our playerVars. This
+            // undocumented-but-widely-used call is a best-effort second
+            // attempt to force them off; it isn't guaranteed to work for
+            // every viewer, since it's ultimately their account setting.
+            e.target.unloadModule?.("captions");
             e.target.playVideo();
           },
           onStateChange: (e) => {
@@ -112,25 +120,32 @@ export function YoutubeBackground({ videoId, startSeconds, endSeconds }: Youtube
             if (!YT) return;
             if (e.data === YT.PlayerState.PLAYING) {
               e.target.setPlaybackQuality("highres");
+              e.target.unloadModule?.("captions");
               setVisible(true);
               return;
             }
             if (e.data === YT.PlayerState.ENDED) {
               // Manual loop instead of the loop+playlist trick (see above).
+              // Hide first — YouTube shows a "related videos" end-card
+              // behind the scenes here, and there's a beat before seekTo
+              // actually resumes playback.
+              setVisible(false);
               e.target.seekTo(startSeconds ?? 0, true);
               e.target.playVideo();
               return;
             }
-            // Force playback to actually resume whenever it's not — a
-            // muted autoplay that got stuck cued/paused (rather than
-            // truly playing) leaves YouTube's own center play icon
-            // sitting on screen since controls:0 only hides the bottom
-            // bar, not that overlay. Skip BUFFERING, which is transient.
+            // Anything other than PLAYING/ENDED/BUFFERING means YouTube's
+            // own chrome is back on screen — the center play icon, or (if
+            // playback stalled mid-loop) the related-videos end card. Hide
+            // the video and force a resume; skip BUFFERING, which is a
+            // transient step on the way to PLAYING and would otherwise
+            // cause a visible flicker.
             if (
               e.data === YT.PlayerState.PAUSED ||
               e.data === YT.PlayerState.CUED ||
               e.data === YT.PlayerState.UNSTARTED
             ) {
+              setVisible(false);
               e.target.playVideo();
             }
           },
