@@ -9,7 +9,7 @@ export function Footer({ isAdminArea = false }: { isAdminArea?: boolean }) {
           isAdminArea ? "max-w-none" : "max-w-7xl",
         )}
       >
-        <span className="font-data">© 2026 Core47. Micro-tool ecosystem cho developer.</span>
+        <span className="font-data">© 2026 Core47 Labs.</span>
         <span className="font-data flex items-center gap-1.5">
           <span className="led-dot bg-[rgb(var(--accent))]" />
           dev by <span className="font-semibold text-[rgb(var(--fg))]">traviscore</span>
