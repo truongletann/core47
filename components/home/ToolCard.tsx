@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import type { Tool } from "@/types/tool";
 import { cn } from "@/lib/utils/cn";
 import { getCategoryColorVar } from "@/lib/tools/categoryColor";
@@ -35,15 +34,14 @@ export function ToolCard({ tool, index }: { tool: Tool; index: number }) {
   }, [tool.slug]);
 
   return (
-    <motion.a
+    <a
       ref={cardRef}
       href={isDisabled ? undefined : `https://${tool.subdomain}`}
       target={isDisabled ? undefined : "_blank"}
       rel="noreferrer noopener"
-      whileHover={isDisabled ? undefined : { y: -4 }}
-      transition={{ duration: 0.15 }}
       className={cn(
-        "relative flex overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] shadow-sm transition-shadow hover:shadow-md",
+        "relative flex overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] shadow-sm transition-[transform,box-shadow] duration-150 hover:shadow-md",
+        !isDisabled && "hover:-translate-y-1",
         isDisabled && "pointer-events-none opacity-50",
         flashing && "ring-2 ring-[rgb(var(--accent))]",
       )}
@@ -101,6 +99,6 @@ export function ToolCard({ tool, index }: { tool: Tool; index: number }) {
           {tool.subdomain}
         </span>
       </div>
-    </motion.a>
+    </a>
   );
 }
