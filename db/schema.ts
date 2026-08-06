@@ -264,9 +264,11 @@ export const focusSettings = sqliteTable("focus_settings", {
   updatedAt: text("updated_at").notNull(),
 });
 
-// NEW — Focus: ambient sound library, admin-managed. "bundled" tracks ship
-// as static files in public/sounds/, "r2" tracks are uploaded to the
-// FOCUS_SOUNDS bucket, "external" tracks point straight at a CDN URL.
+// NEW — Focus: ambient sound library, admin-managed. "r2" tracks are
+// uploaded to the FOCUS_SOUNDS bucket, "external" tracks point straight at
+// a CDN URL. "bundled" (static files under public/sounds/) is no longer
+// used — the last two bundled tracks were moved to R2 to keep audio out of
+// the deploy bundle; kept as an enum value only for old-row compatibility.
 export const focusSoundTracks = sqliteTable("focus_sound_tracks", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -12,18 +13,27 @@ const ROOT_DOMAIN = "core47.xyz";
 export function Navbar({ isAdminArea = false }: { isAdminArea?: boolean }) {
   const [homeUrl, setHomeUrl] = useState("/");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isOnRoot, setIsOnRoot] = useState(false);
+  const [isOnAdminSubdomain, setIsOnAdminSubdomain] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const { hostname, protocol, port } = window.location;
     const isAlreadyOnRoot =
       hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}` || hostname === "localhost";
+    setIsOnRoot(isAlreadyOnRoot);
+    setIsOnAdminSubdomain(hostname === `admin.${ROOT_DOMAIN}`);
 
     if (!isAlreadyOnRoot) {
       const portSuffix = port ? `:${port}` : "";
       setHomeUrl(`${protocol}//${ROOT_DOMAIN}${portSuffix}/`);
     }
   }, []);
+
+  const isBlogActive = isOnRoot && pathname.startsWith("/blog");
+  const isBucketListActive = isOnRoot && pathname.startsWith("/bucket-list");
+  const isMarketActive = isOnRoot && pathname.startsWith("/market");
 
   useEffect(() => {
     fetch("https://core47.xyz/api/auth/me", { credentials: "include" })
@@ -46,19 +56,42 @@ export function Navbar({ isAdminArea = false }: { isAdminArea?: boolean }) {
 
         <div className="flex items-center gap-3 sm:gap-6">
           <nav className="font-data hidden items-center gap-6 text-sm text-[rgb(var(--muted))] sm:flex">
-            <a href={homeUrl.replace(/\/$/, "") + "/blog"} className="hover:text-[rgb(var(--fg))] transition-colors">
+            <a
+              href={homeUrl.replace(/\/$/, "") + "/blog"}
+              className={cn(
+                "hover:text-[rgb(var(--fg))] transition-colors",
+                isBlogActive && "text-[rgb(var(--fg))]",
+              )}
+            >
               Blog
             </a>
-            <a href={homeUrl.replace(/\/$/, "") + "/bucket-list"} className="hover:text-[rgb(var(--fg))] transition-colors">
+            <a
+              href={homeUrl.replace(/\/$/, "") + "/bucket-list"}
+              className={cn(
+                "hover:text-[rgb(var(--fg))] transition-colors",
+                isBucketListActive && "text-[rgb(var(--fg))]",
+              )}
+            >
               Bucket List
             </a>
-            <a href={homeUrl.replace(/\/$/, "") + "/market"} className="hover:text-[rgb(var(--fg))] transition-colors">
+            <a
+              href={homeUrl.replace(/\/$/, "") + "/market"}
+              className={cn(
+                "hover:text-[rgb(var(--fg))] transition-colors",
+                isMarketActive && "text-[rgb(var(--fg))]",
+              )}
+            >
               Market
             </a>
             {isAdmin && (
               <a
                 href="https://admin.core47.xyz/"
-                className="text-[rgb(var(--accent))] hover:opacity-80 transition-opacity"
+                className={cn(
+                  "transition-opacity hover:opacity-80",
+                  isOnAdminSubdomain
+                    ? "text-[rgb(var(--accent))]"
+                    : "text-[rgb(var(--muted))] hover:text-[rgb(var(--accent))]",
+                )}
               >
                 Admin
               </a>
@@ -81,26 +114,38 @@ export function Navbar({ isAdminArea = false }: { isAdminArea?: boolean }) {
         <nav className="font-data flex flex-col gap-1 border-t border-[rgb(var(--border))] px-6 py-3 text-sm text-[rgb(var(--muted))] sm:hidden">
           <a
             href={homeUrl.replace(/\/$/, "") + "/blog"}
-            className="rounded-md px-2 py-2 hover:bg-[rgb(var(--border)/0.5)] hover:text-[rgb(var(--fg))]"
+            className={cn(
+              "rounded-md px-2 py-2 hover:bg-[rgb(var(--border)/0.5)] hover:text-[rgb(var(--fg))]",
+              isBlogActive && "text-[rgb(var(--fg))]",
+            )}
           >
             Blog
           </a>
           <a
             href={homeUrl.replace(/\/$/, "") + "/bucket-list"}
-            className="rounded-md px-2 py-2 hover:bg-[rgb(var(--border)/0.5)] hover:text-[rgb(var(--fg))]"
+            className={cn(
+              "rounded-md px-2 py-2 hover:bg-[rgb(var(--border)/0.5)] hover:text-[rgb(var(--fg))]",
+              isBucketListActive && "text-[rgb(var(--fg))]",
+            )}
           >
             Bucket List
           </a>
           <a
             href={homeUrl.replace(/\/$/, "") + "/market"}
-            className="rounded-md px-2 py-2 hover:bg-[rgb(var(--border)/0.5)] hover:text-[rgb(var(--fg))]"
+            className={cn(
+              "rounded-md px-2 py-2 hover:bg-[rgb(var(--border)/0.5)] hover:text-[rgb(var(--fg))]",
+              isMarketActive && "text-[rgb(var(--fg))]",
+            )}
           >
             Market
           </a>
           {isAdmin && (
             <a
               href="https://admin.core47.xyz/"
-              className="rounded-md px-2 py-2 text-[rgb(var(--accent))] hover:opacity-80"
+              className={cn(
+                "rounded-md px-2 py-2 hover:opacity-80",
+                isOnAdminSubdomain ? "text-[rgb(var(--accent))]" : "text-[rgb(var(--muted))] hover:text-[rgb(var(--accent))]",
+              )}
             >
               Admin
             </a>

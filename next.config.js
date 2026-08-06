@@ -6,7 +6,7 @@ const cspHeader = `
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: blob: https:;
   font-src 'self' data:;
-  connect-src 'self' https://*.core47.xyz wss://www.fxtin.com:39555 https://www.fxtin.com wss://stream.binance.com https://api.binance.com;
+  connect-src 'self' https://core47.xyz https://*.core47.xyz wss://www.fxtin.com:39555 https://www.fxtin.com wss://stream.binance.com https://api.binance.com;
   frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://open.spotify.com;
   object-src 'none';
   base-uri 'self';
