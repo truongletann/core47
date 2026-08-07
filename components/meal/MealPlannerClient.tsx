@@ -6,8 +6,6 @@ import { filterRecipesByIngredientQuery } from "@/lib/meal/ingredientSearch";
 
 interface RecipeIngredient {
   name: string;
-  quantity: number;
-  unit: string;
   foodName: string | null;
   calories: number | null;
 }
@@ -120,7 +118,10 @@ export function MealPlannerClient() {
   }, [from, to]);
 
   useEffect(() => {
-    fetch("/api/meal/recipes", { credentials: "include" })
+    // ?all=1 returns the full recipe pool (lightweight fields only) — the
+    // picker/auto-suggest below need to search/rank across every recipe,
+    // not just one page of the library's paginated listing.
+    fetch("/api/meal/recipes?all=1", { credentials: "include" })
       .then((r) => r.json() as Promise<{ data?: { recipes?: Recipe[] } }>)
       .then((json) => setRecipes(json?.data?.recipes ?? []));
   }, []);

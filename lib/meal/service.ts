@@ -1,7 +1,9 @@
-import { eq, and, asc, gte, lte, inArray } from "drizzle-orm";
+import { eq, and, asc, gte, lte, inArray, like, count } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { mealRecipes, mealRecipeIngredients, mealFoods, mealTargets, mealPlanEntries } from "@/db/schema";
 import type { RecipeInput, TargetInput, PlanEntryInput, FoodInput } from "./schema";
+import { filterRecipesByIngredientQuery } from "./ingredientSearch";
+import { deriveCookingMethods, CALORIE_RANGES } from "./recipeFilters";
 
 function toRecipe(r: typeof mealRecipes.$inferSelect) {
   return { ...r, goalTags: r.goalTags ? r.goalTags.split(",").filter(Boolean) : [] };
@@ -39,31 +41,191 @@ async function attachIngredients(recipe: ReturnType<typeof toRecipe>) {
   return { ...recipe, ingredients: rows.map(toIngredient) };
 }
 
-export async function listRecipes() {
+interface RecipeSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  servings: number;
+  caloriesPerServing: number;
+  proteinG: number;
+  fatG: number;
+  carbG: number;
+  goalTags: string[];
+  updatedAt: string;
+  ingredients: {
+    name: string;
+    foodName: string | null;
+    foodCategory: string | null;
+    calories: number | null;
+  }[];
+}
+
+// Lightweight recipe shape (no instructions/tips/rawText/etc, no per-
+// ingredient quantity/unit) — enough for cards, search, and filtering, at a
+// fraction of the payload of the full recipe. Loads every recipe, so it's
+// meant for callers (recipe library, meal planner picker) that need the
+// whole pool to search/filter/pick from client-side, not a single detail
+// view (use getRecipeById for that).
+async function loadAllSummaries(): Promise<RecipeSummary[]> {
   const db = await getDb();
   const [recipeRows, ingredientRows] = await Promise.all([
-    db.select().from(mealRecipes).orderBy(asc(mealRecipes.name)),
-    // One batched query for every recipe's ingredients instead of one
-    // query per recipe — with thousands of recipes, N+1 here turns a
-    // sub-second page load into a multi-second (or timed-out) one.
     db
-      .select({ ingredient: mealRecipeIngredients, food: mealFoods })
+      .select({
+        id: mealRecipes.id,
+        name: mealRecipes.name,
+        description: mealRecipes.description,
+        servings: mealRecipes.servings,
+        caloriesPerServing: mealRecipes.caloriesPerServing,
+        proteinG: mealRecipes.proteinG,
+        fatG: mealRecipes.fatG,
+        carbG: mealRecipes.carbG,
+        goalTags: mealRecipes.goalTags,
+        updatedAt: mealRecipes.updatedAt,
+      })
+      .from(mealRecipes)
+      .orderBy(asc(mealRecipes.name)),
+    db
+      .select({
+        recipeId: mealRecipeIngredients.recipeId,
+        name: mealRecipeIngredients.name,
+        quantity: mealRecipeIngredients.quantity,
+        foodName: mealFoods.name,
+        foodCategory: mealFoods.category,
+        caloriesPer100g: mealFoods.caloriesPer100g,
+      })
       .from(mealRecipeIngredients)
-      .leftJoin(mealFoods, eq(mealRecipeIngredients.foodId, mealFoods.id))
-      .orderBy(asc(mealRecipeIngredients.sortOrder)),
+      .leftJoin(mealFoods, eq(mealRecipeIngredients.foodId, mealFoods.id)),
   ]);
 
-  const ingredientsByRecipe = new Map<string, ReturnType<typeof toIngredient>[]>();
+  const ingredientsByRecipe = new Map<string, RecipeSummary["ingredients"]>();
   for (const row of ingredientRows) {
-    const list = ingredientsByRecipe.get(row.ingredient.recipeId) ?? [];
-    list.push(toIngredient(row));
-    ingredientsByRecipe.set(row.ingredient.recipeId, list);
+    const list = ingredientsByRecipe.get(row.recipeId) ?? [];
+    list.push({
+      name: row.name,
+      foodName: row.foodName ?? null,
+      foodCategory: row.foodCategory ?? null,
+      calories: row.caloriesPer100g != null ? (row.quantity / 100) * row.caloriesPer100g : null,
+    });
+    ingredientsByRecipe.set(row.recipeId, list);
   }
 
-  return recipeRows.map((r) => {
-    const recipe = toRecipe(r);
-    return { ...recipe, ingredients: ingredientsByRecipe.get(recipe.id) ?? [] };
-  });
+  return recipeRows.map((r) => ({
+    ...r,
+    goalTags: r.goalTags ? r.goalTags.split(",").filter(Boolean) : [],
+    ingredients: ingredientsByRecipe.get(r.id) ?? [],
+  }));
+}
+
+// Full pool of lightweight summaries — used by the meal planner's recipe
+// picker + auto-suggest, which both need to search/rank across every
+// recipe, not just one page of them.
+export async function listRecipeSummaries() {
+  return loadAllSummaries();
+}
+
+function buildIngredientFacets(recipes: RecipeSummary[]) {
+  const seen = new Map<string, Set<string>>();
+  for (const r of recipes) {
+    for (const ing of r.ingredients) {
+      if (!ing.foodName || !ing.foodCategory) continue;
+      const set = seen.get(ing.foodCategory) ?? new Set<string>();
+      set.add(ing.foodName);
+      seen.set(ing.foodCategory, set);
+    }
+  }
+  const facets: Record<string, string[]> = {};
+  for (const [cat, names] of seen) facets[cat] = [...names].sort((a, b) => a.localeCompare(b, "vi"));
+  return facets;
+}
+
+export interface ListRecipesPagedOptions {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  ingredients?: string[];
+  cookingMethods?: string[];
+  goals?: string[];
+  calorieRanges?: string[];
+  sort?: "name" | "calAsc" | "calDesc" | "proteinDesc";
+}
+
+// Paginated + filtered recipe listing for the public recipe library.
+// Filtering happens in memory over the lightweight summary set (D1 reads
+// are cheap and this is a small dataset to hold in a Worker's memory), but
+// only the current page — plus facet option lists built from the full set
+// — actually goes over the wire to the browser.
+export async function listRecipesPaged(options: ListRecipesPagedOptions = {}) {
+  const all = await loadAllSummaries();
+  const facets = buildIngredientFacets(all);
+
+  let result = options.search ? filterRecipesByIngredientQuery(all, options.search) : all;
+
+  if (options.ingredients?.length) {
+    const set = new Set(options.ingredients);
+    result = result.filter((r) => r.ingredients.some((i) => i.foodName && set.has(i.foodName)));
+  }
+  if (options.cookingMethods?.length) {
+    const set = new Set(options.cookingMethods);
+    result = result.filter((r) => deriveCookingMethods(r.name).some((m) => set.has(m)));
+  }
+  if (options.goals?.length) {
+    const set = new Set(options.goals);
+    result = result.filter((r) => r.goalTags.some((g) => set.has(g)));
+  }
+  if (options.calorieRanges?.length) {
+    const set = new Set(options.calorieRanges);
+    result = result.filter((r) =>
+      CALORIE_RANGES.some((range) => set.has(range.key) && range.test(r.caloriesPerServing)),
+    );
+  }
+
+  const sorted = [...result];
+  if (options.sort === "calAsc") sorted.sort((a, b) => a.caloriesPerServing - b.caloriesPerServing);
+  else if (options.sort === "calDesc") sorted.sort((a, b) => b.caloriesPerServing - a.caloriesPerServing);
+  else if (options.sort === "proteinDesc") sorted.sort((a, b) => b.proteinG - a.proteinG);
+  else sorted.sort((a, b) => a.name.localeCompare(b.name, "vi"));
+
+  const total = sorted.length;
+  const pageSize = Math.min(Math.max(options.pageSize ?? 24, 1), 100);
+  const page = Math.max(options.page ?? 1, 1);
+  const recipes = sorted.slice((page - 1) * pageSize, page * pageSize);
+
+  return { recipes, total, page, pageSize, facets };
+}
+
+export interface ListRecipeAdminSummariesOptions {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+}
+
+// Minimal paginated listing for the admin recipe table — pure SQL
+// LIMIT/OFFSET, no ingredient join at all, since that table only ever
+// shows name/servings/calories/updatedAt.
+export async function listRecipeAdminSummaries(options: ListRecipeAdminSummariesOptions = {}) {
+  const db = await getDb();
+  const pageSize = Math.min(Math.max(options.pageSize ?? 30, 1), 200);
+  const page = Math.max(options.page ?? 1, 1);
+  const where = options.search ? like(mealRecipes.name, `%${options.search}%`) : undefined;
+
+  const [rows, [{ total }]] = await Promise.all([
+    db
+      .select({
+        id: mealRecipes.id,
+        name: mealRecipes.name,
+        servings: mealRecipes.servings,
+        caloriesPerServing: mealRecipes.caloriesPerServing,
+        updatedAt: mealRecipes.updatedAt,
+      })
+      .from(mealRecipes)
+      .where(where)
+      .orderBy(asc(mealRecipes.name))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db.select({ total: count() }).from(mealRecipes).where(where),
+  ]);
+
+  return { recipes: rows, total, page, pageSize };
 }
 
 export async function getRecipeById(id: string) {

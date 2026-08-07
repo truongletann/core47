@@ -1,44 +1,44 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Search, Flame, Beef, Droplet, Wheat, SlidersHorizontal, ChevronDown, X } from "lucide-react";
-import { filterRecipesByIngredientQuery } from "@/lib/meal/ingredientSearch";
+import { useEffect, useState } from "react";
+import { Search, Flame, Beef, Droplet, Wheat, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import {
   FOOD_CATEGORY_LABELS,
   FOOD_CATEGORY_ORDER,
   COOKING_METHOD_LABELS,
   COOKING_METHOD_ORDER,
-  deriveCookingMethods,
   CALORIE_RANGES,
   GOAL_LABELS,
   GOAL_ORDER,
 } from "@/lib/meal/recipeFilters";
 
-interface RecipeIngredient {
-  name: string;
-  quantity: number;
-  unit: string;
-  foodName: string | null;
-  foodCategory: string | null;
-  calories: number | null;
-}
-
-interface Recipe {
+interface RecipeCard {
   id: string;
   name: string;
   description: string | null;
-  instructions: string;
   servings: number;
   caloriesPerServing: number;
   proteinG: number;
   fatG: number;
   carbG: number;
   goalTags: string[];
+  ingredients: { name: string; foodName: string | null; foodCategory: string | null }[];
+}
+
+interface RecipeDetail extends RecipeCard {
+  instructions: string;
   servingNotes: string | null;
   tips: string | null;
   expertAdvice: string | null;
   suggestedCombo: string | null;
-  ingredients: RecipeIngredient[];
+  ingredients: {
+    name: string;
+    quantity: number;
+    unit: string;
+    foodName: string | null;
+    foodCategory: string | null;
+    calories: number | null;
+  }[];
 }
 
 const SORT_OPTIONS = [
@@ -48,6 +48,8 @@ const SORT_OPTIONS = [
   { key: "proteinDesc", label: "Đạm: cao → thấp" },
 ] as const;
 type SortKey = (typeof SORT_OPTIONS)[number]["key"];
+
+const PAGE_SIZE = 24;
 
 type FilterSection = "ingredient" | "cooking" | "goal" | "calorie";
 
@@ -59,11 +61,19 @@ function toggleInSet<T>(set: Set<T>, value: T): Set<T> {
 }
 
 export function RecipeLibraryClient() {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [recipes, setRecipes] = useState<RecipeCard[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [facets, setFacets] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
+
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("name");
-  const [openRecipe, setOpenRecipe] = useState<Recipe | null>(null);
+
+  const [openRecipeId, setOpenRecipeId] = useState<string | null>(null);
+  const [openRecipe, setOpenRecipe] = useState<RecipeDetail | null>(null);
+  const [openRecipeLoading, setOpenRecipeLoading] = useState(false);
 
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [expandedSection, setExpandedSection] = useState<FilterSection | null>("ingredient");
@@ -72,59 +82,60 @@ export function RecipeLibraryClient() {
   const [selectedGoals, setSelectedGoals] = useState<Set<string>>(new Set());
   const [selectedCalorieRanges, setSelectedCalorieRanges] = useState<Set<string>>(new Set());
 
+  // Debounce the search box so every keystroke doesn't fire a request.
   useEffect(() => {
-    fetch("/api/meal/recipes", { credentials: "include" })
-      .then((r) => r.json() as Promise<{ data?: { recipes?: Recipe[] } }>)
-      .then((json) => setRecipes(json?.data?.recipes ?? []))
-      .finally(() => setLoading(false));
-  }, []);
+    const t = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
-  // Ingredient checkboxes are built from whatever's actually linked across
-  // the loaded recipes (grouped by the food's category), not a hardcoded
-  // list — stays accurate as the admin adds recipes/foods.
-  const ingredientsByCategory = useMemo(() => {
-    const map = new Map<string, Set<string>>();
-    for (const recipe of recipes) {
-      for (const ing of recipe.ingredients) {
-        if (!ing.foodName || !ing.foodCategory) continue;
-        const set = map.get(ing.foodCategory) ?? new Set<string>();
-        set.add(ing.foodName);
-        map.set(ing.foodCategory, set);
-      }
+  // Any filter/search/sort change resets back to page 1.
+  useEffect(() => {
+    setPage(1);
+  }, [search, sortKey, selectedIngredients, selectedCookingMethods, selectedGoals, selectedCalorieRanges]);
+
+  useEffect(() => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("pageSize", String(PAGE_SIZE));
+    params.set("sort", sortKey);
+    if (search.trim()) params.set("q", search.trim());
+    if (selectedIngredients.size) params.set("ingredients", [...selectedIngredients].join(","));
+    if (selectedCookingMethods.size) params.set("cooking", [...selectedCookingMethods].join(","));
+    if (selectedGoals.size) params.set("goals", [...selectedGoals].join(","));
+    if (selectedCalorieRanges.size) params.set("calorie", [...selectedCalorieRanges].join(","));
+
+    fetch(`/api/meal/recipes?${params.toString()}`, { credentials: "include" })
+      .then(
+        (r) =>
+          r.json() as Promise<{
+            data?: { recipes?: RecipeCard[]; total?: number; facets?: Record<string, string[]> };
+          }>,
+      )
+      .then((json) => {
+        setRecipes(json?.data?.recipes ?? []);
+        setTotal(json?.data?.total ?? 0);
+        setFacets(json?.data?.facets ?? {});
+      })
+      .finally(() => setLoading(false));
+  }, [page, sortKey, search, selectedIngredients, selectedCookingMethods, selectedGoals, selectedCalorieRanges]);
+
+  useEffect(() => {
+    if (!openRecipeId) {
+      setOpenRecipe(null);
+      return;
     }
-    return map;
-  }, [recipes]);
+    setOpenRecipeLoading(true);
+    fetch(`/api/meal/recipes/${openRecipeId}`, { credentials: "include" })
+      .then((r) => r.json() as Promise<{ data?: { recipe?: RecipeDetail } }>)
+      .then((json) => setOpenRecipe(json?.data?.recipe ?? null))
+      .finally(() => setOpenRecipeLoading(false));
+  }, [openRecipeId]);
 
   const activeFilterCount =
     selectedIngredients.size + selectedCookingMethods.size + selectedGoals.size + selectedCalorieRanges.size;
 
-  const filtered = useMemo(() => {
-    let result = filterRecipesByIngredientQuery(recipes, search);
-
-    if (selectedIngredients.size > 0) {
-      result = result.filter((r) =>
-        r.ingredients.some((ing) => ing.foodName && selectedIngredients.has(ing.foodName)),
-      );
-    }
-    if (selectedCookingMethods.size > 0) {
-      result = result.filter((r) => deriveCookingMethods(r.name).some((m) => selectedCookingMethods.has(m)));
-    }
-    if (selectedGoals.size > 0) {
-      result = result.filter((r) => r.goalTags.some((g) => selectedGoals.has(g)));
-    }
-    if (selectedCalorieRanges.size > 0) {
-      result = result.filter((r) =>
-        CALORIE_RANGES.some((range) => selectedCalorieRanges.has(range.key) && range.test(r.caloriesPerServing)),
-      );
-    }
-
-    const sorted = [...result];
-    if (sortKey === "calAsc") sorted.sort((a, b) => a.caloriesPerServing - b.caloriesPerServing);
-    else if (sortKey === "calDesc") sorted.sort((a, b) => b.caloriesPerServing - a.caloriesPerServing);
-    else if (sortKey === "proteinDesc") sorted.sort((a, b) => b.proteinG - a.proteinG);
-    else sorted.sort((a, b) => a.name.localeCompare(b.name, "vi"));
-    return sorted;
-  }, [recipes, search, selectedIngredients, selectedCookingMethods, selectedGoals, selectedCalorieRanges, sortKey]);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   function clearAllFilters() {
     setSelectedIngredients(new Set());
@@ -166,8 +177,8 @@ export function RecipeLibraryClient() {
       <div className="relative mb-4">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[rgb(var(--muted))]" />
         <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Tìm món ăn hoặc nguyên liệu..."
           className="w-full rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] py-3.5 pl-12 pr-4 text-base shadow-sm outline-none focus:ring-2 focus:ring-[rgb(var(--accent)/0.3)]"
         />
@@ -220,13 +231,13 @@ export function RecipeLibraryClient() {
               <SectionHeader section="ingredient" label="Nguyên liệu" />
               {expandedSection === "ingredient" && (
                 <div className="flex flex-col gap-3 py-3">
-                  {FOOD_CATEGORY_ORDER.filter((cat) => ingredientsByCategory.has(cat)).map((cat) => (
+                  {FOOD_CATEGORY_ORDER.filter((cat) => (facets[cat]?.length ?? 0) > 0).map((cat) => (
                     <div key={cat}>
                       <p className="mb-1.5 text-xs font-semibold text-[rgb(var(--muted))]">
                         {FOOD_CATEGORY_LABELS[cat]}
                       </p>
                       <div className="flex flex-col gap-1.5">
-                        {[...(ingredientsByCategory.get(cat) ?? [])].sort((a, b) => a.localeCompare(b, "vi")).map((name) => (
+                        {(facets[cat] ?? []).map((name) => (
                           <label key={name} className={checkboxRowClass}>
                             <input
                               type="checkbox"
@@ -305,124 +316,162 @@ export function RecipeLibraryClient() {
 
         {/* Results */}
         <div className="min-w-0 flex-1">
-          <p className="mb-3 text-xs text-[rgb(var(--muted))]">{filtered.length} món</p>
+          <p className="mb-3 text-xs text-[rgb(var(--muted))]">{total} món</p>
 
           {loading ? (
             <p className="text-center text-sm text-[rgb(var(--muted))]">Loading...</p>
           ) : recipes.length === 0 ? (
-            <p className="text-center text-sm text-[rgb(var(--muted))]">Chưa có công thức nào trong hệ thống.</p>
-          ) : filtered.length === 0 ? (
-            <p className="text-center text-sm text-[rgb(var(--muted))]">Không tìm thấy món nào khớp bộ lọc.</p>
+            <p className="text-center text-sm text-[rgb(var(--muted))]">
+              {total === 0 && activeFilterCount === 0 && !search
+                ? "Chưa có công thức nào trong hệ thống."
+                : "Không tìm thấy món nào khớp bộ lọc."}
+            </p>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((r) => (
-                <button
-                  key={r.id}
-                  onClick={() => setOpenRecipe(r)}
-                  className="flex flex-col rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-4 text-left transition-colors hover:border-[rgb(var(--accent))]"
-                >
-                  <h3 className="font-display text-sm font-semibold">{r.name}</h3>
-                  {r.description && (
-                    <p className="mt-1 line-clamp-2 text-xs text-[rgb(var(--muted))]">{r.description}</p>
-                  )}
-                  <p className="mt-2 truncate text-[11px] text-[rgb(var(--muted))]">
-                    {r.ingredients.map((i) => i.name).join(", ")}
-                  </p>
-                  <div className="font-data mt-3 flex items-center gap-3 text-[11px] text-[rgb(var(--muted))]">
-                    <span className="flex items-center gap-1">
-                      <Flame size={12} className="text-[rgb(var(--accent))]" /> {Math.round(r.caloriesPerServing)} kcal
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Beef size={12} /> {Math.round(r.proteinG)}g
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Droplet size={12} /> {Math.round(r.fatG)}g
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Wheat size={12} /> {Math.round(r.carbG)}g
-                    </span>
-                  </div>
-                  {r.goalTags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {r.goalTags.map((g) => (
-                        <span
-                          key={g}
-                          className="rounded-full bg-[rgb(var(--accent)/0.1)] px-2 py-0.5 text-[10px] text-[rgb(var(--accent))]"
-                        >
-                          {GOAL_LABELS[g] ?? g}
-                        </span>
-                      ))}
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {recipes.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => setOpenRecipeId(r.id)}
+                    className="flex flex-col rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-4 text-left transition-colors hover:border-[rgb(var(--accent))]"
+                  >
+                    <h3 className="font-display text-sm font-semibold">{r.name}</h3>
+                    {r.description && (
+                      <p className="mt-1 line-clamp-2 text-xs text-[rgb(var(--muted))]">{r.description}</p>
+                    )}
+                    <p className="mt-2 truncate text-[11px] text-[rgb(var(--muted))]">
+                      {r.ingredients.map((i) => i.name).join(", ")}
+                    </p>
+                    <div className="font-data mt-3 flex items-center gap-3 text-[11px] text-[rgb(var(--muted))]">
+                      <span className="flex items-center gap-1">
+                        <Flame size={12} className="text-[rgb(var(--accent))]" /> {Math.round(r.caloriesPerServing)} kcal
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Beef size={12} /> {Math.round(r.proteinG)}g
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Droplet size={12} /> {Math.round(r.fatG)}g
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Wheat size={12} /> {Math.round(r.carbG)}g
+                      </span>
                     </div>
-                  )}
-                </button>
-              ))}
-            </div>
+                    {r.goalTags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {r.goalTags.map((g) => (
+                          <span
+                            key={g}
+                            className="rounded-full bg-[rgb(var(--accent)/0.1)] px-2 py-0.5 text-[10px] text-[rgb(var(--accent))]"
+                          >
+                            {GOAL_LABELS[g] ?? g}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="mt-6 flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    aria-label="Trang trước"
+                    className="flex items-center gap-1 rounded-md border border-[rgb(var(--border))] px-3 py-1.5 text-xs hover:bg-[rgb(var(--border)/0.5)] disabled:opacity-40"
+                  >
+                    <ChevronLeft size={14} /> Trước
+                  </button>
+                  <span className="font-data text-xs text-[rgb(var(--muted))]">
+                    Trang {page}/{totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    aria-label="Trang sau"
+                    className="flex items-center gap-1 rounded-md border border-[rgb(var(--border))] px-3 py-1.5 text-xs hover:bg-[rgb(var(--border)/0.5)] disabled:opacity-40"
+                  >
+                    Sau <ChevronRight size={14} />
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      {openRecipe && (
+      {openRecipeId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
           <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-5 shadow-xl">
             <div className="mb-3 flex items-start justify-between gap-3">
-              <h2 className="font-display text-lg font-semibold">{openRecipe.name}</h2>
-              <button onClick={() => setOpenRecipe(null)} aria-label="Close" className="shrink-0">
+              <h2 className="font-display text-lg font-semibold">{openRecipe?.name ?? "Đang tải..."}</h2>
+              <button onClick={() => setOpenRecipeId(null)} aria-label="Close" className="shrink-0">
                 <X size={18} />
               </button>
             </div>
-            {openRecipe.description && (
-              <p className="mb-3 text-sm text-[rgb(var(--muted))]">{openRecipe.description}</p>
-            )}
 
-            <div className="font-data mb-4 flex flex-wrap gap-3 text-xs text-[rgb(var(--muted))]">
-              <span>{openRecipe.servings} khẩu phần</span>
-              <span>{Math.round(openRecipe.caloriesPerServing)} kcal/khẩu phần</span>
-              <span>Đạm {Math.round(openRecipe.proteinG)}g</span>
-              <span>Béo {Math.round(openRecipe.fatG)}g</span>
-              <span>Tinh bột {Math.round(openRecipe.carbG)}g</span>
-            </div>
-
-            <h3 className="mb-1.5 text-sm font-semibold">Nguyên liệu</h3>
-            <ul className="mb-4 flex flex-col gap-1 text-sm">
-              {openRecipe.ingredients.map((ing, i) => (
-                <li key={i} className="flex items-center justify-between border-b border-[rgb(var(--border))] pb-1 last:border-0">
-                  <span>{ing.name}</span>
-                  <span className="font-data text-xs text-[rgb(var(--muted))]">
-                    {ing.quantity} {ing.unit}
-                    {ing.calories !== null && ` · ≈${Math.round(ing.calories)} kcal`}
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            <h3 className="mb-1.5 text-sm font-semibold">Cách làm</h3>
-            <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.instructions}</div>
-
-            {openRecipe.servingNotes && (
+            {openRecipeLoading || !openRecipe ? (
+              <p className="text-center text-sm text-[rgb(var(--muted))]">Loading...</p>
+            ) : (
               <>
-                <h3 className="mb-1.5 mt-4 text-sm font-semibold">Cách dùng</h3>
-                <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.servingNotes}</div>
-              </>
-            )}
+                {openRecipe.description && (
+                  <p className="mb-3 text-sm text-[rgb(var(--muted))]">{openRecipe.description}</p>
+                )}
 
-            {openRecipe.tips && (
-              <>
-                <h3 className="mb-1.5 mt-4 text-sm font-semibold">Mẹo nhỏ</h3>
-                <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.tips}</div>
-              </>
-            )}
+                <div className="font-data mb-4 flex flex-wrap gap-3 text-xs text-[rgb(var(--muted))]">
+                  <span>{openRecipe.servings} khẩu phần</span>
+                  <span>{Math.round(openRecipe.caloriesPerServing)} kcal/khẩu phần</span>
+                  <span>Đạm {Math.round(openRecipe.proteinG)}g</span>
+                  <span>Béo {Math.round(openRecipe.fatG)}g</span>
+                  <span>Tinh bột {Math.round(openRecipe.carbG)}g</span>
+                </div>
 
-            {openRecipe.expertAdvice && (
-              <>
-                <h3 className="mb-1.5 mt-4 text-sm font-semibold">Lời khuyên chuyên gia</h3>
-                <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.expertAdvice}</div>
-              </>
-            )}
+                <h3 className="mb-1.5 text-sm font-semibold">Nguyên liệu</h3>
+                <ul className="mb-4 flex flex-col gap-1 text-sm">
+                  {openRecipe.ingredients.map((ing, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center justify-between border-b border-[rgb(var(--border))] pb-1 last:border-0"
+                    >
+                      <span>{ing.name}</span>
+                      <span className="font-data text-xs text-[rgb(var(--muted))]">
+                        {ing.quantity} {ing.unit}
+                        {ing.calories !== null && ` · ≈${Math.round(ing.calories)} kcal`}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
 
-            {openRecipe.suggestedCombo && (
-              <>
-                <h3 className="mb-1.5 mt-4 text-sm font-semibold">Gợi ý dùng kèm</h3>
-                <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.suggestedCombo}</div>
+                <h3 className="mb-1.5 text-sm font-semibold">Cách làm</h3>
+                <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.instructions}</div>
+
+                {openRecipe.servingNotes && (
+                  <>
+                    <h3 className="mb-1.5 mt-4 text-sm font-semibold">Cách dùng</h3>
+                    <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.servingNotes}</div>
+                  </>
+                )}
+
+                {openRecipe.tips && (
+                  <>
+                    <h3 className="mb-1.5 mt-4 text-sm font-semibold">Mẹo nhỏ</h3>
+                    <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.tips}</div>
+                  </>
+                )}
+
+                {openRecipe.expertAdvice && (
+                  <>
+                    <h3 className="mb-1.5 mt-4 text-sm font-semibold">Lời khuyên chuyên gia</h3>
+                    <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.expertAdvice}</div>
+                  </>
+                )}
+
+                {openRecipe.suggestedCombo && (
+                  <>
+                    <h3 className="mb-1.5 mt-4 text-sm font-semibold">Gợi ý dùng kèm</h3>
+                    <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.suggestedCombo}</div>
+                  </>
+                )}
               </>
             )}
           </div>

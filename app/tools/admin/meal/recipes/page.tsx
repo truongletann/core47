@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 
 interface RecipeRow {
@@ -12,22 +13,43 @@ interface RecipeRow {
   updatedAt: string;
 }
 
+const PAGE_SIZE = 30;
+
 export default function AdminMealRecipesPage() {
   const [recipes, setRecipes] = useState<RecipeRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<RecipeRow | null>(null);
 
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
   function load() {
     setLoading(true);
-    fetch("/api/admin/meal/recipes", { credentials: "include" })
-      .then((r) => r.json() as Promise<{ data?: { recipes?: RecipeRow[] } }>)
-      .then((json) => setRecipes(json?.data?.recipes ?? []))
+    const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+    if (search.trim()) params.set("q", search.trim());
+    fetch(`/api/admin/meal/recipes?${params.toString()}`, { credentials: "include" })
+      .then((r) => r.json() as Promise<{ data?: { recipes?: RecipeRow[]; total?: number } }>)
+      .then((json) => {
+        setRecipes(json?.data?.recipes ?? []);
+        setTotal(json?.data?.total ?? 0);
+      })
       .finally(() => setLoading(false));
   }
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search]);
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -39,9 +61,11 @@ export default function AdminMealRecipesPage() {
     load();
   }
 
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-semibold">Meal Recipes</h1>
         <div className="flex gap-2">
           <Link
@@ -57,6 +81,16 @@ export default function AdminMealRecipesPage() {
             + New recipe
           </Link>
         </div>
+      </div>
+
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <input
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Search by name..."
+          className="w-full max-w-xs rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[rgb(var(--accent)/0.3)]"
+        />
+        <span className="shrink-0 text-xs text-[rgb(var(--muted))]">{total} recipes</span>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-[rgb(var(--border))]">
@@ -114,6 +148,30 @@ export default function AdminMealRecipesPage() {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-3">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            aria-label="Previous page"
+            className="flex items-center gap-1 rounded-md border border-[rgb(var(--border))] px-3 py-1.5 text-xs hover:bg-[rgb(var(--border)/0.5)] disabled:opacity-40"
+          >
+            <ChevronLeft size={14} /> Prev
+          </button>
+          <span className="font-data text-xs text-[rgb(var(--muted))]">
+            Page {page}/{totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            aria-label="Next page"
+            className="flex items-center gap-1 rounded-md border border-[rgb(var(--border))] px-3 py-1.5 text-xs hover:bg-[rgb(var(--border)/0.5)] disabled:opacity-40"
+          >
+            Next <ChevronRight size={14} />
+          </button>
+        </div>
+      )}
 
       {deleteTarget && (
         <Modal title="Delete recipe" onClose={() => setDeleteTarget(null)}>
