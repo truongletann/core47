@@ -355,6 +355,13 @@ export const mealRecipes = sqliteTable("meal_recipes", {
   fatG: real("fat_g").notNull().default(0),
   carbG: real("carb_g").notNull().default(0),
   goalTags: text("goal_tags"), // comma-separated: lose_weight,maintain,gain_weight,gain_muscle
+  // Optional richer fields — populated for recipes imported from a fuller
+  // source dataset; nullable since the admin-authored recipe form doesn't
+  // require them.
+  servingNotes: text("serving_notes"), // plating/how-to-enjoy + finished-dish notes
+  tips: text("tips"), // "mẹo nhỏ"
+  expertAdvice: text("expert_advice"), // "lời khuyên chuyên gia"
+  suggestedCombo: text("suggested_combo"), // suggested side dishes to round out a meal
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
@@ -374,6 +381,12 @@ export const mealRecipeIngredients = sqliteTable("meal_recipe_ingredients", {
   name: text("name").notNull(),
   quantity: real("quantity").notNull(),
   unit: text("unit").notNull(),
+  // Free-text aside from the source line (e.g. prep note like "Luộc chín,
+  // giữ lại nước luộc"). rawText preserves the original ingredient line
+  // verbatim — quantity/unit parsing from free text is lossy, so this lets
+  // an admin manually fix outliers without losing the source data.
+  note: text("note"),
+  rawText: text("raw_text"),
   sortOrder: integer("sort_order").notNull().default(0),
 });
 

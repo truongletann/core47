@@ -8,13 +8,15 @@ export const MEAL_GOALS = ["lose_weight", "maintain", "gain_weight", "gain_muscl
 export const MEAL_SLOTS = ["breakfast", "lunch", "dinner", "snack"] as const;
 
 export const RecipeIngredientSchema = z.object({
-  name: z.string().trim().min(1).max(120),
+  name: z.string().trim().min(1).max(200),
   quantity: z.coerce.number().positive(),
-  unit: z.string().trim().min(1).max(30),
+  unit: z.string().trim().max(60).nullable().optional().transform((v) => v ?? ""),
   // Links this line to a meal_foods nutrition entry. When set, quantity is
   // interpreted in grams and the ingredient's own calo/macro contribution
   // can be computed — powers per-ingredient breakdown + ingredient search.
   foodId: z.string().trim().min(1).nullable().optional().transform((v) => v ?? null),
+  note: nullableString(300),
+  rawText: nullableString(500),
 });
 
 export const FOOD_CATEGORIES = ["thit", "hai_san", "rau_cu_qua", "tinh_bot", "khac"] as const;
@@ -30,15 +32,19 @@ export const FoodSchema = z.object({
 
 export const RecipeSchema = z.object({
   name: z.string().trim().min(1).max(160),
-  description: nullableString(400),
-  instructions: z.string().trim().min(1).max(5000),
+  description: nullableString(1000),
+  instructions: z.string().trim().min(1).max(8000),
   servings: z.coerce.number().int().positive(),
   caloriesPerServing: z.coerce.number().nonnegative(),
   proteinG: z.coerce.number().nonnegative(),
   fatG: z.coerce.number().nonnegative(),
   carbG: z.coerce.number().nonnegative(),
   goalTags: z.array(z.enum(MEAL_GOALS)).default([]),
-  ingredients: z.array(RecipeIngredientSchema).min(1).max(60),
+  servingNotes: nullableString(4000),
+  tips: nullableString(4000),
+  expertAdvice: nullableString(4000),
+  suggestedCombo: nullableString(1000),
+  ingredients: z.array(RecipeIngredientSchema).min(1).max(80),
 });
 
 export const TargetSchema = z.object({

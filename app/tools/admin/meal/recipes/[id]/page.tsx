@@ -27,11 +27,17 @@ export default async function EditMealRecipePage({
           fatG: recipe.fatG,
           carbG: recipe.carbG,
           goalTags: recipe.goalTags,
+          servingNotes: recipe.servingNotes,
+          tips: recipe.tips,
+          expertAdvice: recipe.expertAdvice,
+          suggestedCombo: recipe.suggestedCombo,
           ingredients: recipe.ingredients.map((i) => ({
             name: i.name,
             quantity: i.quantity,
             unit: i.unit,
             foodId: i.foodId,
+            note: i.note,
+            rawText: i.rawText,
           })),
         }}
       />

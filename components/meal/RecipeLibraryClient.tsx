@@ -34,6 +34,10 @@ interface Recipe {
   fatG: number;
   carbG: number;
   goalTags: string[];
+  servingNotes: string | null;
+  tips: string | null;
+  expertAdvice: string | null;
+  suggestedCombo: string | null;
   ingredients: RecipeIngredient[];
 }
 
@@ -393,6 +397,34 @@ export function RecipeLibraryClient() {
 
             <h3 className="mb-1.5 text-sm font-semibold">Cách làm</h3>
             <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.instructions}</div>
+
+            {openRecipe.servingNotes && (
+              <>
+                <h3 className="mb-1.5 mt-4 text-sm font-semibold">Cách dùng</h3>
+                <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.servingNotes}</div>
+              </>
+            )}
+
+            {openRecipe.tips && (
+              <>
+                <h3 className="mb-1.5 mt-4 text-sm font-semibold">Mẹo nhỏ</h3>
+                <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.tips}</div>
+              </>
+            )}
+
+            {openRecipe.expertAdvice && (
+              <>
+                <h3 className="mb-1.5 mt-4 text-sm font-semibold">Lời khuyên chuyên gia</h3>
+                <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.expertAdvice}</div>
+              </>
+            )}
+
+            {openRecipe.suggestedCombo && (
+              <>
+                <h3 className="mb-1.5 mt-4 text-sm font-semibold">Gợi ý dùng kèm</h3>
+                <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.suggestedCombo}</div>
+              </>
+            )}
           </div>
         </div>
       )}

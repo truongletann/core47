@@ -19,6 +19,8 @@ interface IngredientForm {
   quantity: number;
   unit: string;
   foodId: string | null;
+  note?: string | null;
+  rawText?: string | null;
 }
 
 interface EditorInitial {
@@ -31,6 +33,10 @@ interface EditorInitial {
   fatG: number;
   carbG: number;
   goalTags: string[];
+  servingNotes?: string | null;
+  tips?: string | null;
+  expertAdvice?: string | null;
+  suggestedCombo?: string | null;
   ingredients: IngredientForm[];
 }
 
@@ -44,6 +50,10 @@ const emptyInitial: EditorInitial = {
   fatG: 0,
   carbG: 0,
   goalTags: [],
+  servingNotes: "",
+  tips: "",
+  expertAdvice: "",
+  suggestedCombo: "",
   ingredients: [{ name: "", quantity: 0, unit: "", foodId: null }],
 };
 
@@ -134,7 +144,7 @@ export function RecipeEditor({
     try {
       const payload = {
         ...form,
-        ingredients: form.ingredients.filter((i) => i.name.trim() && i.unit.trim() && i.quantity > 0),
+        ingredients: form.ingredients.filter((i) => i.name.trim() && i.quantity > 0),
       };
       if (payload.ingredients.length === 0) {
         setError("Add at least one ingredient with a valid quantity and unit.");
@@ -197,6 +207,52 @@ export function RecipeEditor({
             rows={6}
             value={form.instructions}
             onChange={(e) => setForm((f) => ({ ...f, instructions: e.target.value }))}
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-medium text-[rgb(var(--muted))]">
+            Serving notes / cách dùng (optional)
+          </label>
+          <textarea
+            rows={3}
+            value={form.servingNotes ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, servingNotes: e.target.value }))}
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-medium text-[rgb(var(--muted))]">Tips / mẹo nhỏ (optional)</label>
+          <textarea
+            rows={3}
+            value={form.tips ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, tips: e.target.value }))}
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-medium text-[rgb(var(--muted))]">
+            Expert advice / lời khuyên chuyên gia (optional)
+          </label>
+          <textarea
+            rows={3}
+            value={form.expertAdvice ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, expertAdvice: e.target.value }))}
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-medium text-[rgb(var(--muted))]">
+            Suggested combo / gợi ý món ăn kèm (optional)
+          </label>
+          <textarea
+            rows={2}
+            value={form.suggestedCombo ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, suggestedCombo: e.target.value }))}
             className={inputClass}
           />
         </div>

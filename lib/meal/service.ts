@@ -7,10 +7,26 @@ function toRecipe(r: typeof mealRecipes.$inferSelect) {
   return { ...r, goalTags: r.goalTags ? r.goalTags.split(",").filter(Boolean) : [] };
 }
 
-// Attaches each recipe's ingredient lines, joined with their linked
-// meal_foods entry (if any) so callers get a per-ingredient calo/macro
-// breakdown — quantity is treated as grams whenever foodId is set — plus
-// the food's name, which is what ingredient search matches against.
+function toIngredient({
+  ingredient,
+  food,
+}: {
+  ingredient: typeof mealRecipeIngredients.$inferSelect;
+  food: typeof mealFoods.$inferSelect | null;
+}) {
+  return {
+    ...ingredient,
+    foodName: food?.name ?? null,
+    foodCategory: food?.category ?? null,
+    calories: food ? (ingredient.quantity / 100) * food.caloriesPer100g : null,
+    proteinG: food ? (ingredient.quantity / 100) * food.proteinPer100g : null,
+    fatG: food ? (ingredient.quantity / 100) * food.fatPer100g : null,
+    carbG: food ? (ingredient.quantity / 100) * food.carbPer100g : null,
+  };
+}
+
+// Attaches ingredient lines (joined with their linked meal_foods nutrition
+// entry, if any) to a single recipe.
 async function attachIngredients(recipe: ReturnType<typeof toRecipe>) {
   const db = await getDb();
   const rows = await db
@@ -20,24 +36,34 @@ async function attachIngredients(recipe: ReturnType<typeof toRecipe>) {
     .where(eq(mealRecipeIngredients.recipeId, recipe.id))
     .orderBy(asc(mealRecipeIngredients.sortOrder));
 
-  const ingredients = rows.map(({ ingredient, food }) => ({
-    ...ingredient,
-    foodName: food?.name ?? null,
-    foodCategory: food?.category ?? null,
-    calories: food ? (ingredient.quantity / 100) * food.caloriesPer100g : null,
-    proteinG: food ? (ingredient.quantity / 100) * food.proteinPer100g : null,
-    fatG: food ? (ingredient.quantity / 100) * food.fatPer100g : null,
-    carbG: food ? (ingredient.quantity / 100) * food.carbPer100g : null,
-  }));
-
-  return { ...recipe, ingredients };
+  return { ...recipe, ingredients: rows.map(toIngredient) };
 }
 
 export async function listRecipes() {
   const db = await getDb();
-  const rows = await db.select().from(mealRecipes).orderBy(asc(mealRecipes.name));
-  const recipes = rows.map(toRecipe);
-  return Promise.all(recipes.map(attachIngredients));
+  const [recipeRows, ingredientRows] = await Promise.all([
+    db.select().from(mealRecipes).orderBy(asc(mealRecipes.name)),
+    // One batched query for every recipe's ingredients instead of one
+    // query per recipe — with thousands of recipes, N+1 here turns a
+    // sub-second page load into a multi-second (or timed-out) one.
+    db
+      .select({ ingredient: mealRecipeIngredients, food: mealFoods })
+      .from(mealRecipeIngredients)
+      .leftJoin(mealFoods, eq(mealRecipeIngredients.foodId, mealFoods.id))
+      .orderBy(asc(mealRecipeIngredients.sortOrder)),
+  ]);
+
+  const ingredientsByRecipe = new Map<string, ReturnType<typeof toIngredient>[]>();
+  for (const row of ingredientRows) {
+    const list = ingredientsByRecipe.get(row.ingredient.recipeId) ?? [];
+    list.push(toIngredient(row));
+    ingredientsByRecipe.set(row.ingredient.recipeId, list);
+  }
+
+  return recipeRows.map((r) => {
+    const recipe = toRecipe(r);
+    return { ...recipe, ingredients: ingredientsByRecipe.get(recipe.id) ?? [] };
+  });
 }
 
 export async function getRecipeById(id: string) {
@@ -108,6 +134,10 @@ export async function createRecipe(input: RecipeInput) {
     fatG: input.fatG,
     carbG: input.carbG,
     goalTags: input.goalTags.join(","),
+    servingNotes: input.servingNotes,
+    tips: input.tips,
+    expertAdvice: input.expertAdvice,
+    suggestedCombo: input.suggestedCombo,
     createdAt: now,
     updatedAt: now,
   });
@@ -120,6 +150,8 @@ export async function createRecipe(input: RecipeInput) {
       name: ing.name,
       quantity: ing.quantity,
       unit: ing.unit,
+      note: ing.note,
+      rawText: ing.rawText,
       sortOrder: i,
     })),
   );
@@ -144,6 +176,10 @@ export async function updateRecipe(id: string, input: RecipeInput) {
       fatG: input.fatG,
       carbG: input.carbG,
       goalTags: input.goalTags.join(","),
+      servingNotes: input.servingNotes,
+      tips: input.tips,
+      expertAdvice: input.expertAdvice,
+      suggestedCombo: input.suggestedCombo,
       updatedAt: new Date().toISOString(),
     })
     .where(eq(mealRecipes.id, id));
@@ -157,6 +193,8 @@ export async function updateRecipe(id: string, input: RecipeInput) {
       name: ing.name,
       quantity: ing.quantity,
       unit: ing.unit,
+      note: ing.note,
+      rawText: ing.rawText,
       sortOrder: i,
     })),
   );
