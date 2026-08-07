@@ -27,7 +27,12 @@ export default async function EditMealRecipePage({
           fatG: recipe.fatG,
           carbG: recipe.carbG,
           goalTags: recipe.goalTags,
-          ingredients: recipe.ingredients.map((i) => ({ name: i.name, quantity: i.quantity, unit: i.unit })),
+          ingredients: recipe.ingredients.map((i) => ({
+            name: i.name,
+            quantity: i.quantity,
+            unit: i.unit,
+            foodId: i.foodId,
+          })),
         }}
       />
     </div>

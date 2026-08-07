@@ -1,19 +1,34 @@
 import { eq, and, asc, gte, lte, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { mealRecipes, mealRecipeIngredients, mealTargets, mealPlanEntries } from "@/db/schema";
-import type { RecipeInput, TargetInput, PlanEntryInput } from "./schema";
+import { mealRecipes, mealRecipeIngredients, mealFoods, mealTargets, mealPlanEntries } from "@/db/schema";
+import type { RecipeInput, TargetInput, PlanEntryInput, FoodInput } from "./schema";
 
 function toRecipe(r: typeof mealRecipes.$inferSelect) {
   return { ...r, goalTags: r.goalTags ? r.goalTags.split(",").filter(Boolean) : [] };
 }
 
+// Attaches each recipe's ingredient lines, joined with their linked
+// meal_foods entry (if any) so callers get a per-ingredient calo/macro
+// breakdown — quantity is treated as grams whenever foodId is set — plus
+// the food's name, which is what ingredient search matches against.
 async function attachIngredients(recipe: ReturnType<typeof toRecipe>) {
   const db = await getDb();
-  const ingredients = await db
-    .select()
+  const rows = await db
+    .select({ ingredient: mealRecipeIngredients, food: mealFoods })
     .from(mealRecipeIngredients)
+    .leftJoin(mealFoods, eq(mealRecipeIngredients.foodId, mealFoods.id))
     .where(eq(mealRecipeIngredients.recipeId, recipe.id))
     .orderBy(asc(mealRecipeIngredients.sortOrder));
+
+  const ingredients = rows.map(({ ingredient, food }) => ({
+    ...ingredient,
+    foodName: food?.name ?? null,
+    calories: food ? (ingredient.quantity / 100) * food.caloriesPer100g : null,
+    proteinG: food ? (ingredient.quantity / 100) * food.proteinPer100g : null,
+    fatG: food ? (ingredient.quantity / 100) * food.fatPer100g : null,
+    carbG: food ? (ingredient.quantity / 100) * food.carbPer100g : null,
+  }));
+
   return { ...recipe, ingredients };
 }
 
@@ -29,6 +44,49 @@ export async function getRecipeById(id: string) {
   const row = await db.select().from(mealRecipes).where(eq(mealRecipes.id, id)).get();
   if (!row) return null;
   return attachIngredients(toRecipe(row));
+}
+
+export async function listFoods() {
+  const db = await getDb();
+  return db.select().from(mealFoods).orderBy(asc(mealFoods.name));
+}
+
+export async function createFood(input: FoodInput) {
+  const db = await getDb();
+  const now = new Date().toISOString();
+  const record = {
+    id: crypto.randomUUID(),
+    name: input.name,
+    caloriesPer100g: input.caloriesPer100g,
+    proteinPer100g: input.proteinPer100g,
+    fatPer100g: input.fatPer100g,
+    carbPer100g: input.carbPer100g,
+    createdAt: now,
+    updatedAt: now,
+  };
+  await db.insert(mealFoods).values(record);
+  return record;
+}
+
+export async function updateFood(id: string, input: FoodInput) {
+  const db = await getDb();
+  await db
+    .update(mealFoods)
+    .set({
+      name: input.name,
+      caloriesPer100g: input.caloriesPer100g,
+      proteinPer100g: input.proteinPer100g,
+      fatPer100g: input.fatPer100g,
+      carbPer100g: input.carbPer100g,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(mealFoods.id, id));
+}
+
+export async function deleteFood(id: string) {
+  const db = await getDb();
+  await db.update(mealRecipeIngredients).set({ foodId: null }).where(eq(mealRecipeIngredients.foodId, id));
+  await db.delete(mealFoods).where(eq(mealFoods.id, id));
 }
 
 export async function createRecipe(input: RecipeInput) {
@@ -55,6 +113,7 @@ export async function createRecipe(input: RecipeInput) {
     input.ingredients.map((ing, i) => ({
       id: crypto.randomUUID(),
       recipeId: id,
+      foodId: ing.foodId,
       name: ing.name,
       quantity: ing.quantity,
       unit: ing.unit,
@@ -91,6 +150,7 @@ export async function updateRecipe(id: string, input: RecipeInput) {
     input.ingredients.map((ing, i) => ({
       id: crypto.randomUUID(),
       recipeId: id,
+      foodId: ing.foodId,
       name: ing.name,
       quantity: ing.quantity,
       unit: ing.unit,

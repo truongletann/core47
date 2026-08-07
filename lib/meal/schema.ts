@@ -11,6 +11,18 @@ export const RecipeIngredientSchema = z.object({
   name: z.string().trim().min(1).max(120),
   quantity: z.coerce.number().positive(),
   unit: z.string().trim().min(1).max(30),
+  // Links this line to a meal_foods nutrition entry. When set, quantity is
+  // interpreted in grams and the ingredient's own calo/macro contribution
+  // can be computed — powers per-ingredient breakdown + ingredient search.
+  foodId: z.string().trim().min(1).nullable().optional().transform((v) => v ?? null),
+});
+
+export const FoodSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  caloriesPer100g: z.coerce.number().nonnegative(),
+  proteinPer100g: z.coerce.number().nonnegative(),
+  fatPer100g: z.coerce.number().nonnegative(),
+  carbPer100g: z.coerce.number().nonnegative(),
 });
 
 export const RecipeSchema = z.object({
@@ -44,3 +56,4 @@ export const PlanEntrySchema = z.object({
 export type RecipeInput = z.infer<typeof RecipeSchema>;
 export type TargetInput = z.infer<typeof TargetSchema>;
 export type PlanEntryInput = z.infer<typeof PlanEntrySchema>;
+export type FoodInput = z.infer<typeof FoodSchema>;

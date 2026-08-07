@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, Trash2, ShoppingCart, Settings2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, ShoppingCart, Settings2, X, Search } from "lucide-react";
+import { filterRecipesByIngredientQuery } from "@/lib/meal/ingredientSearch";
+
+interface RecipeIngredient {
+  name: string;
+  quantity: number;
+  unit: string;
+  foodName: string | null;
+  calories: number | null;
+}
 
 interface Recipe {
   id: string;
@@ -12,6 +21,7 @@ interface Recipe {
   fatG: number;
   carbG: number;
   goalTags: string[];
+  ingredients: RecipeIngredient[];
 }
 
 interface PlanEntry {
@@ -359,6 +369,9 @@ function RecipePickerModal({
   onPick: (recipeId: string, servings: number) => void;
 }) {
   const [servingsByRecipe, setServingsByRecipe] = useState<Record<string, number>>({});
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => filterRecipesByIngredientQuery(recipes, search), [recipes, search]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
@@ -369,11 +382,22 @@ function RecipePickerModal({
             <X size={18} />
           </button>
         </div>
+        <div className="relative mb-3">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[rgb(var(--muted))]" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm theo nguyên liệu, vd: thịt, thịt trứng..."
+            className="w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] py-2 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-[rgb(var(--accent)/0.3)]"
+          />
+        </div>
         {recipes.length === 0 ? (
           <p className="text-sm text-[rgb(var(--muted))]">Chưa có công thức nào trong hệ thống.</p>
+        ) : filtered.length === 0 ? (
+          <p className="text-sm text-[rgb(var(--muted))]">Không tìm thấy món nào khớp nguyên liệu.</p>
         ) : (
           <div className="flex flex-col gap-2">
-            {recipes.map((r) => (
+            {filtered.map((r) => (
               <div
                 key={r.id}
                 className="flex items-center justify-between gap-2 rounded-lg border border-[rgb(var(--border))] p-2.5"
@@ -382,6 +406,12 @@ function RecipePickerModal({
                   <p className="truncate text-sm font-medium">{r.name}</p>
                   <p className="font-data text-xs text-[rgb(var(--muted))]">
                     {r.caloriesPerServing} kcal/khẩu phần
+                  </p>
+                  <p className="mt-0.5 truncate text-[11px] text-[rgb(var(--muted))]" title={r.ingredients
+                    .map((i) => (i.calories !== null ? `${i.name} (≈${Math.round(i.calories)} kcal)` : i.name))
+                    .join(", ")}
+                  >
+                    {r.ingredients.map((i) => i.name).join(", ")}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">

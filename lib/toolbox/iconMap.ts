@@ -4,6 +4,7 @@
 // since these lookups are dynamic — this named-import map keeps only what's used.
 import {
   AlignLeft,
+  Apple,
   Asterisk,
   Binary,
   Box,
@@ -55,6 +56,7 @@ import {
 
 export const iconMap: Record<string, LucideIcon> = {
   AlignLeft,
+  Apple,
   Asterisk,
   Binary,
   Box,

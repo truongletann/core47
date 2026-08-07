@@ -1,14 +1,24 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Trash2, Calculator } from "lucide-react";
 import { MEAL_GOALS } from "@/lib/meal/schema";
+
+interface Food {
+  id: string;
+  name: string;
+  caloriesPer100g: number;
+  proteinPer100g: number;
+  fatPer100g: number;
+  carbPer100g: number;
+}
 
 interface IngredientForm {
   name: string;
   quantity: number;
   unit: string;
+  foodId: string | null;
 }
 
 interface EditorInitial {
@@ -34,7 +44,7 @@ const emptyInitial: EditorInitial = {
   fatG: 0,
   carbG: 0,
   goalTags: [],
-  ingredients: [{ name: "", quantity: 0, unit: "" }],
+  ingredients: [{ name: "", quantity: 0, unit: "", foodId: null }],
 };
 
 const GOAL_LABELS: Record<string, string> = {
@@ -57,6 +67,13 @@ export function RecipeEditor({
   const [form, setForm] = useState<EditorInitial>(initial ?? emptyInitial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [foods, setFoods] = useState<Food[]>([]);
+
+  useEffect(() => {
+    fetch("/api/admin/meal/foods", { credentials: "include" })
+      .then((r) => r.json() as Promise<{ data?: { foods?: Food[] } }>)
+      .then((json) => setFoods(json?.data?.foods ?? []));
+  }, []);
 
   function updateIngredient(index: number, patch: Partial<IngredientForm>) {
     setForm((f) => ({
@@ -66,7 +83,38 @@ export function RecipeEditor({
   }
 
   function addIngredient() {
-    setForm((f) => ({ ...f, ingredients: [...f.ingredients, { name: "", quantity: 0, unit: "" }] }));
+    setForm((f) => ({
+      ...f,
+      ingredients: [...f.ingredients, { name: "", quantity: 0, unit: "", foodId: null }],
+    }));
+  }
+
+  // Sums each linked ingredient's calo/macro (quantity treated as grams),
+  // then divides by servings to fill the recipe's per-serving totals —
+  // ingredients with no linked food (spices, "vừa đủ", ...) are skipped.
+  function autoCalcFromIngredients() {
+    const totals = form.ingredients.reduce(
+      (acc, ing) => {
+        const food = ing.foodId ? foods.find((f) => f.id === ing.foodId) : null;
+        if (!food) return acc;
+        const factor = ing.quantity / 100;
+        return {
+          calories: acc.calories + factor * food.caloriesPer100g,
+          protein: acc.protein + factor * food.proteinPer100g,
+          fat: acc.fat + factor * food.fatPer100g,
+          carb: acc.carb + factor * food.carbPer100g,
+        };
+      },
+      { calories: 0, protein: 0, fat: 0, carb: 0 },
+    );
+    const servings = form.servings > 0 ? form.servings : 1;
+    setForm((f) => ({
+      ...f,
+      caloriesPerServing: Math.round(totals.calories / servings),
+      proteinG: Math.round((totals.protein / servings) * 10) / 10,
+      fatG: Math.round((totals.fat / servings) * 10) / 10,
+      carbG: Math.round((totals.carb / servings) * 10) / 10,
+    }));
   }
 
   function removeIngredient(index: number) {
@@ -153,7 +201,17 @@ export function RecipeEditor({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium text-[rgb(var(--muted))]">Nutrition per serving</label>
+          <button
+            type="button"
+            onClick={autoCalcFromIngredients}
+            className="flex items-center gap-1 text-xs text-[rgb(var(--accent))] hover:underline"
+          >
+            <Calculator size={12} /> Tính tự động từ nguyên liệu
+          </button>
+        </div>
+        <div className="-mt-2 grid grid-cols-2 gap-3 sm:grid-cols-5">
           <div>
             <label className="mb-1 block text-xs font-medium text-[rgb(var(--muted))]">Servings</label>
             <input
@@ -237,39 +295,68 @@ export function RecipeEditor({
               + Add ingredient
             </button>
           </div>
+          <p className="mb-2 text-[11px] text-[rgb(var(--muted))]">
+            Liên kết "Nutrition" để tính calo/macro tự động cho dòng này — khi liên kết, nhập số
+            lượng theo <strong>gram</strong>.
+          </p>
           <div className="flex flex-col gap-2">
-            {form.ingredients.map((ing, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <input
-                  placeholder="Name"
-                  value={ing.name}
-                  onChange={(e) => updateIngredient(i, { name: e.target.value })}
-                  className={`${inputClass} flex-1`}
-                />
-                <input
-                  type="number"
-                  min={0}
-                  placeholder="Qty"
-                  value={ing.quantity || ""}
-                  onChange={(e) => updateIngredient(i, { quantity: Number(e.target.value) })}
-                  className={`${inputClass} w-24`}
-                />
-                <input
-                  placeholder="Unit"
-                  value={ing.unit}
-                  onChange={(e) => updateIngredient(i, { unit: e.target.value })}
-                  className={`${inputClass} w-24`}
-                />
-                <button
-                  type="button"
-                  onClick={() => removeIngredient(i)}
-                  className="shrink-0 text-[rgb(var(--muted))] hover:text-red-600"
-                  aria-label="Remove ingredient"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
+            {form.ingredients.map((ing, i) => {
+              const linkedFood = ing.foodId ? foods.find((f) => f.id === ing.foodId) : null;
+              const lineCalories = linkedFood ? (ing.quantity / 100) * linkedFood.caloriesPer100g : null;
+              return (
+                <div key={i} className="flex flex-col gap-1 rounded-md border border-[rgb(var(--border))] p-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      placeholder="Name"
+                      value={ing.name}
+                      onChange={(e) => updateIngredient(i, { name: e.target.value })}
+                      className={`${inputClass} flex-1`}
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      placeholder="Qty"
+                      value={ing.quantity || ""}
+                      onChange={(e) => updateIngredient(i, { quantity: Number(e.target.value) })}
+                      className={`${inputClass} w-20`}
+                    />
+                    <input
+                      placeholder="Unit"
+                      value={ing.unit}
+                      onChange={(e) => updateIngredient(i, { unit: e.target.value })}
+                      className={`${inputClass} w-20`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeIngredient(i)}
+                      className="shrink-0 text-[rgb(var(--muted))] hover:text-red-600"
+                      aria-label="Remove ingredient"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={ing.foodId ?? ""}
+                      onChange={(e) => updateIngredient(i, { foodId: e.target.value || null })}
+                      className={`${inputClass} flex-1 text-xs`}
+                    >
+                      <option value="">— No nutrition link —</option>
+                      {foods.map((food) => (
+                        <option key={food.id} value={food.id}>
+                          {food.name} ({food.caloriesPer100g} kcal/100g)
+                        </option>
+                      ))}
+                    </select>
+                    {lineCalories !== null && (
+                      <span className="font-data shrink-0 text-xs text-[rgb(var(--muted))]">
+                        ≈ {Math.round(lineCalories)} kcal
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 

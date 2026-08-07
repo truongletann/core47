@@ -339,10 +339,11 @@ export const priceSymbols = sqliteTable("price_symbols", {
   createdAt: text("created_at").notNull(),
 });
 
-// NEW — Meal: recipes, admin-authored. Macros are entered as totals per
-// serving (not derived from a nutrition-per-ingredient database) to keep the
-// data-entry burden low — see CONVENTIONS.md-style scope note in the meal
-// planner migration.
+// NEW — Meal: recipes, admin-authored. caloriesPerServing/proteinG/fatG/carbG
+// are the recipe's own totals — either typed in directly, or auto-summed in
+// the admin UI from linked meal_foods ingredient nutrition (see
+// meal_recipe_ingredients.foodId below) and saved as a snapshot, so a later
+// edit to a food's nutrition doesn't silently change already-saved recipes.
 export const mealRecipes = sqliteTable("meal_recipes", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -358,14 +359,38 @@ export const mealRecipes = sqliteTable("meal_recipes", {
   updatedAt: text("updated_at").notNull(),
 });
 
-// NEW — Meal: ingredient lines for a recipe, used to build shopping lists
+// NEW — Meal: ingredient lines for a recipe, used to build shopping lists.
+// foodId optionally links this line to a meal_foods nutrition entry — when
+// set, quantity is interpreted in grams and the line's own calo/protein/fat/
+// carb contribution can be computed (quantity / 100 * food's per-100g
+// values), which is what powers the "search recipes by ingredient" and
+// per-ingredient macro breakdown features. foodId is nullable because not
+// every ingredient (spices, "gia vị vừa đủ", ...) has — or needs — a
+// nutrition entry.
 export const mealRecipeIngredients = sqliteTable("meal_recipe_ingredients", {
   id: text("id").primaryKey(),
   recipeId: text("recipe_id").notNull(),
+  foodId: text("food_id"),
   name: text("name").notNull(),
   quantity: real("quantity").notNull(),
   unit: text("unit").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
+});
+
+// NEW — Meal: per-100g nutrition reference for ingredients, admin-managed.
+// Small curated table (not a full USDA-scale database) — enough for the
+// ingredients actually used across recipes. Searched by name to power
+// ingredient search/autocomplete in the recipe editor and the "find recipes
+// containing X" feature.
+export const mealFoods = sqliteTable("meal_foods", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  caloriesPer100g: real("calories_per_100g").notNull().default(0),
+  proteinPer100g: real("protein_per_100g").notNull().default(0),
+  fatPer100g: real("fat_per_100g").notNull().default(0),
+  carbPer100g: real("carb_per_100g").notNull().default(0),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
 });
 
 // NEW — Meal: per-user daily calorie/macro targets, one row per user

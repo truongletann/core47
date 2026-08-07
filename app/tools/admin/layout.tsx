@@ -34,7 +34,10 @@ const NAV: AdminNavSection[] = [
   },
   {
     section: "Meal",
-    items: [{ href: "/meal/recipes", label: "Recipes", icon: "Utensils" }],
+    items: [
+      { href: "/meal/recipes", label: "Recipes", icon: "Utensils" },
+      { href: "/meal/foods", label: "Foods (nutrition)", icon: "Apple" },
+    ],
   },
   {
     section: "Focus",
