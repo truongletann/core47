@@ -339,6 +339,63 @@ export const priceSymbols = sqliteTable("price_symbols", {
   createdAt: text("created_at").notNull(),
 });
 
+// NEW — Meal: recipes, admin-authored. Macros are entered as totals per
+// serving (not derived from a nutrition-per-ingredient database) to keep the
+// data-entry burden low — see CONVENTIONS.md-style scope note in the meal
+// planner migration.
+export const mealRecipes = sqliteTable("meal_recipes", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  instructions: text("instructions").notNull(), // one step per line
+  servings: integer("servings").notNull().default(1),
+  caloriesPerServing: real("calories_per_serving").notNull().default(0),
+  proteinG: real("protein_g").notNull().default(0),
+  fatG: real("fat_g").notNull().default(0),
+  carbG: real("carb_g").notNull().default(0),
+  goalTags: text("goal_tags"), // comma-separated: lose_weight,maintain,gain_weight,gain_muscle
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// NEW — Meal: ingredient lines for a recipe, used to build shopping lists
+export const mealRecipeIngredients = sqliteTable("meal_recipe_ingredients", {
+  id: text("id").primaryKey(),
+  recipeId: text("recipe_id").notNull(),
+  name: text("name").notNull(),
+  quantity: real("quantity").notNull(),
+  unit: text("unit").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+// NEW — Meal: per-user daily calorie/macro targets, one row per user
+export const mealTargets = sqliteTable("meal_targets", {
+  userId: text("user_id").primaryKey(),
+  goal: text("goal", {
+    enum: ["lose_weight", "maintain", "gain_weight", "gain_muscle"],
+  })
+    .notNull()
+    .default("maintain"),
+  targetCalories: real("target_calories").notNull(),
+  targetProteinG: real("target_protein_g").notNull().default(0),
+  targetFatG: real("target_fat_g").notNull().default(0),
+  targetCarbG: real("target_carb_g").notNull().default(0),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// NEW — Meal: one recipe placed into a user's plan for a given day/slot
+export const mealPlanEntries = sqliteTable("meal_plan_entries", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  date: text("date").notNull(), // ISO date, e.g. 2026-08-10
+  mealSlot: text("meal_slot", {
+    enum: ["breakfast", "lunch", "dinner", "snack"],
+  }).notNull(),
+  recipeId: text("recipe_id").notNull(),
+  servings: real("servings").notNull().default(1),
+  createdAt: text("created_at").notNull(),
+});
+
 // NEW — Market: Vietnam domestic gold (SJC/DOJI/PNJ), shown on
 // /market/prices. Uses vang.today's public aggregator API (free, no key,
 // CORS-open, and — unlike SJC's own endpoint or Binance — not blocked from

@@ -47,6 +47,7 @@ import {
   Toolbox,
   Type,
   Users,
+  Utensils,
   Wallet,
   Wrench,
   type LucideIcon,
@@ -97,6 +98,7 @@ export const iconMap: Record<string, LucideIcon> = {
   Toolbox,
   Type,
   Users,
+  Utensils,
   Wallet,
   Wrench,
 };
