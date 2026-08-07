@@ -43,12 +43,20 @@ export default function AdminMealRecipesPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="font-display text-2xl font-semibold">Meal Recipes</h1>
-        <Link
-          href="/meal/recipes/new"
-          className="rounded-lg bg-[rgb(var(--accent))] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-        >
-          + New recipe
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/meal/recipes/import"
+            className="rounded-lg border border-[rgb(var(--border))] px-4 py-2 text-sm font-semibold hover:bg-[rgb(var(--border)/0.5)]"
+          >
+            Import CSV
+          </Link>
+          <Link
+            href="/meal/recipes/new"
+            className="rounded-lg bg-[rgb(var(--accent))] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+          >
+            + New recipe
+          </Link>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-[rgb(var(--border))]">
