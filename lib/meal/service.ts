@@ -23,6 +23,7 @@ async function attachIngredients(recipe: ReturnType<typeof toRecipe>) {
   const ingredients = rows.map(({ ingredient, food }) => ({
     ...ingredient,
     foodName: food?.name ?? null,
+    foodCategory: food?.category ?? null,
     calories: food ? (ingredient.quantity / 100) * food.caloriesPer100g : null,
     proteinG: food ? (ingredient.quantity / 100) * food.proteinPer100g : null,
     fatG: food ? (ingredient.quantity / 100) * food.fatPer100g : null,
@@ -57,6 +58,7 @@ export async function createFood(input: FoodInput) {
   const record = {
     id: crypto.randomUUID(),
     name: input.name,
+    category: input.category,
     caloriesPer100g: input.caloriesPer100g,
     proteinPer100g: input.proteinPer100g,
     fatPer100g: input.fatPer100g,
@@ -74,6 +76,7 @@ export async function updateFood(id: string, input: FoodInput) {
     .update(mealFoods)
     .set({
       name: input.name,
+      category: input.category,
       caloriesPer100g: input.caloriesPer100g,
       proteinPer100g: input.proteinPer100g,
       fatPer100g: input.fatPer100g,

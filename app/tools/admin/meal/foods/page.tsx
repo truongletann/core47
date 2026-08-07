@@ -6,13 +6,29 @@ import { Modal } from "@/components/ui/Modal";
 interface Food {
   id: string;
   name: string;
+  category: string;
   caloriesPer100g: number;
   proteinPer100g: number;
   fatPer100g: number;
   carbPer100g: number;
 }
 
-const emptyForm = { name: "", caloriesPer100g: "0", proteinPer100g: "0", fatPer100g: "0", carbPer100g: "0" };
+const CATEGORY_LABELS: Record<string, string> = {
+  thit: "Thịt",
+  hai_san: "Hải sản",
+  rau_cu_qua: "Rau củ quả",
+  tinh_bot: "Tinh bột",
+  khac: "Khác",
+};
+
+const emptyForm = {
+  name: "",
+  category: "khac",
+  caloriesPer100g: "0",
+  proteinPer100g: "0",
+  fatPer100g: "0",
+  carbPer100g: "0",
+};
 type FormState = typeof emptyForm;
 
 function FoodForm({ form, setForm }: { form: FormState; setForm: (f: FormState) => void }) {
@@ -28,6 +44,20 @@ function FoodForm({ form, setForm }: { form: FormState; setForm: (f: FormState) 
           placeholder="Thịt heo (nạc)"
           className={inputClass}
         />
+      </label>
+      <label className="text-sm">
+        <span className="mb-1 block text-[rgb(var(--muted))]">Nhóm nguyên liệu</span>
+        <select
+          value={form.category}
+          onChange={(e) => setForm({ ...form, category: e.target.value })}
+          className={inputClass}
+        >
+          {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
       </label>
       <div className="grid grid-cols-2 gap-3">
         <label className="text-sm">
@@ -106,6 +136,7 @@ export default function AdminMealFoodsPage() {
   function openEdit(f: Food) {
     setForm({
       name: f.name,
+      category: f.category,
       caloriesPer100g: String(f.caloriesPer100g),
       proteinPer100g: String(f.proteinPer100g),
       fatPer100g: String(f.fatPer100g),
@@ -195,6 +226,7 @@ export default function AdminMealFoodsPage() {
           <thead>
             <tr className="border-b border-[rgb(var(--border))] text-xs uppercase text-[rgb(var(--muted))]">
               <th className="px-4 py-2">Name</th>
+              <th className="px-4 py-2">Category</th>
               <th className="px-4 py-2">Kcal/100g</th>
               <th className="px-4 py-2">Protein/100g</th>
               <th className="px-4 py-2">Fat/100g</th>
@@ -205,13 +237,13 @@ export default function AdminMealFoodsPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-[rgb(var(--muted))]">
+                <td colSpan={7} className="px-4 py-6 text-center text-[rgb(var(--muted))]">
                   Loading...
                 </td>
               </tr>
             ) : foods.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-[rgb(var(--muted))]">
+                <td colSpan={7} className="px-4 py-6 text-center text-[rgb(var(--muted))]">
                   No foods yet.
                 </td>
               </tr>
@@ -219,6 +251,7 @@ export default function AdminMealFoodsPage() {
               foods.map((f) => (
                 <tr key={f.id} className="border-b border-[rgb(var(--border))] last:border-0">
                   <td className="px-4 py-2">{f.name}</td>
+                  <td className="px-4 py-2 text-xs">{CATEGORY_LABELS[f.category] ?? f.category}</td>
                   <td className="px-4 py-2 text-xs">{f.caloriesPer100g}</td>
                   <td className="px-4 py-2 text-xs">{f.proteinPer100g}</td>
                   <td className="px-4 py-2 text-xs">{f.fatPer100g}</td>

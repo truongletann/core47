@@ -17,8 +17,11 @@ export const RecipeIngredientSchema = z.object({
   foodId: z.string().trim().min(1).nullable().optional().transform((v) => v ?? null),
 });
 
+export const FOOD_CATEGORIES = ["thit", "hai_san", "rau_cu_qua", "tinh_bot", "khac"] as const;
+
 export const FoodSchema = z.object({
   name: z.string().trim().min(1).max(120),
+  category: z.enum(FOOD_CATEGORIES),
   caloriesPer100g: z.coerce.number().nonnegative(),
   proteinPer100g: z.coerce.number().nonnegative(),
   fatPer100g: z.coerce.number().nonnegative(),

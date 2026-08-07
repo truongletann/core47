@@ -385,6 +385,14 @@ export const mealRecipeIngredients = sqliteTable("meal_recipe_ingredients", {
 export const mealFoods = sqliteTable("meal_foods", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
+  // Drives the "Nguyên liệu" filter group on the recipe library page —
+  // recipes are grouped by which category their linked ingredients fall
+  // into, same shape as a typical recipe-site ingredient filter.
+  category: text("category", {
+    enum: ["thit", "hai_san", "rau_cu_qua", "tinh_bot", "khac"],
+  })
+    .notNull()
+    .default("khac"),
   caloriesPer100g: real("calories_per_100g").notNull().default(0),
   proteinPer100g: real("protein_per_100g").notNull().default(0),
   fatPer100g: real("fat_per_100g").notNull().default(0),

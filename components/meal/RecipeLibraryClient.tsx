@@ -1,14 +1,25 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, Flame, Beef, Droplet, Wheat } from "lucide-react";
+import { Search, Flame, Beef, Droplet, Wheat, SlidersHorizontal, ChevronDown, X } from "lucide-react";
 import { filterRecipesByIngredientQuery } from "@/lib/meal/ingredientSearch";
+import {
+  FOOD_CATEGORY_LABELS,
+  FOOD_CATEGORY_ORDER,
+  COOKING_METHOD_LABELS,
+  COOKING_METHOD_ORDER,
+  deriveCookingMethods,
+  CALORIE_RANGES,
+  GOAL_LABELS,
+  GOAL_ORDER,
+} from "@/lib/meal/recipeFilters";
 
 interface RecipeIngredient {
   name: string;
   quantity: number;
   unit: string;
   foodName: string | null;
+  foodCategory: string | null;
   calories: number | null;
 }
 
@@ -26,20 +37,6 @@ interface Recipe {
   ingredients: RecipeIngredient[];
 }
 
-const GOAL_LABELS: Record<string, string> = {
-  lose_weight: "Giảm cân",
-  maintain: "Duy trì",
-  gain_weight: "Tăng cân",
-  gain_muscle: "Tăng cơ",
-};
-
-const CALORIE_RANGES = [
-  { key: "under300", label: "Dưới 300 kcal", test: (c: number) => c < 300 },
-  { key: "300to500", label: "300–500 kcal", test: (c: number) => c >= 300 && c <= 500 },
-  { key: "over500", label: "Trên 500 kcal", test: (c: number) => c > 500 },
-] as const;
-type CalorieRangeKey = (typeof CALORIE_RANGES)[number]["key"];
-
 const SORT_OPTIONS = [
   { key: "name", label: "Tên (A-Z)" },
   { key: "calAsc", label: "Calo: thấp → cao" },
@@ -48,14 +45,28 @@ const SORT_OPTIONS = [
 ] as const;
 type SortKey = (typeof SORT_OPTIONS)[number]["key"];
 
+type FilterSection = "ingredient" | "cooking" | "goal" | "calorie";
+
+function toggleInSet<T>(set: Set<T>, value: T): Set<T> {
+  const next = new Set(set);
+  if (next.has(value)) next.delete(value);
+  else next.add(value);
+  return next;
+}
+
 export function RecipeLibraryClient() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [activeGoal, setActiveGoal] = useState<string | null>(null);
-  const [activeCalorieRange, setActiveCalorieRange] = useState<CalorieRangeKey | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [openRecipe, setOpenRecipe] = useState<Recipe | null>(null);
+
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<FilterSection | null>("ingredient");
+  const [selectedIngredients, setSelectedIngredients] = useState<Set<string>>(new Set());
+  const [selectedCookingMethods, setSelectedCookingMethods] = useState<Set<string>>(new Set());
+  const [selectedGoals, setSelectedGoals] = useState<Set<string>>(new Set());
+  const [selectedCalorieRanges, setSelectedCalorieRanges] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetch("/api/meal/recipes", { credentials: "include" })
@@ -64,12 +75,43 @@ export function RecipeLibraryClient() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Ingredient checkboxes are built from whatever's actually linked across
+  // the loaded recipes (grouped by the food's category), not a hardcoded
+  // list — stays accurate as the admin adds recipes/foods.
+  const ingredientsByCategory = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const recipe of recipes) {
+      for (const ing of recipe.ingredients) {
+        if (!ing.foodName || !ing.foodCategory) continue;
+        const set = map.get(ing.foodCategory) ?? new Set<string>();
+        set.add(ing.foodName);
+        map.set(ing.foodCategory, set);
+      }
+    }
+    return map;
+  }, [recipes]);
+
+  const activeFilterCount =
+    selectedIngredients.size + selectedCookingMethods.size + selectedGoals.size + selectedCalorieRanges.size;
+
   const filtered = useMemo(() => {
     let result = filterRecipesByIngredientQuery(recipes, search);
-    if (activeGoal) result = result.filter((r) => r.goalTags.includes(activeGoal));
-    if (activeCalorieRange) {
-      const range = CALORIE_RANGES.find((r) => r.key === activeCalorieRange)!;
-      result = result.filter((r) => range.test(r.caloriesPerServing));
+
+    if (selectedIngredients.size > 0) {
+      result = result.filter((r) =>
+        r.ingredients.some((ing) => ing.foodName && selectedIngredients.has(ing.foodName)),
+      );
+    }
+    if (selectedCookingMethods.size > 0) {
+      result = result.filter((r) => deriveCookingMethods(r.name).some((m) => selectedCookingMethods.has(m)));
+    }
+    if (selectedGoals.size > 0) {
+      result = result.filter((r) => r.goalTags.some((g) => selectedGoals.has(g)));
+    }
+    if (selectedCalorieRanges.size > 0) {
+      result = result.filter((r) =>
+        CALORIE_RANGES.some((range) => selectedCalorieRanges.has(range.key) && range.test(r.caloriesPerServing)),
+      );
     }
 
     const sorted = [...result];
@@ -78,7 +120,34 @@ export function RecipeLibraryClient() {
     else if (sortKey === "proteinDesc") sorted.sort((a, b) => b.proteinG - a.proteinG);
     else sorted.sort((a, b) => a.name.localeCompare(b.name, "vi"));
     return sorted;
-  }, [recipes, search, activeGoal, activeCalorieRange, sortKey]);
+  }, [recipes, search, selectedIngredients, selectedCookingMethods, selectedGoals, selectedCalorieRanges, sortKey]);
+
+  function clearAllFilters() {
+    setSelectedIngredients(new Set());
+    setSelectedCookingMethods(new Set());
+    setSelectedGoals(new Set());
+    setSelectedCalorieRanges(new Set());
+  }
+
+  const checkboxRowClass = "flex items-center gap-2 text-sm";
+  const checkboxClass = "h-4 w-4 accent-[rgb(var(--accent))]";
+
+  function SectionHeader({ section, label }: { section: FilterSection; label: string }) {
+    const expanded = expandedSection === section;
+    return (
+      <button
+        type="button"
+        onClick={() => setExpandedSection((s) => (s === section ? null : section))}
+        className="flex w-full items-center justify-between border-b border-[rgb(var(--border))] py-3 text-left"
+      >
+        <span className={`text-sm font-semibold ${expanded ? "text-[rgb(var(--accent))]" : ""}`}>{label}</span>
+        <ChevronDown
+          size={16}
+          className={`text-[rgb(var(--muted))] transition-transform ${expanded ? "rotate-180" : ""}`}
+        />
+      </button>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 md:px-6 md:py-12">
@@ -100,132 +169,193 @@ export function RecipeLibraryClient() {
         />
       </div>
 
-      {/* Goal filter tags */}
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium text-[rgb(var(--muted))]">Mục tiêu:</span>
+      {/* Filter toggle + sort */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <button
-          onClick={() => setActiveGoal(null)}
-          className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
-            activeGoal === null
-              ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent)/0.12)] text-[rgb(var(--accent))]"
-              : "border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:bg-[rgb(var(--border)/0.5)]"
+          onClick={() => setFilterPanelOpen((v) => !v)}
+          className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold ${
+            activeFilterCount > 0
+              ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent)/0.1)] text-[rgb(var(--accent))]"
+              : "border-[rgb(var(--border))] text-[rgb(var(--fg))] hover:bg-[rgb(var(--border)/0.5)]"
           }`}
         >
-          Tất cả
+          <SlidersHorizontal size={15} />
+          {filterPanelOpen ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
+          {activeFilterCount > 0 && (
+            <span className="font-data rounded-full bg-[rgb(var(--accent))] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+              {activeFilterCount}
+            </span>
+          )}
         </button>
-        {Object.entries(GOAL_LABELS).map(([goal, label]) => (
-          <button
-            key={goal}
-            onClick={() => setActiveGoal((g) => (g === goal ? null : goal))}
-            className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
-              activeGoal === goal
-                ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent)/0.12)] text-[rgb(var(--accent))]"
-                : "border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:bg-[rgb(var(--border)/0.5)]"
-            }`}
-          >
-            {label}
+        {activeFilterCount > 0 && (
+          <button onClick={clearAllFilters} className="text-xs text-[rgb(var(--muted))] hover:underline">
+            Xóa hết bộ lọc
           </button>
-        ))}
-      </div>
-
-      {/* Calorie range filter tags */}
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium text-[rgb(var(--muted))]">Calo:</span>
-        <button
-          onClick={() => setActiveCalorieRange(null)}
-          className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
-            activeCalorieRange === null
-              ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent)/0.12)] text-[rgb(var(--accent))]"
-              : "border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:bg-[rgb(var(--border)/0.5)]"
-          }`}
-        >
-          Tất cả
-        </button>
-        {CALORIE_RANGES.map((range) => (
-          <button
-            key={range.key}
-            onClick={() => setActiveCalorieRange((r) => (r === range.key ? null : range.key))}
-            className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
-              activeCalorieRange === range.key
-                ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent)/0.12)] text-[rgb(var(--accent))]"
-                : "border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:bg-[rgb(var(--border)/0.5)]"
-            }`}
+        )}
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-xs font-medium text-[rgb(var(--muted))]">Sắp xếp:</span>
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as SortKey)}
+            className="rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] px-2.5 py-1.5 text-xs outline-none"
           >
-            {range.label}
-          </button>
-        ))}
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.key} value={opt.key}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Sort */}
-      <div className="mb-6 flex items-center gap-2">
-        <span className="text-xs font-medium text-[rgb(var(--muted))]">Sắp xếp:</span>
-        <select
-          value={sortKey}
-          onChange={(e) => setSortKey(e.target.value as SortKey)}
-          className="rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] px-2.5 py-1.5 text-xs outline-none"
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <option key={opt.key} value={opt.key}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <span className="ml-auto text-xs text-[rgb(var(--muted))]">{filtered.length} món</span>
-      </div>
-
-      {loading ? (
-        <p className="text-center text-sm text-[rgb(var(--muted))]">Loading...</p>
-      ) : recipes.length === 0 ? (
-        <p className="text-center text-sm text-[rgb(var(--muted))]">Chưa có công thức nào trong hệ thống.</p>
-      ) : filtered.length === 0 ? (
-        <p className="text-center text-sm text-[rgb(var(--muted))]">
-          Không tìm thấy món nào khớp &ldquo;{search}&rdquo;.
-        </p>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => setOpenRecipe(r)}
-              className="flex flex-col rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-4 text-left transition-colors hover:border-[rgb(var(--accent))]"
-            >
-              <h3 className="font-display text-sm font-semibold">{r.name}</h3>
-              {r.description && (
-                <p className="mt-1 line-clamp-2 text-xs text-[rgb(var(--muted))]">{r.description}</p>
-              )}
-              <p className="mt-2 truncate text-[11px] text-[rgb(var(--muted))]">
-                {r.ingredients.map((i) => i.name).join(", ")}
-              </p>
-              <div className="font-data mt-3 flex items-center gap-3 text-[11px] text-[rgb(var(--muted))]">
-                <span className="flex items-center gap-1">
-                  <Flame size={12} className="text-[rgb(var(--accent))]" /> {Math.round(r.caloriesPerServing)} kcal
-                </span>
-                <span className="flex items-center gap-1">
-                  <Beef size={12} /> {Math.round(r.proteinG)}g
-                </span>
-                <span className="flex items-center gap-1">
-                  <Droplet size={12} /> {Math.round(r.fatG)}g
-                </span>
-                <span className="flex items-center gap-1">
-                  <Wheat size={12} /> {Math.round(r.carbG)}g
-                </span>
-              </div>
-              {r.goalTags.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {r.goalTags.map((g) => (
-                    <span
-                      key={g}
-                      className="rounded-full bg-[rgb(var(--accent)/0.1)] px-2 py-0.5 text-[10px] text-[rgb(var(--accent))]"
-                    >
-                      {GOAL_LABELS[g] ?? g}
-                    </span>
+      <div className="flex flex-col gap-6 md:flex-row">
+        {/* Accordion filter panel */}
+        {filterPanelOpen && (
+          <div className="w-full shrink-0 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-4 md:w-64">
+            <div>
+              <SectionHeader section="ingredient" label="Nguyên liệu" />
+              {expandedSection === "ingredient" && (
+                <div className="flex flex-col gap-3 py-3">
+                  {FOOD_CATEGORY_ORDER.filter((cat) => ingredientsByCategory.has(cat)).map((cat) => (
+                    <div key={cat}>
+                      <p className="mb-1.5 text-xs font-semibold text-[rgb(var(--muted))]">
+                        {FOOD_CATEGORY_LABELS[cat]}
+                      </p>
+                      <div className="flex flex-col gap-1.5">
+                        {[...(ingredientsByCategory.get(cat) ?? [])].sort((a, b) => a.localeCompare(b, "vi")).map((name) => (
+                          <label key={name} className={checkboxRowClass}>
+                            <input
+                              type="checkbox"
+                              checked={selectedIngredients.has(name)}
+                              onChange={() => setSelectedIngredients((s) => toggleInSet(s, name))}
+                              className={checkboxClass}
+                            />
+                            {name}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
-            </button>
-          ))}
+            </div>
+
+            <div>
+              <SectionHeader section="cooking" label="Cách nấu" />
+              {expandedSection === "cooking" && (
+                <div className="flex flex-col gap-1.5 py-3">
+                  {COOKING_METHOD_ORDER.map((key) => (
+                    <label key={key} className={checkboxRowClass}>
+                      <input
+                        type="checkbox"
+                        checked={selectedCookingMethods.has(key)}
+                        onChange={() => setSelectedCookingMethods((s) => toggleInSet(s, key))}
+                        className={checkboxClass}
+                      />
+                      {COOKING_METHOD_LABELS[key]}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <SectionHeader section="goal" label="Theo nhu cầu dinh dưỡng" />
+              {expandedSection === "goal" && (
+                <div className="flex flex-col gap-1.5 py-3">
+                  {GOAL_ORDER.map((key) => (
+                    <label key={key} className={checkboxRowClass}>
+                      <input
+                        type="checkbox"
+                        checked={selectedGoals.has(key)}
+                        onChange={() => setSelectedGoals((s) => toggleInSet(s, key))}
+                        className={checkboxClass}
+                      />
+                      {GOAL_LABELS[key]}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <SectionHeader section="calorie" label="Calo" />
+              {expandedSection === "calorie" && (
+                <div className="flex flex-col gap-1.5 py-3">
+                  {CALORIE_RANGES.map((range) => (
+                    <label key={range.key} className={checkboxRowClass}>
+                      <input
+                        type="checkbox"
+                        checked={selectedCalorieRanges.has(range.key)}
+                        onChange={() => setSelectedCalorieRanges((s) => toggleInSet(s, range.key))}
+                        className={checkboxClass}
+                      />
+                      {range.label}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Results */}
+        <div className="min-w-0 flex-1">
+          <p className="mb-3 text-xs text-[rgb(var(--muted))]">{filtered.length} món</p>
+
+          {loading ? (
+            <p className="text-center text-sm text-[rgb(var(--muted))]">Loading...</p>
+          ) : recipes.length === 0 ? (
+            <p className="text-center text-sm text-[rgb(var(--muted))]">Chưa có công thức nào trong hệ thống.</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-center text-sm text-[rgb(var(--muted))]">Không tìm thấy món nào khớp bộ lọc.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => setOpenRecipe(r)}
+                  className="flex flex-col rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-4 text-left transition-colors hover:border-[rgb(var(--accent))]"
+                >
+                  <h3 className="font-display text-sm font-semibold">{r.name}</h3>
+                  {r.description && (
+                    <p className="mt-1 line-clamp-2 text-xs text-[rgb(var(--muted))]">{r.description}</p>
+                  )}
+                  <p className="mt-2 truncate text-[11px] text-[rgb(var(--muted))]">
+                    {r.ingredients.map((i) => i.name).join(", ")}
+                  </p>
+                  <div className="font-data mt-3 flex items-center gap-3 text-[11px] text-[rgb(var(--muted))]">
+                    <span className="flex items-center gap-1">
+                      <Flame size={12} className="text-[rgb(var(--accent))]" /> {Math.round(r.caloriesPerServing)} kcal
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Beef size={12} /> {Math.round(r.proteinG)}g
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Droplet size={12} /> {Math.round(r.fatG)}g
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Wheat size={12} /> {Math.round(r.carbG)}g
+                    </span>
+                  </div>
+                  {r.goalTags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {r.goalTags.map((g) => (
+                        <span
+                          key={g}
+                          className="rounded-full bg-[rgb(var(--accent)/0.1)] px-2 py-0.5 text-[10px] text-[rgb(var(--accent))]"
+                        >
+                          {GOAL_LABELS[g] ?? g}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {openRecipe && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
@@ -233,7 +363,7 @@ export function RecipeLibraryClient() {
             <div className="mb-3 flex items-start justify-between gap-3">
               <h2 className="font-display text-lg font-semibold">{openRecipe.name}</h2>
               <button onClick={() => setOpenRecipe(null)} aria-label="Close" className="shrink-0">
-                ✕
+                <X size={18} />
               </button>
             </div>
             {openRecipe.description && (
