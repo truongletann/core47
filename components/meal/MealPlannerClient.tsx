@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, Trash2, ShoppingCart, Settings2, X, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, ShoppingCart, Settings2, X, Search, Sparkles } from "lucide-react";
 import { filterRecipesByIngredientQuery } from "@/lib/meal/ingredientSearch";
 
 interface RecipeIngredient {
@@ -91,6 +91,7 @@ export function MealPlannerClient() {
   const [shoppingListOpen, setShoppingListOpen] = useState(false);
   const [shoppingList, setShoppingList] = useState<{ name: string; unit: string; quantity: number }[]>([]);
   const [targetPanelOpen, setTargetPanelOpen] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
 
   const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
   const from = toISODate(weekDays[0]);
@@ -150,6 +151,55 @@ export function MealPlannerClient() {
   async function handleRemoveEntry(id: string) {
     await fetch(`/api/meal/plan/${id}`, { method: "DELETE", credentials: "include" });
     loadWeek();
+  }
+
+  // Fills whichever meal slots are still empty for the selected day: splits
+  // the daily calorie target across slots (breakfast/lunch/dinner/snack ≈
+  // 25/35/30/10%), narrows the recipe pool to the user's goal tag when set,
+  // and for each slot picks whichever candidate's calo/serving is closest to
+  // that slot's share — reusing a recipe only if every candidate is already
+  // used once. Real optimization (macro balance, variety over multiple
+  // days) is out of scope for a first pass.
+  async function handleAutoSuggest() {
+    if (recipes.length === 0) return;
+    const filledSlots = new Set(dayEntries.map((e) => e.mealSlot));
+    const emptySlots = SLOTS.filter((s) => !filledSlots.has(s.key));
+    if (emptySlots.length === 0) return;
+
+    setSuggesting(true);
+    try {
+      const slotWeights: Record<PlanEntry["mealSlot"], number> = {
+        breakfast: 0.25,
+        lunch: 0.35,
+        dinner: 0.3,
+        snack: 0.1,
+      };
+      const dailyCalories = target?.targetCalories ?? 2000;
+      const goalPool = target ? recipes.filter((r) => r.goalTags.includes(target.goal)) : [];
+      const candidates = goalPool.length > 0 ? goalPool : recipes;
+
+      const usedIds = new Set<string>();
+      for (const slot of emptySlots) {
+        const slotTarget = dailyCalories * slotWeights[slot.key];
+        const unused = candidates.filter((r) => !usedIds.has(r.id));
+        const pool = unused.length > 0 ? unused : candidates;
+        const best = pool.reduce((closest, r) =>
+          Math.abs(r.caloriesPerServing - slotTarget) < Math.abs(closest.caloriesPerServing - slotTarget)
+            ? r
+            : closest,
+        );
+        usedIds.add(best.id);
+        await fetch("/api/meal/plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ date: selectedDate, mealSlot: slot.key, recipeId: best.id, servings: 1 }),
+          credentials: "include",
+        });
+      }
+      loadWeek();
+    } finally {
+      setSuggesting(false);
+    }
   }
 
   async function handleOpenShoppingList() {
@@ -240,6 +290,24 @@ export function MealPlannerClient() {
             </button>
           );
         })}
+      </div>
+
+      {/* Auto-suggest */}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <p className="text-xs text-[rgb(var(--muted))]">
+          {SLOTS.filter((s) => !dayEntries.some((e) => e.mealSlot === s.key)).length === 0
+            ? "Ngày này đã đủ bữa."
+            : "Còn bữa trống — để hệ thống tự gợi ý theo mục tiêu calo của bạn."}
+        </p>
+        <button
+          onClick={handleAutoSuggest}
+          disabled={
+            suggesting || recipes.length === 0 || SLOTS.every((s) => dayEntries.some((e) => e.mealSlot === s.key))
+          }
+          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[rgb(var(--accent))] px-3 py-2 text-sm font-semibold text-[rgb(var(--accent))] hover:bg-[rgb(var(--accent)/0.1)] disabled:opacity-40"
+        >
+          <Sparkles size={15} /> {suggesting ? "Đang gợi ý..." : "Gợi ý thực đơn"}
+        </button>
       </div>
 
       {/* Totals vs target */}
