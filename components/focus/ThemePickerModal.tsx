@@ -39,11 +39,11 @@ export function ThemePickerModal({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-center gap-1 rounded-xl bg-white/5 p-1">
+      <div className="flex justify-center gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
         <button
           onClick={() => switchTab("static")}
           className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-colors ${
-            tab === "static" ? "bg-white/15 text-white" : "text-white/50 hover:text-white"
+            tab === "static" ? "bg-white/15 text-white" : "text-white/50 hover:bg-white/10 hover:text-white"
           }`}
         >
           <ImagePlus size={14} />
@@ -52,7 +52,7 @@ export function ThemePickerModal({
         <button
           onClick={() => switchTab("live")}
           className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-colors ${
-            tab === "live" ? "bg-white/15 text-white" : "text-white/50 hover:text-white"
+            tab === "live" ? "bg-white/15 text-white" : "text-white/50 hover:bg-white/10 hover:text-white"
           }`}
         >
           <Play size={14} />
