@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Utensils } from "lucide-react";
+import { CalendarDays, Utensils, Apple } from "lucide-react";
 
 const TABS = [
   { href: "/", label: "Kế hoạch tuần", icon: CalendarDays },
   { href: "/recipes", label: "Công thức", icon: Utensils },
+  { href: "/foods", label: "Nguyên liệu", icon: Apple },
 ];
 
 export function MealNav() {
