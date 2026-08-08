@@ -44,21 +44,33 @@ function toRecipe(r: typeof mealRecipes.$inferSelect) {
   };
 }
 
-function toIngredient({
-  ingredient,
-  food,
-}: {
-  ingredient: typeof mealRecipeIngredients.$inferSelect;
-  food: typeof mealFoods.$inferSelect | null;
-}) {
+// ingredient.quantity is always "how much this ingredient line calls for to
+// make the WHOLE recipe" (servings portions), not "per serving" — so the
+// per-ingredient calo/macro contribution must be divided by servings to
+// match caloriesPerServing/proteinG/etc, which ARE already per-serving.
+// For the vast majority of recipes servings is 1 so this is a no-op; it
+// matters for the ~41 recipes whose real serving count was later corrected
+// from a sourced per-serving calorie figure (see 0106 migration) without
+// touching their ingredient quantities.
+function toIngredient(
+  {
+    ingredient,
+    food,
+  }: {
+    ingredient: typeof mealRecipeIngredients.$inferSelect;
+    food: typeof mealFoods.$inferSelect | null;
+  },
+  servings: number,
+) {
+  const perServing = Math.max(1, servings);
   return {
     ...ingredient,
     foodName: food?.name ?? null,
     foodCategory: food?.category ?? null,
-    calories: food ? (ingredient.quantity / 100) * food.caloriesPer100g : null,
-    proteinG: food ? (ingredient.quantity / 100) * food.proteinPer100g : null,
-    fatG: food ? (ingredient.quantity / 100) * food.fatPer100g : null,
-    carbG: food ? (ingredient.quantity / 100) * food.carbPer100g : null,
+    calories: food ? (ingredient.quantity / 100) * food.caloriesPer100g / perServing : null,
+    proteinG: food ? (ingredient.quantity / 100) * food.proteinPer100g / perServing : null,
+    fatG: food ? (ingredient.quantity / 100) * food.fatPer100g / perServing : null,
+    carbG: food ? (ingredient.quantity / 100) * food.carbPer100g / perServing : null,
   };
 }
 
@@ -73,7 +85,7 @@ async function attachIngredients(recipe: ReturnType<typeof toRecipe>) {
     .where(eq(mealRecipeIngredients.recipeId, recipe.id))
     .orderBy(asc(mealRecipeIngredients.sortOrder));
 
-  return { ...recipe, ingredients: rows.map(toIngredient) };
+  return { ...recipe, ingredients: rows.map((r) => toIngredient(r, recipe.servings)) };
 }
 
 interface RecipeSummary {
@@ -134,24 +146,31 @@ async function loadAllSummaries(): Promise<RecipeSummary[]> {
       .leftJoin(mealFoods, eq(mealRecipeIngredients.foodId, mealFoods.id)),
   ]);
 
-  const ingredientsByRecipe = new Map<string, RecipeSummary["ingredients"]>();
+  const ingredientRowsByRecipe = new Map<string, typeof ingredientRows>();
   for (const row of ingredientRows) {
-    const list = ingredientsByRecipe.get(row.recipeId) ?? [];
-    list.push({
+    const list = ingredientRowsByRecipe.get(row.recipeId) ?? [];
+    list.push(row);
+    ingredientRowsByRecipe.set(row.recipeId, list);
+  }
+
+  return recipeRows.map((r) => {
+    // See toIngredient's comment — ingredient quantity is for the whole
+    // recipe (servings portions), so divide back down to match the
+    // already-per-serving caloriesPerServing.
+    const perServing = Math.max(1, r.servings);
+    const ingredients = (ingredientRowsByRecipe.get(r.id) ?? []).map((row) => ({
       name: row.name,
       foodName: row.foodName ?? null,
       foodCategory: row.foodCategory ?? null,
-      calories: row.caloriesPer100g != null ? (row.quantity / 100) * row.caloriesPer100g : null,
-    });
-    ingredientsByRecipe.set(row.recipeId, list);
-  }
-
-  return recipeRows.map((r) => ({
-    ...r,
-    goalTags: r.goalTags ? r.goalTags.split(",").filter(Boolean) : [],
-    mealCategories: r.mealCategories ? r.mealCategories.split(",").filter(Boolean) : [],
-    ingredients: ingredientsByRecipe.get(r.id) ?? [],
-  }));
+      calories: row.caloriesPer100g != null ? ((row.quantity / 100) * row.caloriesPer100g) / perServing : null,
+    }));
+    return {
+      ...r,
+      goalTags: r.goalTags ? r.goalTags.split(",").filter(Boolean) : [],
+      mealCategories: r.mealCategories ? r.mealCategories.split(",").filter(Boolean) : [],
+      ingredients,
+    };
+  });
 }
 
 // Full pool of lightweight summaries — used by the meal planner's recipe
@@ -524,10 +543,11 @@ export async function getShoppingList(userId: string, from: string, to: string) 
   if (entries.length === 0) return [];
 
   const recipeIds = [...new Set(entries.map((e) => e.recipeId))];
-  const ingredients = await db
-    .select()
-    .from(mealRecipeIngredients)
-    .where(inArray(mealRecipeIngredients.recipeId, recipeIds));
+  const [ingredients, recipes] = await Promise.all([
+    db.select().from(mealRecipeIngredients).where(inArray(mealRecipeIngredients.recipeId, recipeIds)),
+    db.select({ id: mealRecipes.id, servings: mealRecipes.servings }).from(mealRecipes).where(inArray(mealRecipes.id, recipeIds)),
+  ]);
+  const servingsByRecipe = new Map(recipes.map((r) => [r.id, r.servings]));
 
   const byRecipe = new Map<string, typeof ingredients>();
   for (const ing of ingredients) {
@@ -539,10 +559,16 @@ export async function getShoppingList(userId: string, from: string, to: string) 
   const totals = new Map<string, { name: string; unit: string; quantity: number }>();
   for (const entry of entries) {
     const recipeIngredients = byRecipe.get(entry.recipeId) ?? [];
+    // ing.quantity is for the whole recipe (however many servings it
+    // makes) — entry.servings is how many single servings the user wants,
+    // so scale by servings/recipeServings rather than servings alone
+    // (equal to entry.servings for the common recipeServings === 1 case).
+    const recipeServings = Math.max(1, servingsByRecipe.get(entry.recipeId) ?? 1);
+    const factor = entry.servings / recipeServings;
     for (const ing of recipeIngredients) {
       const key = `${ing.name.trim().toLowerCase()}|${ing.unit.trim().toLowerCase()}`;
       const existing = totals.get(key);
-      const addQty = ing.quantity * entry.servings;
+      const addQty = ing.quantity * factor;
       if (existing) {
         existing.quantity += addQty;
       } else {
