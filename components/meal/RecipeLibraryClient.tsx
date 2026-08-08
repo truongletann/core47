@@ -389,18 +389,24 @@ export function RecipeLibraryClient() {
                       {r.ingredients.map((i) => i.name).join(", ")}
                     </p>
                     <div className="font-data mt-3 flex items-center gap-3 text-[11px] text-[rgb(var(--muted))]">
-                      <span className="flex items-center gap-1">
-                        <Flame size={12} className="text-[rgb(var(--accent))]" /> {Math.round(r.caloriesPerServing)} kcal
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Beef size={12} /> {Math.round(r.proteinG)}g
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Droplet size={12} /> {Math.round(r.fatG)}g
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Wheat size={12} /> {Math.round(r.carbG)}g
-                      </span>
+                      {r.caloriesPerServing > 0 ? (
+                        <>
+                          <span className="flex items-center gap-1">
+                            <Flame size={12} className="text-[rgb(var(--accent))]" /> {Math.round(r.caloriesPerServing)} kcal
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Beef size={12} /> {Math.round(r.proteinG)}g
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Droplet size={12} /> {Math.round(r.fatG)}g
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Wheat size={12} /> {Math.round(r.carbG)}g
+                          </span>
+                        </>
+                      ) : (
+                        <span className="italic">Chưa rõ calo</span>
+                      )}
                     </div>
                     {(r.mealCategories.length > 0 || r.goalTags.length > 0) && (
                       <div className="mt-2 flex flex-wrap gap-1">
@@ -412,14 +418,19 @@ export function RecipeLibraryClient() {
                             {MEAL_TIME_LABELS[m] ?? m}
                           </span>
                         ))}
-                        {r.goalTags.map((g) => (
-                          <span
-                            key={g}
-                            className="rounded-full bg-[rgb(var(--accent)/0.1)] px-2 py-0.5 text-[10px] text-[rgb(var(--accent))]"
-                          >
-                            {GOAL_LABELS[g] ?? g}
-                          </span>
-                        ))}
+                        {r.goalTags
+                          // "maintain" is applied to every recipe that has any
+                          // goal tag at all (see backfill migration), so as a
+                          // badge it's just noise — still usable as a filter.
+                          .filter((g) => g !== "maintain")
+                          .map((g) => (
+                            <span
+                              key={g}
+                              className="rounded-full bg-[rgb(var(--accent)/0.1)] px-2 py-0.5 text-[10px] text-[rgb(var(--accent))]"
+                            >
+                              {GOAL_LABELS[g] ?? g}
+                            </span>
+                          ))}
                       </div>
                     )}
                   </button>
@@ -474,10 +485,16 @@ export function RecipeLibraryClient() {
 
                 <div className="font-data mb-1 flex flex-wrap gap-3 text-xs text-[rgb(var(--muted))]">
                   <span>{openRecipe.servings} khẩu phần</span>
-                  <span>{Math.round(openRecipe.caloriesPerServing)} kcal</span>
-                  <span>Đạm {Math.round(openRecipe.proteinG)}g</span>
-                  <span>Béo {Math.round(openRecipe.fatG)}g</span>
-                  <span>Tinh bột {Math.round(openRecipe.carbG)}g</span>
+                  {openRecipe.caloriesPerServing > 0 ? (
+                    <>
+                      <span>{Math.round(openRecipe.caloriesPerServing)} kcal</span>
+                      <span>Đạm {Math.round(openRecipe.proteinG)}g</span>
+                      <span>Béo {Math.round(openRecipe.fatG)}g</span>
+                      <span>Tinh bột {Math.round(openRecipe.carbG)}g</span>
+                    </>
+                  ) : (
+                    <span className="italic">Chưa rõ calo/macro</span>
+                  )}
                 </div>
                 {openRecipe.caloriesPerServing > 0 && (
                   <p className="mb-4 text-[10px] italic text-[rgb(var(--muted))]">

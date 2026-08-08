@@ -189,7 +189,13 @@ export function MealPlannerClient() {
         const slotTagged = candidates.filter((r) => r.mealCategories.includes(slot.key));
         const timeFiltered = slotTagged.length > 0 ? slotTagged : candidates;
         const unused = timeFiltered.filter((r) => !usedIds.has(r.id));
-        const pool = unused.length > 0 ? unused : timeFiltered;
+        let pool = unused.length > 0 ? unused : timeFiltered;
+        // caloriesPerServing === 0 means "unknown", not "zero" — picking by
+        // closeness-to-target would otherwise happily suggest an unrated
+        // recipe over a real one whose calories just aren't close to the
+        // target. Prefer recipes with a known calorie value when any exist.
+        const knownCalorie = pool.filter((r) => r.caloriesPerServing > 0);
+        if (knownCalorie.length > 0) pool = knownCalorie;
         const best = pool.reduce((closest, r) =>
           Math.abs(r.caloriesPerServing - slotTarget) < Math.abs(closest.caloriesPerServing - slotTarget)
             ? r
@@ -487,7 +493,7 @@ function RecipePickerModal({
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{r.name}</p>
                   <p className="font-data text-xs text-[rgb(var(--muted))]">
-                    {r.caloriesPerServing} kcal/khẩu phần
+                    {r.caloriesPerServing > 0 ? `${r.caloriesPerServing} kcal/khẩu phần` : "Chưa rõ calo"}
                   </p>
                   <p className="mt-0.5 truncate text-[11px] text-[rgb(var(--muted))]" title={r.ingredients
                     .map((i) => (i.calories !== null ? `${i.name} (≈${Math.round(i.calories)} kcal)` : i.name))

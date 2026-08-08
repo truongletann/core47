@@ -192,8 +192,13 @@ export async function listRecipesPaged(options: ListRecipesPagedOptions = {}) {
   }
 
   const sorted = [...result];
-  if (options.sort === "calAsc") sorted.sort((a, b) => a.caloriesPerServing - b.caloriesPerServing);
-  else if (options.sort === "calDesc") sorted.sort((a, b) => b.caloriesPerServing - a.caloriesPerServing);
+  // caloriesPerServing === 0 means "unknown", not "lowest possible" — for
+  // ascending sort, push unknowns to the end instead of letting them float
+  // to the top ahead of genuinely low-calorie dishes. Descending already
+  // puts 0 last naturally, so it needs no special handling.
+  if (options.sort === "calAsc") {
+    sorted.sort((a, b) => (a.caloriesPerServing || Infinity) - (b.caloriesPerServing || Infinity));
+  } else if (options.sort === "calDesc") sorted.sort((a, b) => b.caloriesPerServing - a.caloriesPerServing);
   else if (options.sort === "proteinDesc") sorted.sort((a, b) => b.proteinG - a.proteinG);
   else sorted.sort((a, b) => a.name.localeCompare(b.name, "vi"));
 

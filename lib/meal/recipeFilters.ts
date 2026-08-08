@@ -38,8 +38,11 @@ export const COOKING_METHOD_LABELS: Record<string, string> = {
 };
 export const COOKING_METHOD_ORDER = [...COOKING_METHOD_KEYWORDS.map(([key]) => key), "khac"];
 
+// c === 0 means "unknown" (no estimate), not "zero calories" — every range
+// requires c > 0 so unrated recipes don't wrongly show up under "Dưới 300
+// kcal" just because 0 < 300.
 export const CALORIE_RANGES = [
-  { key: "under300", label: "Dưới 300 kcal", test: (c: number) => c < 300 },
+  { key: "under300", label: "Dưới 300 kcal", test: (c: number) => c > 0 && c < 300 },
   { key: "300to500", label: "300–500 kcal", test: (c: number) => c >= 300 && c <= 500 },
   { key: "over500", label: "Trên 500 kcal", test: (c: number) => c > 500 },
 ] as const;
