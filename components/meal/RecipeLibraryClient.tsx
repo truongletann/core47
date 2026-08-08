@@ -172,6 +172,15 @@ export function RecipeLibraryClient() {
       .finally(() => setOpenRecipeLoading(false));
   }, [openRecipeId]);
 
+  useEffect(() => {
+    if (!openRecipeId) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpenRecipeId(null);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [openRecipeId]);
+
   const activeFilterCount =
     selectedIngredients.size +
     selectedCookingMethods.size +
@@ -494,14 +503,18 @@ export function RecipeLibraryClient() {
 
       {openRecipeId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-6 shadow-xl">
-            <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] shadow-xl">
+            {/* Sticky so the close button stays reachable when scrolled deep
+                into a long recipe (daily-menu table etc) instead of scrolling
+                out of view with the content. */}
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-[rgb(var(--border))] bg-[rgb(var(--card))] px-6 py-4">
               <h2 className="font-display text-lg font-semibold">{openRecipe?.name ?? "Đang tải..."}</h2>
               <button onClick={() => setOpenRecipeId(null)} aria-label="Close" className="shrink-0">
                 <X size={18} />
               </button>
             </div>
 
+            <div className="p-6 pt-4">
             {openRecipeLoading || !openRecipe ? (
               <p className="text-center text-sm text-[rgb(var(--muted))]">Loading...</p>
             ) : (
@@ -629,6 +642,7 @@ export function RecipeLibraryClient() {
                 )}
               </>
             )}
+            </div>
           </div>
         </div>
       )}

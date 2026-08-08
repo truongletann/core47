@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 export function Modal({
   title,
   onClose,
@@ -9,6 +11,14 @@ export function Modal({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
       <div className="w-full max-w-md rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] shadow-xl">

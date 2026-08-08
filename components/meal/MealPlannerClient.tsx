@@ -127,6 +127,15 @@ export function MealPlannerClient() {
       .then((json) => setRecipes(json?.data?.recipes ?? []));
   }, []);
 
+  useEffect(() => {
+    if (!shoppingListOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setShoppingListOpen(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [shoppingListOpen]);
+
   const dayEntries = entries.filter((e) => e.date === selectedDate);
   const dayTotals = dayEntries.reduce(
     (acc, e) => ({
@@ -411,13 +420,14 @@ export function MealPlannerClient() {
 
       {shoppingListOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
-          <div className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-5 shadow-xl">
-            <div className="mb-4 flex items-center justify-between">
+          <div className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] shadow-xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[rgb(var(--border))] bg-[rgb(var(--card))] px-5 py-4">
               <h2 className="font-display text-lg font-semibold">Danh sách đi chợ</h2>
               <button onClick={() => setShoppingListOpen(false)} aria-label="Close">
                 <X size={18} />
               </button>
             </div>
+            <div className="p-5 pt-3">
             <p className="mb-3 text-xs text-[rgb(var(--muted))]">
               {from} → {to}
             </p>
@@ -440,6 +450,7 @@ export function MealPlannerClient() {
                 ))}
               </ul>
             )}
+            </div>
           </div>
         </div>
       )}
@@ -461,15 +472,24 @@ function RecipePickerModal({
 
   const filtered = useMemo(() => filterRecipesByIngredientQuery(recipes, search), [recipes, search]);
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
-      <div className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-5 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] shadow-xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[rgb(var(--border))] bg-[rgb(var(--card))] px-5 py-4">
           <h2 className="font-display text-lg font-semibold">Chọn món</h2>
           <button onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>
         </div>
+        <div className="p-5 pt-3">
         <div className="relative mb-3">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[rgb(var(--muted))]" />
           <input
@@ -524,6 +544,7 @@ function RecipePickerModal({
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

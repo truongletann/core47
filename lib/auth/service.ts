@@ -1,4 +1,4 @@
-import { eq, or } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { users, sessions } from "@/db/schema";
 import {
@@ -41,14 +41,25 @@ export async function registerUser(raw: RegisterInput): Promise<{ user: User; se
   const input = RegisterSchema.parse(raw);
   const db = await getDb();
 
-  const existingEmail = await db.select().from(users).where(eq(users.email, input.email)).get();
+  // Case-insensitive — "User@Example.com" and "user@example.com" (or
+  // "Admin"/"admin") must be treated as the same account, both at
+  // registration (to prevent a case-variant duplicate) and at login below.
+  const existingEmail = await db
+    .select()
+    .from(users)
+    .where(sql`lower(${users.email}) = lower(${input.email})`)
+    .get();
   if (existingEmail) {
     throw new Error("EMAIL_TAKEN");
   }
 
   const username = input.username || null;
   if (username) {
-    const existingUsername = await db.select().from(users).where(eq(users.username, username)).get();
+    const existingUsername = await db
+      .select()
+      .from(users)
+      .where(sql`lower(${users.username}) = lower(${username})`)
+      .get();
     if (existingUsername) {
       throw new Error("USERNAME_TAKEN");
     }
@@ -87,7 +98,12 @@ export async function loginUser(raw: LoginInput): Promise<{ user: User; sessionI
   const record = await db
     .select()
     .from(users)
-    .where(or(eq(users.email, input.identifier), eq(users.username, input.identifier)))
+    .where(
+      or(
+        sql`lower(${users.email}) = lower(${input.identifier})`,
+        sql`lower(${users.username}) = lower(${input.identifier})`,
+      ),
+    )
     .get();
 
   if (!record) {
@@ -156,7 +172,11 @@ export async function updateProfile(userId: string, raw: UpdateProfileInput): Pr
 
   const newUsername = input.username || null;
   if (newUsername) {
-    const existing = await db.select().from(users).where(eq(users.username, newUsername)).get();
+    const existing = await db
+      .select()
+      .from(users)
+      .where(sql`lower(${users.username}) = lower(${newUsername})`)
+      .get();
     if (existing && existing.id !== userId) {
       throw new Error("USERNAME_TAKEN");
     }

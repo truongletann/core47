@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 
 const ALLOWED_HOSTS_SUFFIX = ["core47.xyz", "to2.site"];
 
@@ -30,7 +30,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit() {
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
     setLoading(true);
     setError(null);
     try {
@@ -78,7 +79,7 @@ export default function LoginPage() {
         {mode === "login" ? "See your link history." : "Track the links you shorten."}
       </p>
 
-      <div className="mt-6 flex flex-col gap-3">
+      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3">
         {mode === "login" ? (
           <input
             value={identifier}
@@ -112,14 +113,13 @@ export default function LoginPage() {
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
-          type="button"
-          onClick={handleSubmit}
+          type="submit"
           disabled={loading || !canSubmit}
           className="rounded-lg bg-[rgb(var(--accent))] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {loading ? "Please wait..." : mode === "login" ? "Log in" : "Sign up"}
         </button>
-      </div>
+      </form>
 
       <button
         type="button"
