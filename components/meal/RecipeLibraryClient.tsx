@@ -34,6 +34,8 @@ interface RecipeDetail extends RecipeCard {
   tips: string | null;
   expertAdvice: string | null;
   suggestedCombo: string | null;
+  dailyMenuNote: string | null;
+  dailyMenuItems: { slot: string | null; dish: string; note: string | null; energy: string | null }[];
   ingredients: {
     name: string;
     quantity: number;
@@ -394,15 +396,24 @@ export function RecipeLibraryClient() {
                           <span className="flex items-center gap-1">
                             <Flame size={12} className="text-[rgb(var(--accent))]" /> {Math.round(r.caloriesPerServing)} kcal
                           </span>
-                          <span className="flex items-center gap-1">
-                            <Beef size={12} /> {Math.round(r.proteinG)}g
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Droplet size={12} /> {Math.round(r.fatG)}g
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Wheat size={12} /> {Math.round(r.carbG)}g
-                          </span>
+                          {/* proteinG/fatG/carbG can be legitimately unset (0) even when
+                              calories is known — a sourced calorie figure with no ingredient-
+                              linked macro basis. Showing "0g" there would read as "known
+                              zero" rather than "unknown", so only show macros when at least
+                              one is nonzero. */}
+                          {(r.proteinG > 0 || r.fatG > 0 || r.carbG > 0) && (
+                            <>
+                              <span className="flex items-center gap-1">
+                                <Beef size={12} /> {Math.round(r.proteinG)}g
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Droplet size={12} /> {Math.round(r.fatG)}g
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Wheat size={12} /> {Math.round(r.carbG)}g
+                              </span>
+                            </>
+                          )}
                         </>
                       ) : (
                         <span className="italic">Chưa rõ calo</span>
@@ -488,9 +499,13 @@ export function RecipeLibraryClient() {
                   {openRecipe.caloriesPerServing > 0 ? (
                     <>
                       <span>{Math.round(openRecipe.caloriesPerServing)} kcal</span>
-                      <span>Đạm {Math.round(openRecipe.proteinG)}g</span>
-                      <span>Béo {Math.round(openRecipe.fatG)}g</span>
-                      <span>Tinh bột {Math.round(openRecipe.carbG)}g</span>
+                      {(openRecipe.proteinG > 0 || openRecipe.fatG > 0 || openRecipe.carbG > 0) && (
+                        <>
+                          <span>Đạm {Math.round(openRecipe.proteinG)}g</span>
+                          <span>Béo {Math.round(openRecipe.fatG)}g</span>
+                          <span>Tinh bột {Math.round(openRecipe.carbG)}g</span>
+                        </>
+                      )}
                     </>
                   ) : (
                     <span className="italic">Chưa rõ calo/macro</span>
@@ -547,6 +562,33 @@ export function RecipeLibraryClient() {
                   <>
                     <h3 className="mb-1.5 mt-4 text-sm font-semibold">Gợi ý dùng kèm</h3>
                     <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.suggestedCombo}</div>
+                  </>
+                )}
+
+                {openRecipe.dailyMenuItems.length > 0 && (
+                  <>
+                    <h3 className="mb-1.5 mt-4 text-sm font-semibold">Gợi ý thực đơn cả ngày</h3>
+                    {openRecipe.dailyMenuNote && (
+                      <p className="mb-2 text-xs text-[rgb(var(--muted))]">{openRecipe.dailyMenuNote}</p>
+                    )}
+                    <ul className="flex flex-col gap-1 text-sm">
+                      {openRecipe.dailyMenuItems.map((item, i) => (
+                        <li key={i} className="flex items-start justify-between gap-2 border-b border-[rgb(var(--border))] pb-1 last:border-0">
+                          <span>
+                            {item.slot && (
+                              <span className="font-data mr-1.5 text-[10px] font-semibold text-[rgb(var(--accent))]">
+                                {item.slot}
+                              </span>
+                            )}
+                            {item.dish}
+                            {item.note && <span className="text-xs text-[rgb(var(--muted))]"> — {item.note}</span>}
+                          </span>
+                          {item.energy && (
+                            <span className="font-data shrink-0 text-xs text-[rgb(var(--muted))]">{item.energy} kcal</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
                   </>
                 )}
               </>

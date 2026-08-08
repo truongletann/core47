@@ -366,6 +366,12 @@ export const mealRecipes = sqliteTable("meal_recipes", {
   tips: text("tips"), // "mẹo nhỏ"
   expertAdvice: text("expert_advice"), // "lời khuyên chuyên gia"
   suggestedCombo: text("suggested_combo"), // suggested side dishes to round out a meal
+  // Reference-only, import-sourced context: a sample full-day meal plan this
+  // dish appeared in on the original site (breakfast/lunch/dinner/snack
+  // slots with their own dish + energy). Never set by the admin recipe
+  // editor — createRecipe/updateRecipe don't touch these two columns.
+  dailyMenuNote: text("daily_menu_note"),
+  dailyMenuItems: text("daily_menu_items"), // JSON array, see lib/meal/dailyMenu.ts
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

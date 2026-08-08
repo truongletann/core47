@@ -5,11 +5,27 @@ import type { RecipeInput, TargetInput, PlanEntryInput, FoodInput } from "./sche
 import { filterRecipesByIngredientQuery } from "./ingredientSearch";
 import { deriveCookingMethods, CALORIE_RANGES } from "./recipeFilters";
 
+interface DailyMenuItem {
+  slot: string | null;
+  dish: string;
+  note: string | null;
+  energy: string | null;
+}
+
 function toRecipe(r: typeof mealRecipes.$inferSelect) {
+  let dailyMenuItems: DailyMenuItem[] = [];
+  if (r.dailyMenuItems) {
+    try {
+      dailyMenuItems = JSON.parse(r.dailyMenuItems);
+    } catch {
+      dailyMenuItems = [];
+    }
+  }
   return {
     ...r,
     goalTags: r.goalTags ? r.goalTags.split(",").filter(Boolean) : [],
     mealCategories: r.mealCategories ? r.mealCategories.split(",").filter(Boolean) : [],
+    dailyMenuItems,
   };
 }
 
