@@ -494,7 +494,7 @@ export function RecipeLibraryClient() {
 
       {openRecipeId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-6 shadow-xl">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-6 shadow-xl">
             <div className="mb-3 flex items-start justify-between gap-3">
               <h2 className="font-display text-lg font-semibold">{openRecipe?.name ?? "Đang tải..."}</h2>
               <button onClick={() => setOpenRecipeId(null)} aria-label="Close" className="shrink-0">
@@ -586,21 +586,21 @@ export function RecipeLibraryClient() {
                 {openRecipe.servingNotes && (
                   <>
                     <h3 className="mb-1.5 mt-4 text-sm font-semibold">Cách dùng</h3>
-                    <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.servingNotes}</div>
+                    <LabeledText text={openRecipe.servingNotes} />
                   </>
                 )}
 
                 {openRecipe.tips && (
                   <>
                     <h3 className="mb-1.5 mt-4 text-sm font-semibold">Mẹo nhỏ</h3>
-                    <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.tips}</div>
+                    <LabeledText text={openRecipe.tips} />
                   </>
                 )}
 
                 {openRecipe.expertAdvice && (
                   <>
                     <h3 className="mb-1.5 mt-4 text-sm font-semibold">Lời khuyên chuyên gia</h3>
-                    <div className="whitespace-pre-line text-sm text-[rgb(var(--fg))]">{openRecipe.expertAdvice}</div>
+                    <LabeledText text={openRecipe.expertAdvice} />
                   </>
                 )}
 
@@ -641,29 +641,63 @@ export function RecipeLibraryClient() {
 // a simple one (slot/dish/energy/note) and a fuller per-dish nutrient
 // breakdown (protein/fiber/sodium/saturated fat/added sugar). Detected per
 // recipe from whether any row actually carries nutrient values.
+// Cách dùng/Mẹo nhỏ/Lời khuyên chuyên gia are one string per recipe joined
+// from several source lines, many of which follow a "Nhãn: nội dung" shape
+// (e.g. "Đối tượng phù hợp:...", "Cân đối món chiên xào:..."). Rendered as
+// one whitespace-pre-line block, that reads as a dense wall of text with no
+// visual anchor — bolding the label and spacing each line as its own
+// paragraph gives it real structure instead.
+function LabeledText({ text }: { text: string }) {
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  return (
+    <div className="flex flex-col gap-2 text-sm text-[rgb(var(--fg))]">
+      {lines.map((line, i) => {
+        const m = line.match(/^([^:]{1,60}):\s*(.+)$/);
+        if (m) {
+          return (
+            <p key={i}>
+              <span className="font-semibold">{m[1].trim()}:</span> {m[2].trim()}
+            </p>
+          );
+        }
+        return <p key={i}>{line}</p>;
+      })}
+    </div>
+  );
+}
+
 function DailyMenuSection({ note, blocks }: { note: string | null; blocks: DailyMenuBlock[] }) {
   const hasDetailedTable = blocks.some((b) => b.type === "row" && b.protein !== null);
-  const thClass = "px-2 py-1.5 text-left text-[10px] font-semibold uppercase text-[rgb(var(--muted))]";
-  const tdClass = "px-2 py-1.5 text-xs";
+  const thClass =
+    "whitespace-nowrap px-2.5 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-[rgb(var(--muted))]";
+  const tdClass = "whitespace-nowrap px-2.5 py-1.5 text-xs";
 
   return (
     <>
       <h3 className="mb-1.5 mt-4 text-sm font-semibold">Gợi ý thực đơn cả ngày</h3>
       {note && <p className="mb-2 text-xs text-[rgb(var(--muted))]">{note}</p>}
+      {hasDetailedTable && (
+        <p className="mb-2 text-[10px] text-[rgb(var(--muted))]">
+          Đơn vị: Kcal, Đạm/Xơ/Béo BH/Đường (g), Natri (mg)
+        </p>
+      )}
       <div className="overflow-x-auto rounded-lg border border-[rgb(var(--border))]">
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-[rgb(var(--border))] bg-[rgb(var(--border)/0.3)]">
               <th className={thClass}>Bữa</th>
               <th className={thClass}>Món</th>
-              <th className={`${thClass} text-right`}>Năng lượng</th>
+              <th className={`${thClass} text-right`}>Kcal</th>
               {hasDetailedTable && (
                 <>
-                  <th className={`${thClass} text-right`}>Đạm (g)</th>
-                  <th className={`${thClass} text-right`}>Chất xơ (g)</th>
-                  <th className={`${thClass} text-right`}>Natri (mg)</th>
-                  <th className={`${thClass} text-right`}>Béo bão hòa (g)</th>
-                  <th className={`${thClass} text-right`}>Đường bổ sung (g)</th>
+                  <th className={`${thClass} text-right`}>Đạm</th>
+                  <th className={`${thClass} text-right`}>Xơ</th>
+                  <th className={`${thClass} text-right`}>Natri</th>
+                  <th className={`${thClass} text-right`}>Béo BH</th>
+                  <th className={`${thClass} text-right`}>Đường</th>
                 </>
               )}
             </tr>
@@ -687,7 +721,7 @@ function DailyMenuSection({ note, blocks }: { note: string | null; blocks: Daily
                   }`}
                 >
                   <td className={`${tdClass} font-data text-[rgb(var(--muted))]`}>{block.slot ?? ""}</td>
-                  <td className={tdClass}>
+                  <td className="min-w-[9rem] whitespace-normal px-2.5 py-1.5 text-xs">
                     {block.dish}
                     {block.note && <span className="text-[rgb(var(--muted))]"> — {block.note}</span>}
                   </td>
