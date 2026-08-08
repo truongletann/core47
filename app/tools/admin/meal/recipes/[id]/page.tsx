@@ -27,6 +27,7 @@ export default async function EditMealRecipePage({
           fatG: recipe.fatG,
           carbG: recipe.carbG,
           goalTags: recipe.goalTags,
+          mealCategories: recipe.mealCategories,
           servingNotes: recipe.servingNotes,
           tips: recipe.tips,
           expertAdvice: recipe.expertAdvice,

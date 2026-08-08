@@ -6,6 +6,9 @@ const nullableString = (max: number) =>
 
 export const MEAL_GOALS = ["lose_weight", "maintain", "gain_weight", "gain_muscle"] as const;
 export const MEAL_SLOTS = ["breakfast", "lunch", "dinner", "snack"] as const;
+// Superset of MEAL_SLOTS — a recipe's suggested meal-time(s), which also
+// includes "dessert" (not a plan slot on its own, just a dish tag).
+export const MEAL_TIME_CATEGORIES = ["breakfast", "lunch", "dinner", "snack", "dessert"] as const;
 
 export const RecipeIngredientSchema = z.object({
   name: z.string().trim().min(1).max(200),
@@ -40,6 +43,7 @@ export const RecipeSchema = z.object({
   fatG: z.coerce.number().nonnegative(),
   carbG: z.coerce.number().nonnegative(),
   goalTags: z.array(z.enum(MEAL_GOALS)).default([]),
+  mealCategories: z.array(z.enum(MEAL_TIME_CATEGORIES)).default([]),
   servingNotes: nullableString(4000),
   tips: nullableString(4000),
   expertAdvice: nullableString(4000),

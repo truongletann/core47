@@ -1,0 +1,131 @@
+-- Migration: 0085_meal_recipe_nutrition_estimate_part3
+-- Target: Cloudflare D1 (SQLite)
+-- Part 3/3: fills caloriesPerServing/proteinG/fatG/carbG,
+-- summed from each recipe's linked ingredients (meal_recipe_ingredients.food_id),
+-- only where: (1) at least one linked ingredient is a substantial (>=50 kcal)
+-- protein/carb staple (thit/hai_san/tinh_bot) rather than just garnish/herbs,
+-- (2) >=30% of ingredient lines are linked, (3) total is in a plausible 80-3000
+-- kcal range. Recipes failing any check are left at 0 (unknown) rather than
+-- showing a confidently-wrong number. NOTE: since the imported recipes don't
+-- specify a real serving count (servings defaults to 1 for all of them), this
+-- is the WHOLE dish's total, not necessarily a single-person portion — treat
+-- as a ballpark figure, not a precise per-serving number.
+UPDATE meal_recipes SET calories_per_serving = 260, protein_g = 55.7, fat_g = 2.3, carb_g = 2.4 WHERE id = 'recipe-nem-hai-san';
+UPDATE meal_recipes SET calories_per_serving = 903, protein_g = 17.4, fat_g = 1.8, carb_g = 207.7 WHERE id = 'recipe-bun-thit-xao-sa-ot';
+UPDATE meal_recipes SET calories_per_serving = 416, protein_g = 51.3, fat_g = 19, carb_g = 4 WHERE id = 'recipe-tim-heo-nuong-ngu-vi';
+UPDATE meal_recipes SET calories_per_serving = 883, protein_g = 54.6, fat_g = 73, carb_g = 1.4 WHERE id = 'recipe-thit-nuong-bbq';
+UPDATE meal_recipes SET calories_per_serving = 521, protein_g = 50, fat_g = 32.5, carb_g = 0.2 WHERE id = 'recipe-ca-hoi-chien-sot-chanh';
+UPDATE meal_recipes SET calories_per_serving = 303, protein_g = 50.9, fat_g = 1.3, carb_g = 23.2 WHERE id = 'recipe-salad-cam-tom-su';
+UPDATE meal_recipes SET calories_per_serving = 666, protein_g = 69.4, fat_g = 37.9, carb_g = 6.7 WHERE id = 'recipe-thit-bo-xao-la-lot';
+UPDATE meal_recipes SET calories_per_serving = 269, protein_g = 9.4, fat_g = 1.1, carb_g = 59.2 WHERE id = 'recipe-salad-cu-sen-khoai-tay';
+UPDATE meal_recipes SET calories_per_serving = 482, protein_g = 92.7, fat_g = 7.8, carb_g = 7.9 WHERE id = 'recipe-goi-hai-san-phuong-dong';
+UPDATE meal_recipes SET calories_per_serving = 203, protein_g = 48.1, fat_g = 0.6, carb_g = 1.7 WHERE id = 'recipe-goi-xoai-tom';
+UPDATE meal_recipes SET calories_per_serving = 199, protein_g = 48.1, fat_g = 0.6, carb_g = 0.7 WHERE id = 'recipe-canh-khoai-mi-nau-tom';
+UPDATE meal_recipes SET calories_per_serving = 751, protein_g = 18.1, fat_g = 3.1, carb_g = 159.1 WHERE id = 'recipe-com-chien-nam-man';
+UPDATE meal_recipes SET calories_per_serving = 299, protein_g = 72.1, fat_g = 0.9, carb_g = 1.2 WHERE id = 'recipe-sup-trai-cay';
+UPDATE meal_recipes SET calories_per_serving = 1379, protein_g = 85.3, fat_g = 115.2, carb_g = 0.4 WHERE id = 'recipe-suon-non-kho-chao';
+UPDATE meal_recipes SET calories_per_serving = 737, protein_g = 69, fat_g = 39.3, carb_g = 22.3 WHERE id = 'recipe-mi-y-bo-bam';
+UPDATE meal_recipes SET calories_per_serving = 616, protein_g = 99, fat_g = 18, carb_g = 13.8 WHERE id = 'recipe-canh-gan-bo-chua-cay';
+UPDATE meal_recipes SET calories_per_serving = 853, protein_g = 82.3, fat_g = 52.1, carb_g = 4.1 WHERE id = 'recipe-ca-hoi-kho-nuoc-tuong';
+UPDATE meal_recipes SET calories_per_serving = 201, protein_g = 48.1, fat_g = 0.6, carb_g = 1 WHERE id = 'recipe-salad-hoa-ly-tom-xa-xiu';
+UPDATE meal_recipes SET calories_per_serving = 481, protein_g = 57.2, fat_g = 22.8, carb_g = 16.6 WHERE id = 'recipe-salad-mang-cut';
+UPDATE meal_recipes SET calories_per_serving = 575, protein_g = 84.9, fat_g = 14.6, carb_g = 25.9 WHERE id = 'recipe-canh-bong-thap-cam';
+UPDATE meal_recipes SET calories_per_serving = 333, protein_g = 41.7, fat_g = 14.7, carb_g = 11.8 WHERE id = 'recipe-lau-suon-bo-chua-cay';
+UPDATE meal_recipes SET calories_per_serving = 678, protein_g = 64.3, fat_g = 42.2, carb_g = 7.1 WHERE id = 'recipe-luon-kho-cu-nen';
+UPDATE meal_recipes SET calories_per_serving = 268, protein_g = 60.4, fat_g = 0.8, carb_g = 5.2 WHERE id = 'recipe-banh-quay-nhoi-cha-tom';
+UPDATE meal_recipes SET calories_per_serving = 461, protein_g = 78, fat_g = 7, carb_g = 15.7 WHERE id = 'recipe-muc-que-chien-gion-xot-cam';
+UPDATE meal_recipes SET calories_per_serving = 552, protein_g = 34.1, fat_g = 46, carb_g = 0.6 WHERE id = 'recipe-canh-bi-dao-suon-non';
+UPDATE meal_recipes SET calories_per_serving = 226, protein_g = 50.6, fat_g = 1.4, carb_g = 4.2 WHERE id = 'recipe-tom-chien-canh-buom';
+UPDATE meal_recipes SET calories_per_serving = 296, protein_g = 46.9, fat_g = 5.9, carb_g = 10.8 WHERE id = 'recipe-xoi-ga-chien';
+UPDATE meal_recipes SET calories_per_serving = 562, protein_g = 54.4, fat_g = 36.1, carb_g = 1.9 WHERE id = 'recipe-luon-kho-sa-ot-2';
+UPDATE meal_recipes SET calories_per_serving = 129, protein_g = 27.6, fat_g = 1.5, carb_g = 0.3 WHERE id = 'recipe-ca-tim-nuong-tom-chay-mo-he';
+UPDATE meal_recipes SET calories_per_serving = 1226, protein_g = 79.4, fat_g = 98.6, carb_g = 4.8 WHERE id = 'recipe-luon-om-chuoi-dau';
+UPDATE meal_recipes SET calories_per_serving = 393, protein_g = 73.2, fat_g = 6.1, carb_g = 7.7 WHERE id = 'recipe-ca-loc-cuon-nghe';
+UPDATE meal_recipes SET calories_per_serving = 1663, protein_g = 102.3, fat_g = 138.1, carb_g = 3.2 WHERE id = 'recipe-suon-non-xao-chanh-sa';
+UPDATE meal_recipes SET calories_per_serving = 365, protein_g = 52, fat_g = 4.4, carb_g = 31 WHERE id = 'recipe-canh-chua-ca-loc-dau-tuong';
+UPDATE meal_recipes SET calories_per_serving = 1019, protein_g = 92.2, fat_g = 69, carb_g = 0.8 WHERE id = 'recipe-ga-rim-nuoc-tuong';
+UPDATE meal_recipes SET calories_per_serving = 276, protein_g = 24.5, fat_g = 10.1, carb_g = 21 WHERE id = 'recipe-mien-xao-xot-tuong';
+UPDATE meal_recipes SET calories_per_serving = 183, protein_g = 4.3, fat_g = 0.5, carb_g = 41 WHERE id = 'recipe-bun-me-den-xao-ngheu';
+UPDATE meal_recipes SET calories_per_serving = 465, protein_g = 20.4, fat_g = 3.5, carb_g = 70.3 WHERE id = 'recipe-mien-xao-hen-xot-me';
+UPDATE meal_recipes SET calories_per_serving = 134, protein_g = 21.3, fat_g = 2, carb_g = 8.4 WHERE id = 'recipe-goi-nam';
+UPDATE meal_recipes SET calories_per_serving = 212, protein_g = 31, fat_g = 6.3, carb_g = 7 WHERE id = 'recipe-banh-mi-kep-ca-chien-xu';
+UPDATE meal_recipes SET calories_per_serving = 482, protein_g = 63, fat_g = 6.5, carb_g = 49.1 WHERE id = 'recipe-salad-muc-chien';
+UPDATE meal_recipes SET calories_per_serving = 466, protein_g = 31.6, fat_g = 15.8, carb_g = 48.4 WHERE id = 'recipe-bun-gao-xao-mayo';
+UPDATE meal_recipes SET calories_per_serving = 1165, protein_g = 85.2, fat_g = 90, carb_g = 1.2 WHERE id = 'recipe-vit-kho-ngu-vi';
+UPDATE meal_recipes SET calories_per_serving = 625, protein_g = 60, fat_g = 39, carb_g = 0.1 WHERE id = 'recipe-salad-mi-udon-ca-hoi-xot-me-rang';
+UPDATE meal_recipes SET calories_per_serving = 429, protein_g = 32.5, fat_g = 28.4, carb_g = 10.5 WHERE id = 'recipe-banh-ran-nhan-cua';
+UPDATE meal_recipes SET calories_per_serving = 126, protein_g = 18.1, fat_g = 4.5, carb_g = 1.8 WHERE id = 'recipe-muop-huong-xao-tim';
+UPDATE meal_recipes SET calories_per_serving = 299, protein_g = 53.8, fat_g = 1.2, carb_g = 23.3 WHERE id = 'recipe-dau-bap-xao-tom';
+UPDATE meal_recipes SET calories_per_serving = 205, protein_g = 32.4, fat_g = 3.5, carb_g = 9.3 WHERE id = 'recipe-goi-muc-chien';
+UPDATE meal_recipes SET calories_per_serving = 276, protein_g = 52.7, fat_g = 2.3, carb_g = 14.4 WHERE id = 'recipe-canh-tom-banh-gao';
+UPDATE meal_recipes SET calories_per_serving = 302, protein_g = 72.2, fat_g = 0.9, carb_g = 1.8 WHERE id = 'recipe-tom-xao-sa-cay';
+UPDATE meal_recipes SET calories_per_serving = 1532, protein_g = 84.6, fat_g = 127.8, carb_g = 10.7 WHERE id = 'recipe-suon-nau-dau-ngu';
+UPDATE meal_recipes SET calories_per_serving = 503, protein_g = 75.4, fat_g = 20.4, carb_g = 5.8 WHERE id = 'recipe-tom-xot-sua';
+UPDATE meal_recipes SET calories_per_serving = 511, protein_g = 19.8, fat_g = 8.2, carb_g = 92.4 WHERE id = 'recipe-mi-ap-chao-thit-heo';
+UPDATE meal_recipes SET calories_per_serving = 260, protein_g = 40.2, fat_g = 3.8, carb_g = 13.5 WHERE id = 'recipe-goi-muc-cay';
+UPDATE meal_recipes SET calories_per_serving = 204, protein_g = 40.1, fat_g = 1.8, carb_g = 5.8 WHERE id = 'recipe-sandwich-nuong-hai-san';
+UPDATE meal_recipes SET calories_per_serving = 325, protein_g = 75.1, fat_g = 1.4, carb_g = 4.9 WHERE id = 'recipe-canh-cha-tom-chum-ngay';
+UPDATE meal_recipes SET calories_per_serving = 1438, protein_g = 142.3, fat_g = 5.6, carb_g = 204.6 WHERE id = 'recipe-bun-quay';
+UPDATE meal_recipes SET calories_per_serving = 309, protein_g = 72.3, fat_g = 1, carb_g = 3.4 WHERE id = 'recipe-tom-chien-hoanh-thanh';
+UPDATE meal_recipes SET calories_per_serving = 584, protein_g = 39.1, fat_g = 2.8, carb_g = 108 WHERE id = 'recipe-cha-muc-banh-xe-chien-gion';
+UPDATE meal_recipes SET calories_per_serving = 1133, protein_g = 44.8, fat_g = 102.3, carb_g = 10.7 WHERE id = 'recipe-tom-muc-xao-rau-nhut';
+UPDATE meal_recipes SET calories_per_serving = 199, protein_g = 38.4, fat_g = 3.3, carb_g = 0.2 WHERE id = 'recipe-banh-cua';
+UPDATE meal_recipes SET calories_per_serving = 263, protein_g = 2.2, fat_g = 0.4, carb_g = 62.5 WHERE id = 'recipe-mien-tron-kieu-thai-2';
+UPDATE meal_recipes SET calories_per_serving = 1002, protein_g = 86.9, fat_g = 12, carb_g = 137 WHERE id = 'recipe-lau-ca-keo-la-giang';
+UPDATE meal_recipes SET calories_per_serving = 86, protein_g = 1.8, fat_g = 0.3, carb_g = 18.8 WHERE id = 'recipe-chao-ca-gio-heo';
+UPDATE meal_recipes SET calories_per_serving = 262, protein_g = 55.2, fat_g = 3.5, carb_g = 0.6 WHERE id = 'recipe-goi-trai-coc';
+UPDATE meal_recipes SET calories_per_serving = 363, protein_g = 25.2, fat_g = 25.7, carb_g = 8.8 WHERE id = 'recipe-salad-bacon-xot-me-rang';
+UPDATE meal_recipes SET calories_per_serving = 123, protein_g = 25.7, fat_g = 0.4, carb_g = 5.1 WHERE id = 'recipe-banh-xeo-cuon-ap-chao';
+UPDATE meal_recipes SET calories_per_serving = 663, protein_g = 135.6, fat_g = 6.8, carb_g = 15.4 WHERE id = 'recipe-lau-thai-va-hoa';
+UPDATE meal_recipes SET calories_per_serving = 236, protein_g = 18.5, fat_g = 4, carb_g = 13.1 WHERE id = 'recipe-hen-xao-mit';
+UPDATE meal_recipes SET calories_per_serving = 480, protein_g = 78.8, fat_g = 7.3, carb_g = 19.4 WHERE id = 'recipe-muc-xao-nuoc-cot-dua';
+UPDATE meal_recipes SET calories_per_serving = 253, protein_g = 26.1, fat_g = 15, carb_g = 0.6 WHERE id = 'recipe-canh-ca-chua-thit-bo';
+UPDATE meal_recipes SET calories_per_serving = 830, protein_g = 82.2, fat_g = 45.8, carb_g = 16.2 WHERE id = 'recipe-mi-xao-bo-rau-cu';
+UPDATE meal_recipes SET calories_per_serving = 287, protein_g = 21.3, fat_g = 12.7, carb_g = 22.7 WHERE id = 'recipe-mi-efu-xao-xa-xiu';
+UPDATE meal_recipes SET calories_per_serving = 219, protein_g = 48, fat_g = 0.9, carb_g = 0.1 WHERE id = 'recipe-ech-chien-bot';
+UPDATE meal_recipes SET calories_per_serving = 118, protein_g = 24.7, fat_g = 0.4, carb_g = 4.4 WHERE id = 'recipe-bap-cai-hap-nam-tom';
+UPDATE meal_recipes SET calories_per_serving = 1362, protein_g = 48.6, fat_g = 27.9, carb_g = 193.7 WHERE id = 'recipe-bun-cha-hen';
+UPDATE meal_recipes SET calories_per_serving = 1012, protein_g = 78.6, fat_g = 46.2, carb_g = 63.7 WHERE id = 'recipe-salad-ca-hoi';
+UPDATE meal_recipes SET calories_per_serving = 1079, protein_g = 133.5, fat_g = 54.3, carb_g = 10.4 WHERE id = 'recipe-bap-bo-om-gung-sa';
+UPDATE meal_recipes SET calories_per_serving = 107, protein_g = 0.4, fat_g = 0.2, carb_g = 25.8 WHERE id = 'recipe-goi-mien-thit-bam';
+UPDATE meal_recipes SET calories_per_serving = 258, protein_g = 43.8, fat_g = 3.6, carb_g = 14.4 WHERE id = 'recipe-canh-chua-hai-san';
+UPDATE meal_recipes SET calories_per_serving = 1153, protein_g = 30.7, fat_g = 113.2, carb_g = 3.7 WHERE id = 'recipe-lau-oc-tia-to';
+UPDATE meal_recipes SET calories_per_serving = 584, protein_g = 96.8, fat_g = 9, carb_g = 23.6 WHERE id = 'recipe-lau-muc-nam';
+UPDATE meal_recipes SET calories_per_serving = 867, protein_g = 159.1, fat_g = 18.6, carb_g = 6.4 WHERE id = 'recipe-thit-ga-kho-rau-ram';
+UPDATE meal_recipes SET calories_per_serving = 202, protein_g = 48.2, fat_g = 0.7, carb_g = 0.9 WHERE id = 'recipe-tom-chien-rong-bien';
+UPDATE meal_recipes SET calories_per_serving = 215, protein_g = 26.3, fat_g = 2.4, carb_g = 22.5 WHERE id = 'recipe-rau-cu-va-muc-chien';
+UPDATE meal_recipes SET calories_per_serving = 310, protein_g = 72.9, fat_g = 1, carb_g = 3.2 WHERE id = 'recipe-tom-chien-gion-xot-trung-muoi';
+UPDATE meal_recipes SET calories_per_serving = 527, protein_g = 81.4, fat_g = 21.7, carb_g = 2 WHERE id = 'recipe-dong-co-hap-tom';
+UPDATE meal_recipes SET calories_per_serving = 683, protein_g = 81.8, fat_g = 20.6, carb_g = 41.7 WHERE id = 'recipe-canh-ga-cu-sen';
+UPDATE meal_recipes SET calories_per_serving = 1813, protein_g = 103.5, fat_g = 153.6, carb_g = 4.8 WHERE id = 'recipe-suon-kho-nam';
+UPDATE meal_recipes SET calories_per_serving = 689, protein_g = 42.6, fat_g = 57.6, carb_g = 0.1 WHERE id = 'recipe-suon-kho-dau-hu-non';
+UPDATE meal_recipes SET calories_per_serving = 211, protein_g = 6.6, fat_g = 2.3, carb_g = 40.2 WHERE id = 'recipe-sandwich-trai-cay-chien-gion';
+UPDATE meal_recipes SET calories_per_serving = 1015, protein_g = 57.2, fat_g = 85.2, carb_g = 0.8 WHERE id = 'recipe-vit-chien-xot-chua-ngot';
+UPDATE meal_recipes SET calories_per_serving = 394, protein_g = 67.7, fat_g = 3.4, carb_g = 26.7 WHERE id = 'recipe-mang-tay-xao-tom-muc';
+UPDATE meal_recipes SET calories_per_serving = 670, protein_g = 39.3, fat_g = 19.3, carb_g = 80.8 WHERE id = 'recipe-nem-thit-bo-chien-xu';
+UPDATE meal_recipes SET calories_per_serving = 183, protein_g = 32.3, fat_g = 3.7, carb_g = 4.3 WHERE id = 'recipe-lau-ca-vien-nau-sau';
+UPDATE meal_recipes SET calories_per_serving = 528, protein_g = 3.2, fat_g = 0.7, carb_g = 128.8 WHERE id = 'recipe-banh-cuon-lanh';
+UPDATE meal_recipes SET calories_per_serving = 396, protein_g = 3.8, fat_g = 0.5, carb_g = 96.3 WHERE id = 'recipe-tra-sua-matcha-khoai-mon';
+UPDATE meal_recipes SET calories_per_serving = 324, protein_g = 58.1, fat_g = 1.1, carb_g = 21.3 WHERE id = 'recipe-lau-tuong-hai-san';
+UPDATE meal_recipes SET calories_per_serving = 230, protein_g = 37.2, fat_g = 3.2, carb_g = 10.8 WHERE id = 'recipe-dau-bap-nhoi-cha-ca-chien';
+UPDATE meal_recipes SET calories_per_serving = 457, protein_g = 74.9, fat_g = 1.2, carb_g = 39.5 WHERE id = 'recipe-cu-nang-xao-tom-thit';
+UPDATE meal_recipes SET calories_per_serving = 606, protein_g = 48.3, fat_g = 45.1, carb_g = 1.9 WHERE id = 'recipe-tai-heo-thau-chua';
+UPDATE meal_recipes SET calories_per_serving = 1380, protein_g = 85.2, fat_g = 115, carb_g = 1.1 WHERE id = 'recipe-suon-chien-xot-man';
+UPDATE meal_recipes SET calories_per_serving = 287, protein_g = 49.4, fat_g = 4.2, carb_g = 13.3 WHERE id = 'recipe-canh-chua-ca';
+UPDATE meal_recipes SET calories_per_serving = 122, protein_g = 26.6, fat_g = 0.6, carb_g = 4.2 WHERE id = 'recipe-canh-rau-tap-tang';
+UPDATE meal_recipes SET calories_per_serving = 201, protein_g = 16.1, fat_g = 15, carb_g = 0.4 WHERE id = 'recipe-nom-bi';
+UPDATE meal_recipes SET calories_per_serving = 2625, protein_g = 130.9, fat_g = 225.3, carb_g = 9.1 WHERE id = 'recipe-bo-thung';
+UPDATE meal_recipes SET calories_per_serving = 102, protein_g = 24.1, fat_g = 0.3, carb_g = 0.8 WHERE id = 'recipe-salad-banh-da-tom';
+UPDATE meal_recipes SET calories_per_serving = 538, protein_g = 12, fat_g = 1.3, carb_g = 115.6 WHERE id = 'recipe-tom-cang-uyen-uong';
+UPDATE meal_recipes SET calories_per_serving = 376, protein_g = 55.3, fat_g = 12.8, carb_g = 7 WHERE id = 'recipe-canh-muc-nau-chua';
+UPDATE meal_recipes SET calories_per_serving = 521, protein_g = 122.5, fat_g = 1.7, carb_g = 6.2 WHERE id = 'recipe-canh-chua-tom-nuoc-trong';
+UPDATE meal_recipes SET calories_per_serving = 465, protein_g = 33.8, fat_g = 16.2, carb_g = 45.2 WHERE id = 'recipe-chao-hat-sen-nau-bo-vien';
+UPDATE meal_recipes SET calories_per_serving = 1378, protein_g = 85.1, fat_g = 115, carb_g = 0.6 WHERE id = 'recipe-suon-xoc-toi';
+UPDATE meal_recipes SET calories_per_serving = 478, protein_g = 12.2, fat_g = 2.2, carb_g = 105.4 WHERE id = 'recipe-khoai-tay-chien-bo-nuong';
+UPDATE meal_recipes SET calories_per_serving = 823, protein_g = 108.1, fat_g = 39.6, carb_g = 0.5 WHERE id = 'recipe-ca-hoi-cuon-com-chien';
+UPDATE meal_recipes SET calories_per_serving = 432, protein_g = 32.2, fat_g = 30.8, carb_g = 10 WHERE id = 'recipe-vien-me-chien-gion';
+UPDATE meal_recipes SET calories_per_serving = 257, protein_g = 50.6, fat_g = 1.8, carb_g = 12 WHERE id = 'recipe-bap-cai-tim-tron-tom';
+UPDATE meal_recipes SET calories_per_serving = 401, protein_g = 80.5, fat_g = 2.1, carb_g = 20.8 WHERE id = 'recipe-tom-tron-bong-cai';
+UPDATE meal_recipes SET calories_per_serving = 173, protein_g = 3.9, fat_g = 0.8, carb_g = 38.3 WHERE id = 'recipe-khoai-chien-lac-mayo-me-la-que';
+UPDATE meal_recipes SET calories_per_serving = 631, protein_g = 14.3, fat_g = 1.6, carb_g = 142 WHERE id = 'recipe-lau-ca-lang-mang-chua';
+UPDATE meal_recipes SET calories_per_serving = 272, protein_g = 44.6, fat_g = 3.8, carb_g = 16.9 WHERE id = 'recipe-nguu-bang-xao-hai-san';

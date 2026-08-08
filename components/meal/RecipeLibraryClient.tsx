@@ -10,6 +10,8 @@ import {
   CALORIE_RANGES,
   GOAL_LABELS,
   GOAL_ORDER,
+  MEAL_TIME_LABELS,
+  MEAL_TIME_ORDER,
 } from "@/lib/meal/recipeFilters";
 
 interface RecipeCard {
@@ -22,6 +24,7 @@ interface RecipeCard {
   fatG: number;
   carbG: number;
   goalTags: string[];
+  mealCategories: string[];
   ingredients: { name: string; foodName: string | null; foodCategory: string | null }[];
 }
 
@@ -51,7 +54,7 @@ type SortKey = (typeof SORT_OPTIONS)[number]["key"];
 
 const PAGE_SIZE = 24;
 
-type FilterSection = "ingredient" | "cooking" | "goal" | "calorie";
+type FilterSection = "ingredient" | "cooking" | "goal" | "calorie" | "mealTime";
 
 function toggleInSet<T>(set: Set<T>, value: T): Set<T> {
   const next = new Set(set);
@@ -81,6 +84,7 @@ export function RecipeLibraryClient() {
   const [selectedCookingMethods, setSelectedCookingMethods] = useState<Set<string>>(new Set());
   const [selectedGoals, setSelectedGoals] = useState<Set<string>>(new Set());
   const [selectedCalorieRanges, setSelectedCalorieRanges] = useState<Set<string>>(new Set());
+  const [selectedMealTimes, setSelectedMealTimes] = useState<Set<string>>(new Set());
 
   // Debounce the search box so every keystroke doesn't fire a request.
   useEffect(() => {
@@ -91,7 +95,15 @@ export function RecipeLibraryClient() {
   // Any filter/search/sort change resets back to page 1.
   useEffect(() => {
     setPage(1);
-  }, [search, sortKey, selectedIngredients, selectedCookingMethods, selectedGoals, selectedCalorieRanges]);
+  }, [
+    search,
+    sortKey,
+    selectedIngredients,
+    selectedCookingMethods,
+    selectedGoals,
+    selectedCalorieRanges,
+    selectedMealTimes,
+  ]);
 
   useEffect(() => {
     setLoading(true);
@@ -104,6 +116,7 @@ export function RecipeLibraryClient() {
     if (selectedCookingMethods.size) params.set("cooking", [...selectedCookingMethods].join(","));
     if (selectedGoals.size) params.set("goals", [...selectedGoals].join(","));
     if (selectedCalorieRanges.size) params.set("calorie", [...selectedCalorieRanges].join(","));
+    if (selectedMealTimes.size) params.set("mealTimes", [...selectedMealTimes].join(","));
 
     fetch(`/api/meal/recipes?${params.toString()}`, { credentials: "include" })
       .then(
@@ -118,7 +131,16 @@ export function RecipeLibraryClient() {
         setFacets(json?.data?.facets ?? {});
       })
       .finally(() => setLoading(false));
-  }, [page, sortKey, search, selectedIngredients, selectedCookingMethods, selectedGoals, selectedCalorieRanges]);
+  }, [
+    page,
+    sortKey,
+    search,
+    selectedIngredients,
+    selectedCookingMethods,
+    selectedGoals,
+    selectedCalorieRanges,
+    selectedMealTimes,
+  ]);
 
   useEffect(() => {
     if (!openRecipeId) {
@@ -133,7 +155,11 @@ export function RecipeLibraryClient() {
   }, [openRecipeId]);
 
   const activeFilterCount =
-    selectedIngredients.size + selectedCookingMethods.size + selectedGoals.size + selectedCalorieRanges.size;
+    selectedIngredients.size +
+    selectedCookingMethods.size +
+    selectedGoals.size +
+    selectedCalorieRanges.size +
+    selectedMealTimes.size;
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -142,6 +168,7 @@ export function RecipeLibraryClient() {
     setSelectedCookingMethods(new Set());
     setSelectedGoals(new Set());
     setSelectedCalorieRanges(new Set());
+    setSelectedMealTimes(new Set());
   }
 
   const checkboxRowClass = "flex items-center gap-2 text-sm";
@@ -275,6 +302,25 @@ export function RecipeLibraryClient() {
             </div>
 
             <div>
+              <SectionHeader section="mealTime" label="Bữa ăn" />
+              {expandedSection === "mealTime" && (
+                <div className="flex flex-col gap-1.5 py-3">
+                  {MEAL_TIME_ORDER.map((key) => (
+                    <label key={key} className={checkboxRowClass}>
+                      <input
+                        type="checkbox"
+                        checked={selectedMealTimes.has(key)}
+                        onChange={() => setSelectedMealTimes((s) => toggleInSet(s, key))}
+                        className={checkboxClass}
+                      />
+                      {MEAL_TIME_LABELS[key]}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
               <SectionHeader section="goal" label="Theo nhu cầu dinh dưỡng" />
               {expandedSection === "goal" && (
                 <div className="flex flex-col gap-1.5 py-3">
@@ -356,8 +402,16 @@ export function RecipeLibraryClient() {
                         <Wheat size={12} /> {Math.round(r.carbG)}g
                       </span>
                     </div>
-                    {r.goalTags.length > 0 && (
+                    {(r.mealCategories.length > 0 || r.goalTags.length > 0) && (
                       <div className="mt-2 flex flex-wrap gap-1">
+                        {r.mealCategories.map((m) => (
+                          <span
+                            key={m}
+                            className="rounded-full bg-[rgb(var(--border)/0.6)] px-2 py-0.5 text-[10px] text-[rgb(var(--muted))]"
+                          >
+                            {MEAL_TIME_LABELS[m] ?? m}
+                          </span>
+                        ))}
                         {r.goalTags.map((g) => (
                           <span
                             key={g}

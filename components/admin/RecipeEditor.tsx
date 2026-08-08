@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Trash2, Calculator } from "lucide-react";
-import { MEAL_GOALS } from "@/lib/meal/schema";
+import { MEAL_GOALS, MEAL_TIME_CATEGORIES } from "@/lib/meal/schema";
 
 interface Food {
   id: string;
@@ -33,6 +33,7 @@ interface EditorInitial {
   fatG: number;
   carbG: number;
   goalTags: string[];
+  mealCategories: string[];
   servingNotes?: string | null;
   tips?: string | null;
   expertAdvice?: string | null;
@@ -50,6 +51,7 @@ const emptyInitial: EditorInitial = {
   fatG: 0,
   carbG: 0,
   goalTags: [],
+  mealCategories: [],
   servingNotes: "",
   tips: "",
   expertAdvice: "",
@@ -62,6 +64,14 @@ const GOAL_LABELS: Record<string, string> = {
   maintain: "Duy trì",
   gain_weight: "Tăng cân",
   gain_muscle: "Tăng cơ",
+};
+
+const MEAL_TIME_LABELS: Record<string, string> = {
+  breakfast: "Sáng",
+  lunch: "Trưa",
+  dinner: "Tối",
+  snack: "Ăn vặt",
+  dessert: "Tráng miệng",
 };
 
 export function RecipeEditor({
@@ -135,6 +145,15 @@ export function RecipeEditor({
     setForm((f) => ({
       ...f,
       goalTags: f.goalTags.includes(goal) ? f.goalTags.filter((g) => g !== goal) : [...f.goalTags, goal],
+    }));
+  }
+
+  function toggleMealCategory(cat: string) {
+    setForm((f) => ({
+      ...f,
+      mealCategories: f.mealCategories.includes(cat)
+        ? f.mealCategories.filter((c) => c !== cat)
+        : [...f.mealCategories, cat],
     }));
   }
 
@@ -335,6 +354,26 @@ export function RecipeEditor({
                 }`}
               >
                 {GOAL_LABELS[goal]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-[rgb(var(--muted))]">Meal time</label>
+          <div className="flex flex-wrap gap-2">
+            {MEAL_TIME_CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => toggleMealCategory(cat)}
+                className={`rounded-full border px-3 py-1 text-xs ${
+                  form.mealCategories.includes(cat)
+                    ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent)/0.12)] text-[rgb(var(--accent))]"
+                    : "border-[rgb(var(--border))] text-[rgb(var(--muted))]"
+                }`}
+              >
+                {MEAL_TIME_LABELS[cat]}
               </button>
             ))}
           </div>

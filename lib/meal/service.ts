@@ -6,7 +6,11 @@ import { filterRecipesByIngredientQuery } from "./ingredientSearch";
 import { deriveCookingMethods, CALORIE_RANGES } from "./recipeFilters";
 
 function toRecipe(r: typeof mealRecipes.$inferSelect) {
-  return { ...r, goalTags: r.goalTags ? r.goalTags.split(",").filter(Boolean) : [] };
+  return {
+    ...r,
+    goalTags: r.goalTags ? r.goalTags.split(",").filter(Boolean) : [],
+    mealCategories: r.mealCategories ? r.mealCategories.split(",").filter(Boolean) : [],
+  };
 }
 
 function toIngredient({
@@ -51,6 +55,7 @@ interface RecipeSummary {
   fatG: number;
   carbG: number;
   goalTags: string[];
+  mealCategories: string[];
   updatedAt: string;
   ingredients: {
     name: string;
@@ -80,6 +85,7 @@ async function loadAllSummaries(): Promise<RecipeSummary[]> {
         fatG: mealRecipes.fatG,
         carbG: mealRecipes.carbG,
         goalTags: mealRecipes.goalTags,
+        mealCategories: mealRecipes.mealCategories,
         updatedAt: mealRecipes.updatedAt,
       })
       .from(mealRecipes)
@@ -112,6 +118,7 @@ async function loadAllSummaries(): Promise<RecipeSummary[]> {
   return recipeRows.map((r) => ({
     ...r,
     goalTags: r.goalTags ? r.goalTags.split(",").filter(Boolean) : [],
+    mealCategories: r.mealCategories ? r.mealCategories.split(",").filter(Boolean) : [],
     ingredients: ingredientsByRecipe.get(r.id) ?? [],
   }));
 }
@@ -146,6 +153,7 @@ export interface ListRecipesPagedOptions {
   cookingMethods?: string[];
   goals?: string[];
   calorieRanges?: string[];
+  mealTimes?: string[];
   sort?: "name" | "calAsc" | "calDesc" | "proteinDesc";
 }
 
@@ -177,6 +185,10 @@ export async function listRecipesPaged(options: ListRecipesPagedOptions = {}) {
     result = result.filter((r) =>
       CALORIE_RANGES.some((range) => set.has(range.key) && range.test(r.caloriesPerServing)),
     );
+  }
+  if (options.mealTimes?.length) {
+    const set = new Set(options.mealTimes);
+    result = result.filter((r) => r.mealCategories.some((m) => set.has(m)));
   }
 
   const sorted = [...result];
@@ -296,6 +308,7 @@ export async function createRecipe(input: RecipeInput) {
     fatG: input.fatG,
     carbG: input.carbG,
     goalTags: input.goalTags.join(","),
+    mealCategories: input.mealCategories.join(","),
     servingNotes: input.servingNotes,
     tips: input.tips,
     expertAdvice: input.expertAdvice,
@@ -338,6 +351,7 @@ export async function updateRecipe(id: string, input: RecipeInput) {
       fatG: input.fatG,
       carbG: input.carbG,
       goalTags: input.goalTags.join(","),
+      mealCategories: input.mealCategories.join(","),
       servingNotes: input.servingNotes,
       tips: input.tips,
       expertAdvice: input.expertAdvice,

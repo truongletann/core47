@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
     cookingMethods: csvParam(sp, "cooking"),
     goals: csvParam(sp, "goals"),
     calorieRanges: csvParam(sp, "calorie"),
+    mealTimes: csvParam(sp, "mealTimes"),
     sort,
   });
 

@@ -355,6 +355,10 @@ export const mealRecipes = sqliteTable("meal_recipes", {
   fatG: real("fat_g").notNull().default(0),
   carbG: real("carb_g").notNull().default(0),
   goalTags: text("goal_tags"), // comma-separated: lose_weight,maintain,gain_weight,gain_muscle
+  // Comma-separated: breakfast,lunch,dinner,snack,dessert — which meal-time(s)
+  // this dish plausibly suits. Multiple values are normal (e.g. phở fits both
+  // breakfast and lunch) rather than one exclusive slot.
+  mealCategories: text("meal_categories"),
   // Optional richer fields — populated for recipes imported from a fuller
   // source dataset; nullable since the admin-authored recipe form doesn't
   // require them.

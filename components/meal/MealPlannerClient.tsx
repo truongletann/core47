@@ -19,6 +19,7 @@ interface Recipe {
   fatG: number;
   carbG: number;
   goalTags: string[];
+  mealCategories: string[];
   ingredients: RecipeIngredient[];
 }
 
@@ -182,8 +183,13 @@ export function MealPlannerClient() {
       const usedIds = new Set<string>();
       for (const slot of emptySlots) {
         const slotTarget = dailyCalories * slotWeights[slot.key];
-        const unused = candidates.filter((r) => !usedIds.has(r.id));
-        const pool = unused.length > 0 ? unused : candidates;
+        // Prefer recipes tagged for this slot's meal time — falls back to
+        // the full goal pool when nothing matches (most of the imported
+        // recipe set doesn't have a snack/dessert tag, for instance).
+        const slotTagged = candidates.filter((r) => r.mealCategories.includes(slot.key));
+        const timeFiltered = slotTagged.length > 0 ? slotTagged : candidates;
+        const unused = timeFiltered.filter((r) => !usedIds.has(r.id));
+        const pool = unused.length > 0 ? unused : timeFiltered;
         const best = pool.reduce((closest, r) =>
           Math.abs(r.caloriesPerServing - slotTarget) < Math.abs(closest.caloriesPerServing - slotTarget)
             ? r

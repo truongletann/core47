@@ -51,3 +51,45 @@ export const GOAL_LABELS: Record<string, string> = {
   gain_muscle: "Tăng cơ",
 };
 export const GOAL_ORDER = ["lose_weight", "maintain", "gain_weight", "gain_muscle"];
+
+// "Bữa ăn" — which meal-time(s) a dish suits. Same keyword-heuristic
+// approach/limitations as deriveCookingMethods above: no dedicated ground
+// truth, derived from the dish name. A dish gets every plausible slot
+// (phở/bún/mì etc. are eaten at breakfast or lunch in practice) rather than
+// one exclusive pick — Vietnamese cuisine also doesn't meaningfully
+// distinguish lunch vs. dinner dishes, so savory mains default to both.
+const DESSERT_KEYWORDS = [
+  "chè", "kem", "pudding", "mousse", "tiramisu", "thạch", "rau câu",
+  "panna cotta", "cheesecake", "macaron", "cupcake", "cookie", "brownie",
+  "bánh flan", "bánh bông lan", "bánh quy", "bánh su kem", "bánh ngọt",
+  "custard", "caramel", "bánh trung thu", "chocolate", "socola", "trái cây dầm",
+  "yaourt", "sữa chua",
+];
+const SNACK_KEYWORDS = [
+  "gỏi cuốn", "chả giò", "nem chua", "bánh tráng trộn", "khoai tây chiên",
+  "snack", "bắp rang", "sinh tố", "nước ép", "trà sữa", "bánh mì que",
+  "bánh xèo mini", "chips", "popcorn", "nước detox", "trà",
+];
+const BREAKFAST_KEYWORDS = [
+  "cháo", "xôi", "phở", "hủ tiếu", "bún", "mì", "bánh mì", "bánh cuốn",
+  "bánh giò", "ngũ cốc", "yến mạch", "bánh canh", "miến",
+];
+
+export function deriveMealTimeCategories(recipeName: string): string[] {
+  const lower = recipeName.toLowerCase();
+  const has = (list: string[]) => list.some((kw) => lower.includes(kw));
+
+  if (has(DESSERT_KEYWORDS)) return ["dessert"];
+  if (has(SNACK_KEYWORDS)) return ["snack"];
+  if (has(BREAKFAST_KEYWORDS)) return ["breakfast", "lunch"];
+  return ["lunch", "dinner"];
+}
+
+export const MEAL_TIME_LABELS: Record<string, string> = {
+  breakfast: "Sáng",
+  lunch: "Trưa",
+  dinner: "Tối",
+  snack: "Ăn vặt",
+  dessert: "Tráng miệng",
+};
+export const MEAL_TIME_ORDER = ["breakfast", "lunch", "dinner", "snack", "dessert"];
