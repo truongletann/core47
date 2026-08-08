@@ -338,6 +338,13 @@ export function MealPlannerClient() {
           </div>
         ))}
       </div>
+      {dayTotals.calories > 0 && (
+        <p className="-mt-4 mb-6 text-[10px] italic text-[rgb(var(--muted))]">
+          *Calo/macro mỗi món là ước tính từ nguyên liệu khớp được với CSDL dinh dưỡng, có thể chưa
+          gồm hết gia vị và chưa quy đổi theo khẩu phần thực tế — chỉ mang tính tham khảo, không thay
+          thế tư vấn dinh dưỡng chuyên môn.
+        </p>
+      )}
 
       {/* Meal slots */}
       <div className="flex flex-col gap-3">

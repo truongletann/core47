@@ -472,13 +472,19 @@ export function RecipeLibraryClient() {
                   <p className="mb-3 text-sm text-[rgb(var(--muted))]">{openRecipe.description}</p>
                 )}
 
-                <div className="font-data mb-4 flex flex-wrap gap-3 text-xs text-[rgb(var(--muted))]">
+                <div className="font-data mb-1 flex flex-wrap gap-3 text-xs text-[rgb(var(--muted))]">
                   <span>{openRecipe.servings} khẩu phần</span>
-                  <span>{Math.round(openRecipe.caloriesPerServing)} kcal/khẩu phần</span>
+                  <span>{Math.round(openRecipe.caloriesPerServing)} kcal</span>
                   <span>Đạm {Math.round(openRecipe.proteinG)}g</span>
                   <span>Béo {Math.round(openRecipe.fatG)}g</span>
                   <span>Tinh bột {Math.round(openRecipe.carbG)}g</span>
                 </div>
+                {openRecipe.caloriesPerServing > 0 && (
+                  <p className="mb-4 text-[10px] italic text-[rgb(var(--muted))]">
+                    *Ước tính từ nguyên liệu khớp được với CSDL dinh dưỡng — có thể chưa gồm hết gia
+                    vị/nguyên liệu và chưa quy đổi theo khẩu phần thực tế, chỉ mang tính tham khảo.
+                  </p>
+                )}
 
                 <h3 className="mb-1.5 text-sm font-semibold">Nguyên liệu</h3>
                 <ul className="mb-4 flex flex-col gap-1 text-sm">
