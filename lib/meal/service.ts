@@ -5,15 +5,30 @@ import type { RecipeInput, TargetInput, PlanEntryInput, FoodInput } from "./sche
 import { filterRecipesByIngredientQuery } from "./ingredientSearch";
 import { deriveCookingMethods, CALORIE_RANGES } from "./recipeFilters";
 
-interface DailyMenuItem {
-  slot: string | null;
-  dish: string;
-  note: string | null;
-  energy: string | null;
-}
+// One block of a recipe's daily_menu_items JSON — either a section title
+// (from the source's occasional themed-menu header, e.g. "THỰC ĐƠN GIÚP
+// HOẠT ĐỘNG TRÍ NÃO HIỆU QUẢ") or a menu row. Rows come in two source
+// shapes: a simple slot+dish+energy+note row, or a fuller per-dish
+// nutrient breakdown (protein/fiber/sodium/saturated fat/added sugar) —
+// the nutrient fields are null when the source only had the simple shape.
+type DailyMenuBlock =
+  | { type: "title"; text: string }
+  | {
+      type: "row";
+      slot: string | null;
+      dish: string;
+      energy: number | null;
+      protein: number | null;
+      fiber: number | null;
+      sodium: number | null;
+      satFat: number | null;
+      addedSugar: number | null;
+      note: string | null;
+      isTotal: boolean;
+    };
 
 function toRecipe(r: typeof mealRecipes.$inferSelect) {
-  let dailyMenuItems: DailyMenuItem[] = [];
+  let dailyMenuItems: DailyMenuBlock[] = [];
   if (r.dailyMenuItems) {
     try {
       dailyMenuItems = JSON.parse(r.dailyMenuItems);
