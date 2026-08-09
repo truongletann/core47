@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/guard";
-import { swapList100Rank } from "@/lib/admin/service";
+import { swapList100Rank, reorderList100Items } from "@/lib/admin/service";
 
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin(req);
@@ -13,14 +13,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "INVALID_JSON" }, { status: 400 });
   }
 
-  const { idA, idB } = (body ?? {}) as { idA?: unknown; idB?: unknown };
-  if (typeof idA !== "string" || typeof idB !== "string" || !idA || !idB) {
-    return NextResponse.json({ success: false, error: "INVALID_INPUT" }, { status: 400 });
-  }
+  const { idA, idB, orderedIds } = (body ?? {}) as {
+    idA?: unknown;
+    idB?: unknown;
+    orderedIds?: unknown;
+  };
 
   try {
-    await swapList100Rank(idA, idB);
-    return NextResponse.json({ success: true });
+    if (Array.isArray(orderedIds) && orderedIds.every((id) => typeof id === "string")) {
+      await reorderList100Items(orderedIds);
+      return NextResponse.json({ success: true });
+    }
+
+    if (typeof idA === "string" && typeof idB === "string" && idA && idB) {
+      await swapList100Rank(idA, idB);
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ success: false, error: "INVALID_INPUT" }, { status: 400 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ success: false, error: "SERVER_ERROR", message }, { status: 500 });

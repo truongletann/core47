@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown, GripVertical } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 
 interface List100Item {
@@ -159,6 +159,8 @@ export default function AdminBucketListPage() {
   const [saving, setSaving] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [approvingSuggestionId, setApprovingSuggestionId] = useState<string | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   function load() {
     setLoading(true);
@@ -235,6 +237,30 @@ export default function AdminBucketListPage() {
       credentials: "include",
     });
     load();
+  }
+
+  async function persistOrder(ordered: List100Item[]) {
+    await fetch("/api/admin/list100/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderedIds: ordered.map((i) => i.id) }),
+      credentials: "include",
+    });
+    load();
+  }
+
+  function handleDrop(index: number) {
+    setDragOverIndex(null);
+    if (dragIndex === null || dragIndex === index) {
+      setDragIndex(null);
+      return;
+    }
+    const next = [...items];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(index, 0, moved);
+    setItems(next);
+    setDragIndex(null);
+    persistOrder(next);
   }
 
   const fieldLabel: Record<string, string> = {
@@ -413,9 +439,30 @@ export default function AdminBucketListPage() {
               </tr>
             ) : (
               items.map((i, index) => (
-                <tr key={i.id} className="border-b border-[rgb(var(--border))] last:border-0">
+                <tr
+                  key={i.id}
+                  draggable
+                  onDragStart={() => setDragIndex(index)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (dragOverIndex !== index) setDragOverIndex(index);
+                  }}
+                  onDragLeave={() => setDragOverIndex((cur) => (cur === index ? null : cur))}
+                  onDrop={() => handleDrop(index)}
+                  onDragEnd={() => {
+                    setDragIndex(null);
+                    setDragOverIndex(null);
+                  }}
+                  className={`border-b border-[rgb(var(--border))] last:border-0 ${
+                    dragIndex === index ? "opacity-40" : ""
+                  } ${dragOverIndex === index && dragIndex !== index ? "bg-[rgb(var(--accent)/0.08)]" : ""}`}
+                >
                   <td className="px-4 py-2">
                     <div className="flex items-center gap-1.5">
+                      <GripVertical
+                        size={14}
+                        className="cursor-grab text-[rgb(var(--muted))] active:cursor-grabbing"
+                      />
                       <div className="flex flex-col">
                         <button
                           onClick={() => moveRank(index, -1)}

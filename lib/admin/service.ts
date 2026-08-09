@@ -208,6 +208,15 @@ export async function swapList100Rank(idA: string, idB: string) {
   ]);
 }
 
+export async function reorderList100Items(orderedIds: string[]) {
+  const db = await getDb();
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      db.update(list100Items).set({ rank: index + 1 }).where(eq(list100Items.id, id)),
+    ),
+  );
+}
+
 export async function listSuggestionsAdmin() {
   const db = await getDb();
   return db.select().from(list100Suggestions).orderBy(desc(list100Suggestions.createdAt));
