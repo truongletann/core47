@@ -41,6 +41,8 @@ per-tool deployment needed.
 
 ## Getting started
 
+Requires **Node.js >= 20.9**.
+
 ```bash
 npm install
 npm run dev
@@ -51,14 +53,33 @@ host-based, visiting a tool's own experience locally means setting the
 `Host` header or editing `/etc/hosts` to point e.g. `market.localhost` at
 `127.0.0.1` — otherwise `localhost` always serves the root hub page.
 
+D1 and R2 bindings work out of the box under `next dev` — no separate
+`wrangler dev` process needed — thanks to `initOpenNextCloudflareForDev()`
+in [`next.config.js`](next.config.js), which points them at Wrangler's
+local emulated state (`.wrangler/`, gitignored).
+
 ### Database
 
-Schema and seed data live in [`db/`](db), managed with Drizzle. Apply
-migrations locally with Wrangler:
+Schema and migrations live in [`db/migrations`](db/migrations), managed
+with Drizzle. On a fresh clone, apply every migration in order to build
+the local D1 database:
 
 ```bash
-npx wrangler d1 execute core47-db --local --file=db/migrations/<file>.sql
+for f in db/migrations/*.sql; do
+  npx wrangler d1 execute core47-db --local --file="$f"
+done
 ```
+
+When adding a schema change, add the next numbered migration file and
+apply just that one locally the same way (see
+[`CONVENTIONS.md`](CONVENTIONS.md) for the full deploy workflow, including
+applying it to the remote database).
+
+### Secrets
+
+There's no `.env` — runtime secrets (API keys, etc.) live in D1 tables and
+are set directly via `wrangler d1 execute`, never committed. See the
+**Secrets** section in [`CONVENTIONS.md`](CONVENTIONS.md).
 
 ### Scripts
 
@@ -71,6 +92,44 @@ npx wrangler d1 execute core47-db --local --file=db/migrations/<file>.sql
 | `npm run deploy` | Build + deploy to Cloudflare Workers |
 | `npm run cf-typegen` | Regenerate `cloudflare-env.d.ts` from `wrangler.jsonc` bindings |
 
+## Project structure
+
+```
+app/            Next.js App Router routes
+  tools/<slug>/   one folder per subdomain (see middleware.ts rewrite)
+  api/            route handlers
+  market/         market module pages (nested under app/, not app/tools)
+components/     React components, grouped by feature
+lib/            business logic / services, grouped by feature
+  <feature>/schema.ts    Zod validation
+  <feature>/service.ts   DB queries (Drizzle) + domain logic
+db/
+  schema.ts       Drizzle table definitions
+  migrations/     numbered .sql migrations, applied in order
+  seed.sql        initial data
+middleware.ts   subdomain → /tools/<subdomain> rewrite (see below)
+```
+
+## Architecture notes
+
+- **One Worker, many subdomains.** [`middleware.ts`](middleware.ts) rewrites
+  `<subdomain>.core47.xyz/*` to `/tools/<subdomain>/*` before Next.js
+  routing runs, so every tool ships as part of the same deploy — no
+  per-tool infra.
+- **No cron.** Cloudflare Cron Triggers aren't wired into this OpenNext
+  build. Instead, data-freshness features (prices, news, calendar) check
+  `shouldRefresh(thresholdMinutes)` on page load and refetch lazily,
+  caching the result in D1.
+- **Admin-editable config over redeploys.** External API keys, symbol
+  lists, and source URLs live in singleton-row D1 tables editable from
+  `admin.core47.xyz`, so they can change without touching code or
+  redeploying.
+- **Worker bundle size is a hard constraint.** Cloudflare's free plan caps
+  the deployed script at 3 MiB gzip. This ruled out `sanitize-html` (the
+  blog markdown sanitizer is hand-rolled instead) and shapes how
+  browser-only libraries and icon sets get imported — see
+  [`CONVENTIONS.md`](CONVENTIONS.md) for the specifics and why.
+
 ## Project conventions
 
 Repo-specific rules, gotchas, and established patterns (deploy workflow,
@@ -81,7 +140,8 @@ Read it before making non-trivial changes.
 ## Contributing
 
 This is a personal project, but see [`CONTRIBUTING.md`](CONTRIBUTING.md) if
-you'd like to report a bug or suggest a change.
+you'd like to report a bug or suggest a change. Found a security issue?
+See [`SECURITY.md`](SECURITY.md) instead of opening a public issue.
 
 ## License
 
