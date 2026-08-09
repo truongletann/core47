@@ -1,64 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { ArrowRightLeft, Component } from "lucide-react";
 import { ToolShell } from "@/components/toolbox/ToolShell";
+import { EditorPanel } from "@/components/toolbox/EditorPanel";
+import { ConfigPanel, ConfigRow } from "@/components/toolbox/ConfigPanel";
+import { ModeToggle } from "@/components/toolbox/ModeToggle";
+import { getRelatedTools } from "@/lib/toolbox/registry";
+
+const suggestions = getRelatedTools("url-encoder");
 
 export default function UrlEncoderPage() {
   const [input, setInput] = useState("");
-  const [output, setOutput] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [encode, setEncode] = useState(true);
+  const [componentMode, setComponentMode] = useState(true);
 
-  function encode() {
-    setOutput(encodeURIComponent(input));
-    setError(null);
-  }
-
-  function decode() {
+  const { output, error } = useMemo(() => {
+    if (!input) return { output: "", error: null as string | null };
     try {
-      setOutput(decodeURIComponent(input));
-      setError(null);
+      if (encode) {
+        return { output: componentMode ? encodeURIComponent(input) : encodeURI(input), error: null };
+      }
+      return { output: componentMode ? decodeURIComponent(input) : decodeURI(input), error: null };
     } catch {
-      setError("Invalid encoded string.");
+      return { output: "", error: "Invalid encoded string." };
     }
-  }
+  }, [input, encode, componentMode]);
 
   return (
     <ToolShell slug="url-encoder" title="URL Encoder / Decoder" description="Encode or decode URL components.">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div>
-          <p className="mb-1 text-sm text-[rgb(var(--muted))]">Input</p>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            rows={10}
-            className="font-data w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-3 text-sm outline-none focus:ring-2 focus:ring-[rgb(var(--accent)/0.3)]"
-          />
-          <div className="mt-2 flex gap-2">
-            <button
-              onClick={encode}
-              className="rounded-md bg-[rgb(var(--accent))] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
-            >
-              Encode
-            </button>
-            <button
-              onClick={decode}
-              className="rounded-md border border-[rgb(var(--border))] px-3 py-1.5 text-xs hover:bg-[rgb(var(--border)/0.5)]"
-            >
-              Decode
-            </button>
-          </div>
-          {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
-        </div>
-        <div>
-          <p className="mb-1 text-sm text-[rgb(var(--muted))]">Output</p>
-          <textarea
-            readOnly
-            value={output}
-            rows={10}
-            className="font-data w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] p-3 text-sm outline-none"
-          />
-        </div>
+      <ConfigPanel>
+        <ConfigRow
+          icon={<ArrowRightLeft size={16} />}
+          title="Conversion"
+          description="Select which conversion mode you want to use"
+        >
+          <span className="text-sm text-[rgb(var(--muted))]">{encode ? "Encode" : "Decode"}</span>
+          <ModeToggle checked={encode} onChange={setEncode} />
+        </ConfigRow>
+
+        <ConfigRow
+          icon={<Component size={16} />}
+          title="Component mode"
+          description="Escape reserved URI characters (&, =, ?, /, ...) too, not just unsafe ones"
+        >
+          <ModeToggle checked={componentMode} onChange={setComponentMode} />
+        </ConfigRow>
+      </ConfigPanel>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <EditorPanel
+          label="Input"
+          value={input}
+          onChange={setInput}
+          placeholder={encode ? "Type or paste text to encode..." : "Type or paste URL to decode..."}
+        />
+        <EditorPanel label="Output" value={output} readOnly suggestions={suggestions} />
       </div>
+
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
     </ToolShell>
   );
 }

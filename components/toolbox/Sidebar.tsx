@@ -104,6 +104,10 @@ export function ToolboxSidebar() {
         </div>
       )}
 
+      {query && filtered.length === 0 && (
+        <p className="px-2 py-3 text-sm text-[rgb(var(--muted))]">No tools match &quot;{query}&quot;.</p>
+      )}
+
       {TOOLBOX_CATEGORIES.map((cat) => {
         const items = filtered.filter((t) => t.categorySlug === cat.slug);
         if (items.length === 0) return null;

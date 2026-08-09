@@ -9,7 +9,10 @@ import { ModeToggle } from "@/components/toolbox/ModeToggle";
 import { getRelatedTools } from "@/lib/toolbox/registry";
 
 function toBase64(text: string, urlSafe: boolean) {
-  const base64 = btoa(unescape(encodeURIComponent(text)));
+  const bytes = new TextEncoder().encode(text);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  const base64 = btoa(binary);
   return urlSafe ? base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") : base64;
 }
 
@@ -19,7 +22,9 @@ function fromBase64(text: string, urlSafe: boolean) {
     normalized = normalized.replace(/-/g, "+").replace(/_/g, "/");
     while (normalized.length % 4 !== 0) normalized += "=";
   }
-  return decodeURIComponent(escape(atob(normalized)));
+  const binary = atob(normalized);
+  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
 }
 
 const suggestions = getRelatedTools("base64");

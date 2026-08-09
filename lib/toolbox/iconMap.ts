@@ -5,6 +5,7 @@
 import {
   AlignLeft,
   Apple,
+  ArrowLeftRight,
   Asterisk,
   Binary,
   Box,
@@ -57,6 +58,7 @@ import {
 export const iconMap: Record<string, LucideIcon> = {
   AlignLeft,
   Apple,
+  ArrowLeftRight,
   Asterisk,
   Binary,
   Box,

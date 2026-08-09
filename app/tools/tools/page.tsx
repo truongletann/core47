@@ -1,12 +1,6 @@
 import Link from "next/link";
 import { TOOLBOX_TOOLS } from "@/lib/toolbox/registry";
-import { iconMap } from "@/lib/toolbox/iconMap";
-
-function Icon({ name }: { name: string }) {
-  const LucideIcon = iconMap[name];
-  if (!LucideIcon) return null;
-  return <LucideIcon size={20} />;
-}
+import { DynamicIcon as Icon } from "@/components/toolbox/DynamicIcon";
 
 export default function ToolboxHomePage() {
   return (
@@ -29,7 +23,7 @@ export default function ToolboxHomePage() {
               </span>
             )}
             <div className="flex items-center gap-2 text-[rgb(var(--accent))]">
-              <Icon name={tool.icon} />
+              <Icon name={tool.icon} size={20} />
               <h2 className="font-display text-sm font-semibold text-[rgb(var(--fg))]">
                 {tool.name}
               </h2>

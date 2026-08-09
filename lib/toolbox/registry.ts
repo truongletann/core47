@@ -39,7 +39,7 @@ export const TOOLBOX_TOOLS: ToolboxTool[] = [
     description: "Convert date to human-readable date and vice versa",
     categorySlug: "converters",
     icon: "Calendar",
-    implemented: false,
+    implemented: true,
   },
   {
     slug: "json-to-table",
@@ -48,7 +48,7 @@ export const TOOLBOX_TOOLS: ToolboxTool[] = [
     description: "Convert a JSON array to tabular format, export to CSV or TSV",
     categorySlug: "converters",
     icon: "Database",
-    implemented: false,
+    implemented: true,
   },
   {
     slug: "json-yaml",
@@ -57,7 +57,7 @@ export const TOOLBOX_TOOLS: ToolboxTool[] = [
     description: "Convert JSON data to YAML and vice versa",
     categorySlug: "converters",
     icon: "ArrowLeftRight",
-    implemented: false,
+    implemented: true,
   },
   {
     slug: "number-base",
@@ -66,7 +66,7 @@ export const TOOLBOX_TOOLS: ToolboxTool[] = [
     description: "Convert numbers from one base to another",
     categorySlug: "converters",
     icon: "Hash",
-    implemented: false,
+    implemented: true,
   },
 
   // Encoders / Decoders
@@ -77,7 +77,7 @@ export const TOOLBOX_TOOLS: ToolboxTool[] = [
     description: "Encode and decode Base64 image data",
     categorySlug: "encoders-decoders",
     icon: "ImageIcon",
-    implemented: false,
+    implemented: true,
   },
   {
     slug: "base64",
@@ -95,7 +95,7 @@ export const TOOLBOX_TOOLS: ToolboxTool[] = [
     description: "Decode a certificate",
     categorySlug: "encoders-decoders",
     icon: "FileText",
-    implemented: false,
+    implemented: true,
   },
   {
     slug: "gzip",
@@ -104,7 +104,7 @@ export const TOOLBOX_TOOLS: ToolboxTool[] = [
     description: "Compress or decompress a text in GZip",
     categorySlug: "encoders-decoders",
     icon: "FileArchive",
-    implemented: false,
+    implemented: true,
   },
   {
     slug: "html-encoder",
@@ -113,7 +113,7 @@ export const TOOLBOX_TOOLS: ToolboxTool[] = [
     description: "Encode and decode HTML text data",
     categorySlug: "encoders-decoders",
     icon: "Code2",
-    implemented: false,
+    implemented: true,
   },
   {
     slug: "jwt",
@@ -122,7 +122,7 @@ export const TOOLBOX_TOOLS: ToolboxTool[] = [
     description: "Encode and decode JSON Web Token",
     categorySlug: "encoders-decoders",
     icon: "Asterisk",
-    implemented: false,
+    implemented: true,
   },
   {
     slug: "qr-code",
@@ -131,7 +131,7 @@ export const TOOLBOX_TOOLS: ToolboxTool[] = [
     description: "Read or generate a QR Code from text",
     categorySlug: "encoders-decoders",
     icon: "QrCode",
-    implemented: false,
+    implemented: true,
   },
   {
     slug: "url-encoder",
@@ -160,7 +160,7 @@ export const TOOLBOX_TOOLS: ToolboxTool[] = [
     description: "Format and prettify your SQL queries",
     categorySlug: "formatters",
     icon: "Database",
-    implemented: false,
+    implemented: true,
   },
   {
     slug: "xml-formatter",
@@ -169,7 +169,7 @@ export const TOOLBOX_TOOLS: ToolboxTool[] = [
     description: "Indent or minify XML data",
     categorySlug: "formatters",
     icon: "Code",
-    implemented: false,
+    implemented: true,
   },
 
   // Generators
@@ -189,7 +189,7 @@ export const TOOLBOX_TOOLS: ToolboxTool[] = [
     description: "Generate Lorem Ipsum placeholder text",
     categorySlug: "generators",
     icon: "Type",
-    implemented: false,
+    implemented: true,
   },
   {
     slug: "password-generator",

@@ -7,10 +7,11 @@ import { EditorPanel } from "@/components/toolbox/EditorPanel";
 import { ConfigPanel, ConfigRow } from "@/components/toolbox/ConfigPanel";
 import { ModeToggle } from "@/components/toolbox/ModeToggle";
 import { getRelatedTools } from "@/lib/toolbox/registry";
+import { formatXml, minifyXml } from "@/lib/toolbox/xmlFormat";
 
-const suggestions = getRelatedTools("json-formatter");
+const suggestions = getRelatedTools("xml-formatter");
 
-export default function JsonFormatterPage() {
+export default function XmlFormatterPage() {
   const [input, setInput] = useState("");
   const [indent, setIndent] = useState(true);
   const [indentSize, setIndentSize] = useState(2);
@@ -18,31 +19,21 @@ export default function JsonFormatterPage() {
   const { output, error } = useMemo(() => {
     if (!input.trim()) return { output: "", error: null as string | null };
     try {
-      const parsed = JSON.parse(input);
-      return { output: JSON.stringify(parsed, null, indent ? indentSize : 0), error: null };
+      return { output: indent ? formatXml(input, indentSize) : minifyXml(input), error: null };
     } catch (e) {
-      return { output: "", error: e instanceof Error ? e.message : "Invalid JSON." };
+      return { output: "", error: e instanceof Error ? e.message : "Invalid XML." };
     }
   }, [input, indent, indentSize]);
 
   return (
-    <ToolShell slug="json-formatter" title="JSON Formatter" description="Indent or minify JSON data.">
+    <ToolShell slug="xml-formatter" title="XML Formatter" description="Indent or minify XML data.">
       <ConfigPanel>
-        <ConfigRow
-          icon={<AlignLeft size={16} />}
-          title="Indent"
-          description="Pretty-print with indentation instead of minifying"
-        >
+        <ConfigRow icon={<AlignLeft size={16} />} title="Indent" description="Pretty-print with indentation instead of minifying">
           <span className="text-sm text-[rgb(var(--muted))]">{indent ? "On" : "Off"}</span>
           <ModeToggle checked={indent} onChange={setIndent} />
         </ConfigRow>
-
         {indent && (
-          <ConfigRow
-            icon={<Minus size={16} />}
-            title="Indent size"
-            description="Number of spaces per indent level"
-          >
+          <ConfigRow icon={<Minus size={16} />} title="Indent size" description="Number of spaces per indent level">
             <select
               value={indentSize}
               onChange={(e) => setIndentSize(Number(e.target.value))}
@@ -59,7 +50,7 @@ export default function JsonFormatterPage() {
       </ConfigPanel>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <EditorPanel label="Input" value={input} onChange={setInput} placeholder='{"hello":"world"}' />
+        <EditorPanel label="Input" value={input} onChange={setInput} placeholder="<root><child>value</child></root>" />
         <EditorPanel label="Output" value={output} readOnly suggestions={suggestions} />
       </div>
 
