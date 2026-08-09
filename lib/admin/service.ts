@@ -130,6 +130,7 @@ export async function listList100Admin() {
   return rows.map((r) => ({
     ...r,
     isDone: Boolean(r.isDone),
+    isPinnedEnd: Boolean(r.isPinnedEnd),
     isPublic: Boolean(r.isPublic),
   }));
 }
