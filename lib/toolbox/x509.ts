@@ -2,14 +2,17 @@
 // Hand-rolled (instead of an npm cert-parsing lib) for the same reason the blog
 // HTML sanitizer is hand-rolled — see CONVENTIONS.md's Worker bundle-size notes;
 // full ASN.1/X.509 libraries pull in a lot of code for what is, here, a read-only
-// "show me the fields" viewer. Covers the fields that matter for that use case;
-// it does not verify signatures or chain trust.
+// "show me the fields" viewer + single-signature check. It verifies the
+// signature over one certificate (self-signed, or against a supplied issuer
+// certificate) using Web Crypto — it does NOT build/validate a certificate
+// chain against a trust store, check revocation, or enforce basic constraints.
 
 interface DerNode {
   tagClass: number; // 0 = universal, 2 = context-specific
   constructed: boolean;
   tagNumber: number;
   value: Uint8Array; // raw content octets
+  raw: Uint8Array; // full TLV bytes (tag + length + value) — needed to re-verify signatures
   children: DerNode[]; // populated when constructed
 }
 
@@ -47,6 +50,7 @@ function parseDer(bytes: Uint8Array, offset: number, end: number): { node: DerNo
   const valueEnd = valueStart + length;
   if (valueEnd > end) throw new Error("DER length exceeds available data.");
   const value = bytes.slice(valueStart, valueEnd);
+  const raw = bytes.slice(offset, valueEnd);
 
   const children: DerNode[] = [];
   if (constructed) {
@@ -58,7 +62,7 @@ function parseDer(bytes: Uint8Array, offset: number, end: number): { node: DerNo
     }
   }
 
-  return { node: { tagClass, constructed, tagNumber, value, children }, next: valueEnd };
+  return { node: { tagClass, constructed, tagNumber, value, raw, children }, next: valueEnd };
 }
 
 function parseDerRoot(bytes: Uint8Array): DerNode {
@@ -167,6 +171,54 @@ const OID_NAMES: Record<string, string> = {
   "1.2.840.10045.4.3.4": "ECDSA with SHA-512",
 };
 
+const RSA_SIG_HASH: Record<string, string> = {
+  "1.2.840.113549.1.1.5": "SHA-1",
+  "1.2.840.113549.1.1.11": "SHA-256",
+  "1.2.840.113549.1.1.12": "SHA-384",
+  "1.2.840.113549.1.1.13": "SHA-512",
+};
+const ECDSA_SIG_HASH: Record<string, string> = {
+  "1.2.840.10045.4.3.2": "SHA-256",
+  "1.2.840.10045.4.3.3": "SHA-384",
+  "1.2.840.10045.4.3.4": "SHA-512",
+};
+const EC_CURVES: Record<string, { name: string; byteSize: number }> = {
+  "1.2.840.10045.3.1.7": { name: "P-256", byteSize: 32 },
+  "1.3.132.0.34": { name: "P-384", byteSize: 48 },
+  "1.3.132.0.35": { name: "P-521", byteSize: 66 },
+};
+
+function decodeBitStringBytes(node: DerNode): Uint8Array {
+  // First content byte = count of unused bits in the last octet (always 0 for
+  // signatures/keys, which are whole-byte-aligned) — the actual data follows.
+  return node.value.slice(1);
+}
+
+function bigIntToFixedBytes(n: bigint, size: number): Uint8Array {
+  const out = new Uint8Array(size);
+  let v = n;
+  for (let i = size - 1; i >= 0; i--) {
+    out[i] = Number(v & BigInt(0xff));
+    v >>= BigInt(8);
+  }
+  return out;
+}
+
+// Web Crypto's ECDSA verify expects raw r||s (IEEE P1363), but X.509 stores
+// the signature as a DER SEQUENCE { INTEGER r, INTEGER s } — convert between them.
+function derEcdsaSignatureToRaw(derSig: Uint8Array, byteSize: number): Uint8Array {
+  const seq = parseDerRoot(derSig);
+  const [rNode, sNode] = seq.children;
+  if (!rNode || !sNode) throw new Error("Malformed ECDSA signature.");
+  const toBigInt = (bytes: Uint8Array) => bytes.reduce((acc, b) => (acc << BigInt(8)) | BigInt(b), BigInt(0));
+  const r = bigIntToFixedBytes(toBigInt(rNode.value), byteSize);
+  const s = bigIntToFixedBytes(toBigInt(sNode.value), byteSize);
+  const out = new Uint8Array(byteSize * 2);
+  out.set(r, 0);
+  out.set(s, byteSize);
+  return out;
+}
+
 function decodeName(node: DerNode): string {
   const parts: string[] = [];
   for (const rdn of node.children) {
@@ -182,24 +234,25 @@ function decodeName(node: DerNode): string {
   return parts.join(", ");
 }
 
-export interface CertificateInfo {
-  subject: string;
-  issuer: string;
-  serialNumber: string;
-  notBefore: Date;
-  notAfter: Date;
-  isExpired: boolean;
-  signatureAlgorithm: string;
-  publicKeyAlgorithm: string;
+interface ParsedCertificate {
+  tbs: DerNode;
+  spkiNode: DerNode;
+  subjectNode: DerNode;
+  issuerNode: DerNode;
+  serialNode: DerNode;
+  validityNode: DerNode;
+  sigAlgOid: string;
+  pubKeyAlgOid: string;
+  signatureBytes: Uint8Array;
   version: number;
 }
 
-export function decodeCertificate(pem: string): CertificateInfo {
+function parseCertificateStructure(pem: string): ParsedCertificate {
   const der = pemToDer(pem);
   const cert = parseDerRoot(der);
   if (cert.tagNumber !== 0x10 || !cert.constructed) throw new Error("Not a valid DER SEQUENCE — is this a certificate?");
 
-  const [tbs, sigAlgNode] = cert.children;
+  const [tbs, sigAlgNode, sigValueNode] = cert.children;
   if (!tbs) throw new Error("Missing TBSCertificate.");
 
   let idx = 0;
@@ -218,22 +271,131 @@ export function decodeCertificate(pem: string): CertificateInfo {
   const subjectNode = tbs.children[idx++];
   const spkiNode = tbs.children[idx++];
 
-  const [notBeforeNode, notAfterNode] = validityNode.children;
-  const notBefore = decodeTime(notBeforeNode);
-  const notAfter = decodeTime(notAfterNode);
-
   const sigAlgOid = decodeOid((sigAlgNode ?? sigAlgInTbs).children[0].value);
   const pubKeyAlgOid = decodeOid(spkiNode.children[0].children[0].value);
 
   return {
-    subject: decodeName(subjectNode),
-    issuer: decodeName(issuerNode),
-    serialNumber: decodeSerial(serialNode.value),
+    tbs,
+    spkiNode,
+    subjectNode,
+    issuerNode,
+    serialNode,
+    validityNode,
+    sigAlgOid,
+    pubKeyAlgOid,
+    signatureBytes: sigValueNode ? decodeBitStringBytes(sigValueNode) : new Uint8Array(),
+    version,
+  };
+}
+
+export interface CertificateInfo {
+  subject: string;
+  issuer: string;
+  serialNumber: string;
+  notBefore: Date;
+  notAfter: Date;
+  isExpired: boolean;
+  signatureAlgorithm: string;
+  publicKeyAlgorithm: string;
+  version: number;
+  isSelfSigned: boolean;
+}
+
+export function decodeCertificate(pem: string): CertificateInfo {
+  const parsed = parseCertificateStructure(pem);
+  const [notBeforeNode, notAfterNode] = parsed.validityNode.children;
+  const notBefore = decodeTime(notBeforeNode);
+  const notAfter = decodeTime(notAfterNode);
+  const subject = decodeName(parsed.subjectNode);
+  const issuer = decodeName(parsed.issuerNode);
+
+  return {
+    subject,
+    issuer,
+    serialNumber: decodeSerial(parsed.serialNode.value),
     notBefore,
     notAfter,
     isExpired: notAfter.getTime() < Date.now(),
-    signatureAlgorithm: OID_NAMES[sigAlgOid] ?? sigAlgOid,
-    publicKeyAlgorithm: OID_NAMES[pubKeyAlgOid] ?? pubKeyAlgOid,
-    version,
+    signatureAlgorithm: OID_NAMES[parsed.sigAlgOid] ?? parsed.sigAlgOid,
+    publicKeyAlgorithm: OID_NAMES[parsed.pubKeyAlgOid] ?? parsed.pubKeyAlgOid,
+    version: parsed.version,
+    isSelfSigned: subject === issuer,
   };
+}
+
+export interface VerifyResult {
+  ok: boolean;
+  message: string;
+}
+
+async function importVerifyKey(
+  spkiRaw: Uint8Array,
+  pubKeyAlgOid: string,
+  sigAlgOid: string,
+): Promise<{ key: CryptoKey; verifyParams: AlgorithmIdentifier | RsaPssParams | EcdsaParams; ecByteSize?: number }> {
+  if (pubKeyAlgOid === "1.2.840.113549.1.1.1") {
+    const hash = RSA_SIG_HASH[sigAlgOid];
+    if (!hash) throw new Error(`Unsupported RSA signature algorithm (OID ${sigAlgOid}).`);
+    const key = await crypto.subtle.importKey("spki", spkiRaw.slice(), { name: "RSASSA-PKCS1-v1_5", hash }, false, ["verify"]);
+    return { key, verifyParams: { name: "RSASSA-PKCS1-v1_5" } };
+  }
+
+  if (pubKeyAlgOid === "1.2.840.10045.2.1") {
+    const hash = ECDSA_SIG_HASH[sigAlgOid];
+    if (!hash) throw new Error(`Unsupported ECDSA signature algorithm (OID ${sigAlgOid}).`);
+    // Named curve lives in the SPKI AlgorithmIdentifier's parameters (an OID).
+    const spki = parseDerRoot(spkiRaw);
+    const curveOidNode = spki.children[0]?.children[1];
+    const curveOid = curveOidNode ? decodeOid(curveOidNode.value) : "";
+    const curve = EC_CURVES[curveOid];
+    if (!curve) throw new Error(`Unsupported or unrecognized EC curve (OID ${curveOid || "unknown"}).`);
+    const key = await crypto.subtle.importKey("spki", spkiRaw.slice(), { name: "ECDSA", namedCurve: curve.name }, false, ["verify"]);
+    return { key, verifyParams: { name: "ECDSA", hash }, ecByteSize: curve.byteSize };
+  }
+
+  throw new Error(`Unsupported public key algorithm (OID ${pubKeyAlgOid}) — only RSA and EC (P-256/384/521) are supported.`);
+}
+
+/**
+ * Verifies the signature on one certificate — either a self-signature (subject
+ * === issuer, common for root/test certs) or against a supplied issuer's
+ * certificate. This is NOT full chain validation: it doesn't walk a path to a
+ * trusted root, check basic constraints/key usage, or check revocation.
+ */
+export async function verifyCertificateSignature(certPem: string, issuerPem?: string): Promise<VerifyResult> {
+  const cert = parseCertificateStructure(certPem);
+
+  let issuerSpkiRaw: Uint8Array;
+  let issuerPubKeyAlgOid: string;
+  let mode: string;
+
+  if (issuerPem && issuerPem.trim()) {
+    const issuerCert = parseCertificateStructure(issuerPem);
+    issuerSpkiRaw = issuerCert.spkiNode.raw;
+    issuerPubKeyAlgOid = issuerCert.pubKeyAlgOid;
+    mode = "against the supplied issuer certificate's public key";
+  } else {
+    issuerSpkiRaw = cert.spkiNode.raw;
+    issuerPubKeyAlgOid = cert.pubKeyAlgOid;
+    mode = "as a self-signature (using its own public key)";
+  }
+
+  try {
+    const { key, verifyParams, ecByteSize } = await importVerifyKey(issuerSpkiRaw, issuerPubKeyAlgOid, cert.sigAlgOid);
+    const signature =
+      issuerPubKeyAlgOid === "1.2.840.10045.2.1"
+        ? derEcdsaSignatureToRaw(cert.signatureBytes, ecByteSize as number)
+        : cert.signatureBytes;
+
+    const ok = await crypto.subtle.verify(verifyParams, key, signature.slice(), cert.tbs.raw.slice());
+
+    return {
+      ok,
+      message: ok
+        ? `Signature is valid, verified ${mode}.`
+        : `Signature does NOT match — verification failed ${mode}.`,
+    };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Could not verify this signature." };
+  }
 }

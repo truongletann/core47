@@ -53,7 +53,8 @@ export default function SqlFormatterPage() {
       </div>
 
       <p className="mt-2 text-xs text-[rgb(var(--muted))]">
-        Keyword-based beautifier — handles common single-statement queries; complex nested subqueries may not be perfectly indented.
+        Keyword-based beautifier, not a full SQL parser — subqueries in parentheses are recursively indented, but very
+        unusual dialect-specific syntax may not format perfectly.
       </p>
     </ToolShell>
   );
