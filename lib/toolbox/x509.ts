@@ -73,7 +73,12 @@ function pemToDer(pem: string): Uint8Array {
   const match = pem.match(/-----BEGIN CERTIFICATE-----([\s\S]+?)-----END CERTIFICATE-----/);
   const body = (match ? match[1] : pem).replace(/[^A-Za-z0-9+/=]/g, "");
   if (!body) throw new Error("No PEM certificate block found (expecting -----BEGIN CERTIFICATE-----).");
-  const binary = atob(body);
+  let binary: string;
+  try {
+    binary = atob(body);
+  } catch {
+    throw new Error("Malformed Base64 inside the PEM block.");
+  }
   return Uint8Array.from(binary, (c) => c.charCodeAt(0));
 }
 

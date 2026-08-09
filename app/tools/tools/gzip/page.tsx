@@ -31,10 +31,10 @@ export default function GzipPage() {
           setError(null);
         }
       })
-      .catch((e) => {
+      .catch(() => {
         if (!cancelled) {
           setOutput("");
-          setError(e instanceof Error ? e.message : compress ? "Could not compress this input." : "Invalid gzip Base64 data.");
+          setError(compress ? "Could not compress this input." : "Invalid gzip Base64 data.");
         }
       });
     return () => {

@@ -9,12 +9,22 @@ function parse(xml: string): Document {
   return doc;
 }
 
+// DOM getters (textContent, attribute .value) hand back already-decoded text —
+// re-escape before writing it back into XML syntax, or "&"/"<" in the original
+// document turns into invalid, unparseable output.
+function escapeText(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function escapeAttr(s: string): string {
+  return escapeText(s).replace(/"/g, "&quot;");
+}
+
 function serializeNode(node: Node, indent: number, indentSize: number): string {
   const pad = " ".repeat(indent * indentSize);
 
   if (node.nodeType === Node.TEXT_NODE) {
     const text = node.textContent?.trim();
-    return text ? `${pad}${text}\n` : "";
+    return text ? `${pad}${escapeText(text)}\n` : "";
   }
   if (node.nodeType === Node.COMMENT_NODE) {
     return `${pad}<!--${node.textContent}-->\n`;
@@ -26,7 +36,7 @@ function serializeNode(node: Node, indent: number, indentSize: number): string {
 
   const el = node as Element;
   const attrs = Array.from(el.attributes)
-    .map((a) => ` ${a.name}="${a.value}"`)
+    .map((a) => ` ${a.name}="${escapeAttr(a.value)}"`)
     .join("");
 
   const children = Array.from(el.childNodes).filter(
@@ -39,7 +49,7 @@ function serializeNode(node: Node, indent: number, indentSize: number): string {
 
   const onlyText = children.length === 1 && children[0].nodeType === Node.TEXT_NODE;
   if (onlyText) {
-    return `${pad}<${el.tagName}${attrs}>${children[0].textContent?.trim()}</${el.tagName}>\n`;
+    return `${pad}<${el.tagName}${attrs}>${escapeText(children[0].textContent?.trim() ?? "")}</${el.tagName}>\n`;
   }
 
   const inner = children.map((child) => serializeNode(child, indent + 1, indentSize)).join("");

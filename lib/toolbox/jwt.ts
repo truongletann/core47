@@ -54,6 +54,13 @@ export async function verifyHmacSignature(
   const hash = HMAC_ALGOS[alg];
   if (!hash) throw new Error(`Unsupported algorithm for verification: ${alg}. Only HS256/HS384/HS512 are supported.`);
 
+  let expected: Uint8Array;
+  try {
+    expected = base64UrlToBytes(signatureB64);
+  } catch {
+    throw new Error("Could not decode the signature segment — this doesn't look like a valid JWT.");
+  }
+
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
@@ -62,7 +69,6 @@ export async function verifyHmacSignature(
     ["sign"],
   );
   const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(signingInput));
-  const expected = base64UrlToBytes(signatureB64);
   const actual = new Uint8Array(signature);
   if (expected.length !== actual.length) return false;
   let diff = 0;

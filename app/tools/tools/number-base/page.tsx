@@ -49,7 +49,13 @@ export default function NumberBaseConverterPage() {
         <ConfigRow icon={<Hash size={16} />} title="Input base" description="Base of the number you're typing">
           <select
             value={inputBase}
-            onChange={(e) => setInputBase(Number(e.target.value))}
+            onChange={(e) => {
+              const nextBase = Number(e.target.value);
+              setInputBase(nextBase);
+              // Re-sanitize the existing value so digits invalid in the new base
+              // don't silently linger — what's shown always matches what's computed.
+              setValue((v) => sanitizeForBase(v, nextBase));
+            }}
             className="rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-[rgb(var(--accent)/0.3)]"
           >
             {BASES.map((b) => (
@@ -65,7 +71,7 @@ export default function NumberBaseConverterPage() {
         <p className="mb-1 text-sm text-[rgb(var(--muted))]">Value</p>
         <input
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => setValue(sanitizeForBase(e.target.value, inputBase))}
           placeholder="Type a number..."
           className="font-data w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-3 text-sm outline-none focus:ring-2 focus:ring-[rgb(var(--accent)/0.3)]"
         />

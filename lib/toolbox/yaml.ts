@@ -179,6 +179,9 @@ function parseBlock(lines: Line[], start: number, indent: number): [JsonValue, n
 export function fromYaml(yaml: string): JsonValue {
   const lines = tokenize(yaml);
   if (lines.length === 0) return null;
-  const [value] = parseBlock(lines, 0, lines[0].indent);
+  const [value, next] = parseBlock(lines, 0, lines[0].indent);
+  if (next < lines.length) {
+    throw new Error(`Inconsistent indentation near "${lines[next].content}" — could not parse the rest of the document.`);
+  }
   return value;
 }

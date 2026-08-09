@@ -10,7 +10,7 @@ const LOWER = "abcdefghijklmnopqrstuvwxyz";
 const UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const DIGITS = "0123456789";
 const SYMBOLS = "!@#$%^&*()_+-=[]{}";
-const AMBIGUOUS = /[il1Lo0O]/;
+const AMBIGUOUS = /[il1Lo0O]/g;
 
 function strengthOf(length: number, charsetSize: number): { label: string; color: string } {
   const entropyBits = length * Math.log2(Math.max(charsetSize, 2));
