@@ -37,6 +37,11 @@ function toUser(record: {
   };
 }
 
+export interface SessionDeviceInfo {
+  platform?: "web" | "ios" | "android";
+  deviceName?: string;
+}
+
 export async function registerUser(raw: RegisterInput): Promise<{ user: User; sessionId: string }> {
   const input = RegisterSchema.parse(raw);
   const db = await getDb();
@@ -91,7 +96,10 @@ export async function registerUser(raw: RegisterInput): Promise<{ user: User; se
   return { user: toUser(userRecord), sessionId };
 }
 
-export async function loginUser(raw: LoginInput): Promise<{ user: User; sessionId: string }> {
+export async function loginUser(
+  raw: LoginInput,
+  device?: SessionDeviceInfo,
+): Promise<{ user: User; sessionId: string }> {
   const input = LoginSchema.parse(raw);
   const db = await getDb();
 
@@ -123,12 +131,12 @@ export async function loginUser(raw: LoginInput): Promise<{ user: User; sessionI
   await db.update(users).set({ lastLoginAt: now }).where(eq(users.id, record.id));
   record.lastLoginAt = now;
 
-  const sessionId = await createSession(record.id);
+  const sessionId = await createSession(record.id, device);
 
   return { user: toUser(record), sessionId };
 }
 
-async function createSession(userId: string): Promise<string> {
+async function createSession(userId: string, device?: SessionDeviceInfo): Promise<string> {
   const db = await getDb();
   const sessionId = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString();
@@ -138,6 +146,8 @@ async function createSession(userId: string): Promise<string> {
     userId,
     expiresAt,
     createdAt: new Date().toISOString(),
+    platform: device?.platform ?? null,
+    deviceName: device?.deviceName ?? null,
   });
 
   return sessionId;

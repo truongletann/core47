@@ -55,6 +55,11 @@ export const sessions = sqliteTable("sessions", {
   userId: text("user_id").notNull(),
   expiresAt: text("expires_at").notNull(),
   createdAt: text("created_at").notNull(),
+  // NEW — set for sessions created via /api/mobile/auth/login, null for
+  // web cookie sessions. Lets "logout all devices" and future session-list
+  // UI distinguish device types; auth/expiry logic is identical either way.
+  platform: text("platform", { enum: ["web", "ios", "android"] }),
+  deviceName: text("device_name"),
 });
 
 // Fixed-window request counters, e.g. "login:203.0.113.4" — used to throttle
