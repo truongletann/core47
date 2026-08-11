@@ -1,11 +1,8 @@
 import { Redirect } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
 import { ApiError, useAuth } from '@/lib/auth/AuthContext';
 
 function errorMessage(code: string): string {
@@ -45,85 +42,61 @@ export default function LoginScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedText type="title" style={styles.title}>
-          Core47
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          Daily Command Center
-        </ThemedText>
+    <SafeAreaView style={styles.safeArea}>
+      <Text style={styles.title}>Core47</Text>
+      <Text style={styles.subtitle}>Daily Command Center</Text>
 
-        <ThemedView type="backgroundElement" style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Email hoặc username"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            value={identifier}
-            onChangeText={setIdentifier}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Mật khẩu"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
+      <View style={styles.form}>
+        <TextInput
+          style={styles.input}
+          placeholder="Email hoặc username"
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+          value={identifier}
+          onChangeText={setIdentifier}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Mật khẩu"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
 
-          {error && (
-            <ThemedText type="small" style={styles.error}>
-              {error}
-            </ThemedText>
-          )}
+        {error && <Text style={styles.error}>{error}</Text>}
 
-          <Pressable
-            style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-            disabled={isSubmitting || !identifier || !password}
-            onPress={handleSubmit}>
-            {isSubmitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <ThemedText type="smallBold" themeColor="background">
-                Đăng nhập
-              </ThemedText>
-            )}
-          </Pressable>
-        </ThemedView>
-      </SafeAreaView>
-    </ThemedView>
+        <Pressable
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+          disabled={isSubmitting || !identifier || !password}
+          onPress={handleSubmit}>
+          {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Đăng nhập</Text>}
+        </Pressable>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center' },
-  safeArea: { flex: 1, justifyContent: 'center', paddingHorizontal: Spacing.four, gap: Spacing.two },
-  title: { textAlign: 'center' },
-  form: {
-    marginTop: Spacing.four,
-    gap: Spacing.three,
-    padding: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  safeArea: { flex: 1, justifyContent: 'center', paddingHorizontal: 24, gap: 8 },
+  title: { fontSize: 40, fontWeight: '700', textAlign: 'center' },
+  subtitle: { fontSize: 14, textAlign: 'center', color: '#666', marginBottom: 8 },
+  form: { marginTop: 24, gap: 16 },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#8888',
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     fontSize: 16,
   },
-  error: {
-    color: '#E5484D',
-  },
+  error: { color: '#E5484D', fontSize: 14 },
   button: {
     backgroundColor: '#208AEF',
-    borderRadius: Spacing.two,
-    paddingVertical: Spacing.three,
+    borderRadius: 8,
+    paddingVertical: 14,
     alignItems: 'center',
   },
-  buttonPressed: {
-    opacity: 0.8,
-  },
+  buttonPressed: { opacity: 0.8 },
+  buttonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });

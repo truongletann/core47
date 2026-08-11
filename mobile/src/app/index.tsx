@@ -1,10 +1,7 @@
 import { Redirect } from 'expo-router';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth/AuthContext';
 
 // Placeholder Home — the real Daily Command Center (market snapshot,
@@ -18,33 +15,28 @@ export default function HomeScreen() {
   if (!user) return <Redirect href="/login" />;
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedText type="title" style={styles.title}>
-          Chào {user.name ?? user.username ?? user.email}
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {user.email}
-        </ThemedText>
+    <SafeAreaView style={styles.safeArea}>
+      <Text style={styles.title}>Chào {user.name ?? user.username ?? user.email}</Text>
+      <Text style={styles.subtitle}>{user.email}</Text>
 
-        <Pressable style={styles.button} onPress={() => logout()}>
-          <ThemedText type="smallBold">Đăng xuất</ThemedText>
-        </Pressable>
-      </SafeAreaView>
-    </ThemedView>
+      <Pressable style={styles.button} onPress={() => logout()}>
+        <Text style={styles.buttonText}>Đăng xuất</Text>
+      </Pressable>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  safeArea: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.two, padding: Spacing.four },
-  title: { textAlign: 'center' },
+  safeArea: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8, padding: 24 },
+  title: { fontSize: 24, fontWeight: '700', textAlign: 'center' },
+  subtitle: { fontSize: 14, color: '#666' },
   button: {
-    marginTop: Spacing.four,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#8888',
   },
+  buttonText: { fontWeight: '700' },
 });
